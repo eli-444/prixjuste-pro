@@ -20,7 +20,9 @@ export function AuthForm({ redirectTo = '/mon-compte' }: { redirectTo?: string }
       return undefined;
     }
 
-    return `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin;
+
+    return `${appUrl}/auth/callback?next=${encodeURIComponent(redirectTo)}`;
   }, [redirectTo]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
