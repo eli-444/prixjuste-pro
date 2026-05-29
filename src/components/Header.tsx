@@ -1,7 +1,13 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 
-export function Header() {
+export async function Header() {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
+
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-1.5">
@@ -11,7 +17,7 @@ export function Header() {
 
         <nav className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
           <Link href="/#fonctionnement" className="hover:text-slate-950">
-            Méthode
+            Methode
           </Link>
           <Link href="/#cibles" className="hover:text-slate-950">
             Pour qui ?
@@ -19,13 +25,16 @@ export function Header() {
           <Link href="/#tarifs" className="hover:text-slate-950">
             Tarifs
           </Link>
+          <Link href={user ? '/mon-compte' : '/connexion'} className="hover:text-slate-950">
+            {user ? 'Mon compte' : 'Connexion'}
+          </Link>
           <Link href="/outil" className="rounded-full bg-slate-950 px-4 py-2 text-white hover:bg-slate-800">
             Calculer un prix
           </Link>
         </nav>
 
-        <Link href="/outil" className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white md:hidden">
-          Calculer
+        <Link href={user ? '/mon-compte' : '/connexion'} className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white md:hidden">
+          Compte
         </Link>
       </div>
     </header>

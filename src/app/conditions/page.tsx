@@ -10,16 +10,19 @@ export default function ConditionsPage() {
           <h1 className="text-3xl font-bold tracking-tight text-slate-950">Conditions d'utilisation</h1>
           <div className="mt-6 space-y-4 leading-7 text-slate-600">
             <p>
-              L'achat premium donne accès aux fonctionnalités avancées de Tarifly sur le navigateur utilisé après
-              paiement.
+              Tarifly est propose par Aurora Web & Security, SIRET 99124922800016. Pour toute question ou reclamation,
+              vous pouvez ecrire a aurorawebsec@gmail.com.
             </p>
             <p>
-              Les calculs fournis sont basés sur les informations saisies par l'utilisateur. L'utilisateur reste seul
-              responsable de ses décisions commerciales, tarifaires, comptables et fiscales.
+              L'achat premium donne acces aux fonctionnalites avancees de Tarifly. Lorsque Supabase et Stripe sont
+              configures, cet acces est rattache au compte utilisateur connecte.
             </p>
             <p>
-              Avant mise en ligne, adaptez cette page à votre activité réelle, votre pays, votre politique de
-              remboursement et vos obligations légales.
+              Les calculs fournis sont bases sur les informations saisies par l'utilisateur. L'utilisateur reste seul
+              responsable de ses decisions commerciales, tarifaires, comptables et fiscales.
+            </p>
+            <p>
+              Les paiements sont executes par Stripe. Tarifly ne collecte ni ne conserve les donnees de carte bancaire.
             </p>
           </div>
         </article>

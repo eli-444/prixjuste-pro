@@ -7,18 +7,24 @@ export default function LegalPage() {
       <Header />
       <main className="bg-slate-100 px-4 py-16">
         <article className="mx-auto max-w-3xl rounded-3xl bg-white p-8 shadow-soft">
-          <h1 className="text-3xl font-bold tracking-tight text-slate-950">Mentions légales</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-950">Mentions legales</h1>
           <div className="mt-6 space-y-4 leading-7 text-slate-600">
             <p>
-              Tarifly est un service numérique édité par le propriétaire du site. Avant publication, complétez cette
-              section avec vos informations légales : nom, statut, SIRET si applicable, adresse de contact et email.
+              Tarifly est edite par Aurora Web & Security, agence proprietaire de cette application.
+            </p>
+            <p>SIRET : 99124922800016</p>
+            <p>
+              Contact en cas de probleme :{' '}
+              <a href="mailto:aurorawebsec@gmail.com" className="font-semibold text-slate-950 hover:underline">
+                aurorawebsec@gmail.com
+              </a>
             </p>
             <p>
-              Le site propose un outil d'aide au calcul de prix. Les résultats sont indicatifs et ne remplacent pas un
+              Le site propose un outil d'aide au calcul de prix. Les resultats sont indicatifs et ne remplacent pas un
               conseil comptable, juridique ou fiscal.
             </p>
             <p>
-              Les paiements sont traités par Stripe. Aucune donnée bancaire n'est stockée par Tarifly.
+              Les paiements sont traites par Stripe. Aucune donnee bancaire n'est stockee par Tarifly.
             </p>
           </div>
         </article>

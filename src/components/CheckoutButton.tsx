@@ -18,14 +18,19 @@ export function CheckoutButton({ className, children }: CheckoutButtonProps) {
         method: 'POST',
       });
 
+      if (response.status === 401) {
+        window.location.href = '/connexion?redirect=/outil';
+        return;
+      }
+
       if (!response.ok) {
-        throw new Error('Impossible de créer la session Stripe.');
+        throw new Error('Impossible de creer la session Stripe.');
       }
 
       const data = (await response.json()) as { url?: string };
 
       if (!data.url) {
-        throw new Error("Stripe n'a pas retourné d'URL de paiement.");
+        throw new Error("Stripe n'a pas retourne d'URL de paiement.");
       }
 
       window.location.href = data.url;
@@ -45,7 +50,7 @@ export function CheckoutButton({ className, children }: CheckoutButtonProps) {
         'rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60'
       }
     >
-      {loading ? 'Redirection...' : children ?? 'Débloquer Premium'}
+      {loading ? 'Redirection...' : children ?? 'Debloquer Premium'}
     </button>
   );
 }

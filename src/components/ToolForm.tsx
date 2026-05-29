@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Copy, Download, Lock, Sparkles } from 'lucide-react';
+import { Copy, Download, Lock, Save, Sparkles } from 'lucide-react';
 import { calculatePricing, type PricingInput } from '@/lib/pricing';
 import { formatCurrency, formatPercent } from '@/lib/utils';
+import { createBrowserSupabaseClient } from '@/lib/supabase/browser';
+import { getSupabaseConfig } from '@/lib/supabase/env';
 import { CheckoutButton } from './CheckoutButton';
 
 const PREMIUM_KEY = 'tarifly_premium';
@@ -23,10 +25,53 @@ const defaultInput: PricingInput = {
 export function ToolForm() {
   const [input, setInput] = useState<PricingInput>(defaultInput);
   const [isPremium, setIsPremium] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState('');
   const result = useMemo(() => calculatePricing(input), [input]);
 
   useEffect(() => {
-    setIsPremium(window.localStorage.getItem(PREMIUM_KEY) === 'true');
+    let isMounted = true;
+
+    async function loadAccountState() {
+      setIsPremium(window.localStorage.getItem(PREMIUM_KEY) === 'true');
+
+      if (!getSupabaseConfig().isConfigured) {
+        return;
+      }
+
+      try {
+        const supabase = createBrowserSupabaseClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!isMounted || !user) {
+          return;
+        }
+
+        setUserId(user.id);
+
+        const { data: entitlement } = await supabase
+          .from('premium_entitlements')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (entitlement) {
+          setIsPremium(true);
+          window.localStorage.setItem(PREMIUM_KEY, 'true');
+        }
+      } catch {
+        // The calculator stays usable even before the Supabase SQL has been executed.
+      }
+    }
+
+    loadAccountState();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   function updateNumber(name: keyof PricingInput, value: string) {
@@ -36,26 +81,59 @@ export function ToolForm() {
     }));
   }
 
+  async function saveCalculation() {
+    setSaveStatus('');
+
+    if (!getSupabaseConfig().isConfigured) {
+      setSaveStatus('Ajoutez Supabase dans .env.local pour sauvegarder.');
+      return;
+    }
+
+    if (!userId) {
+      window.location.href = '/connexion?redirect=/outil';
+      return;
+    }
+
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const { error } = await supabase.from('pricing_calculations').insert({
+        user_id: userId,
+        activity_type: input.activityType,
+        input,
+        result,
+        recommended_price: result.priceIncludingTax,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setSaveStatus('Calcul sauvegarde dans votre compte.');
+    } catch (error) {
+      setSaveStatus(error instanceof Error ? error.message : 'Sauvegarde impossible pour le moment.');
+    }
+  }
+
   function copySummary() {
     const content = isPremium
       ? buildPremiumExport()
-      : `Prix recommandé : ${formatCurrency(result.priceIncludingTax)}. Marge estimée : ${formatPercent(
+      : `Prix recommande : ${formatCurrency(result.priceIncludingTax)}. Marge estimee : ${formatPercent(
           result.marginRate,
         )}.`;
     navigator.clipboard.writeText(content);
-    alert('Résultat copié.');
+    alert('Resultat copie.');
   }
 
   function buildPremiumExport() {
     return `Diagnostic Tarifly
 
-Prix recommandé : ${formatCurrency(result.priceIncludingTax)}
-Coût total estimé : ${formatCurrency(result.baseCost)}
-Frais de paiement estimés : ${formatCurrency(result.transactionFees)}
-Prix HT estimé : ${formatCurrency(result.priceExcludingTax)}
-Taxe estimée : ${formatCurrency(result.taxAmount)}
-Profit net estimé : ${formatCurrency(result.netProfit)}
-Marge réelle : ${formatPercent(result.marginRate)}
+Prix recommande : ${formatCurrency(result.priceIncludingTax)}
+Cout total estime : ${formatCurrency(result.baseCost)}
+Frais de paiement estimes : ${formatCurrency(result.transactionFees)}
+Prix HT estime : ${formatCurrency(result.priceExcludingTax)}
+Taxe estimee : ${formatCurrency(result.taxAmount)}
+Profit net estime : ${formatCurrency(result.netProfit)}
+Marge reelle : ${formatPercent(result.marginRate)}
 Niveau de risque : ${result.riskLevel}
 
 Diagnostic :
@@ -87,13 +165,13 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
           </span>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-950">Calculateur de prix rentable</h1>
-            <p className="text-sm text-slate-500">Renseignez vos coûts. Tarifly calcule un prix défendable.</p>
+            <p className="text-sm text-slate-500">Renseignez vos couts. Tarifly calcule un prix defendable.</p>
           </div>
         </div>
 
         <div className="mt-8 grid gap-5 md:grid-cols-2">
           <label className="space-y-2">
-            <span className="text-sm font-semibold text-slate-700">Type d'activité</span>
+            <span className="text-sm font-semibold text-slate-700">Type d'activite</span>
             <select
               value={input.activityType}
               onChange={(event) =>
@@ -110,44 +188,28 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
             </select>
           </label>
 
-          <NumberField
-            label="Coût matière / achat (€)"
-            value={input.productCost}
-            onChange={(value) => updateNumber('productCost', value)}
-          />
+          <NumberField label="Cout matiere / achat (EUR)" value={input.productCost} onChange={(value) => updateNumber('productCost', value)} />
           <NumberField label="Temps de travail (heures)" value={input.workHours} onChange={(value) => updateNumber('workHours', value)} />
-          <NumberField label="Valeur horaire souhaitée (€)" value={input.hourlyRate} onChange={(value) => updateNumber('hourlyRate', value)} />
-          <NumberField label="Frais fixes à intégrer (€)" value={input.fixedFees} onChange={(value) => updateNumber('fixedFees', value)} />
-          <NumberField
-            label="Frais paiement / plateforme (%)"
-            value={input.transactionFeesPercent}
-            onChange={(value) => updateNumber('transactionFeesPercent', value)}
-          />
-          <NumberField
-            label="Marge cible (%)"
-            value={input.desiredMarginPercent}
-            onChange={(value) => updateNumber('desiredMarginPercent', value)}
-          />
+          <NumberField label="Valeur horaire souhaitee (EUR)" value={input.hourlyRate} onChange={(value) => updateNumber('hourlyRate', value)} />
+          <NumberField label="Frais fixes a integrer (EUR)" value={input.fixedFees} onChange={(value) => updateNumber('fixedFees', value)} />
+          <NumberField label="Frais paiement / plateforme (%)" value={input.transactionFeesPercent} onChange={(value) => updateNumber('transactionFeesPercent', value)} />
+          <NumberField label="Marge cible (%)" value={input.desiredMarginPercent} onChange={(value) => updateNumber('desiredMarginPercent', value)} />
           <NumberField label="TVA / taxe (%)" value={input.taxPercent} onChange={(value) => updateNumber('taxPercent', value)} />
-          <NumberField
-            label="Prix concurrent optionnel (€)"
-            value={input.competitorPrice}
-            onChange={(value) => updateNumber('competitorPrice', value)}
-          />
+          <NumberField label="Prix concurrent optionnel (EUR)" value={input.competitorPrice} onChange={(value) => updateNumber('competitorPrice', value)} />
         </div>
       </div>
 
       <aside className="rounded-3xl border border-slate-200 bg-slate-950 p-6 text-white shadow-soft md:p-8">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-100">Résultat</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-100">Resultat</p>
         <div className="mt-5">
-          <p className="text-sm text-slate-300">Prix recommandé</p>
+          <p className="text-sm text-slate-300">Prix recommande</p>
           <p className="mt-1 text-5xl font-bold tracking-tight">{formatCurrency(result.priceIncludingTax)}</p>
         </div>
 
         <div className="mt-6 grid gap-3 text-sm">
-          <Metric label="Coût total estimé" value={formatCurrency(result.baseCost)} />
-          <Metric label="Profit net estimé" value={isPremium ? formatCurrency(result.netProfit) : 'Premium'} locked={!isPremium} />
-          <Metric label="Marge réelle" value={isPremium ? formatPercent(result.marginRate) : 'Premium'} locked={!isPremium} />
+          <Metric label="Cout total estime" value={formatCurrency(result.baseCost)} />
+          <Metric label="Profit net estime" value={isPremium ? formatCurrency(result.netProfit) : 'Premium'} locked={!isPremium} />
+          <Metric label="Marge reelle" value={isPremium ? formatPercent(result.marginRate) : 'Premium'} locked={!isPremium} />
           <Metric label="Niveau de risque" value={isPremium ? result.riskLevel : 'Premium'} locked={!isPremium} />
         </div>
 
@@ -162,19 +224,19 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
           <div className="mt-6 rounded-2xl border border-white/15 bg-white/10 p-4">
             <div className="flex items-center gap-2 font-semibold">
               <Lock size={16} />
-              Analyse complète verrouillée
+              Analyse complete verrouillee
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-200">
-              La version gratuite affiche le prix recommandé. Le premium débloque la marge, le risque, le diagnostic
-              et l'export professionnel.
+              La version gratuite affiche le prix recommande. Le premium debloque la marge, le risque, le diagnostic et
+              l'export professionnel.
             </p>
             <CheckoutButton className="mt-4 w-full rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100">
-              Débloquer pour 9,90 €
+              Debloquer pour 9,90 EUR
             </CheckoutButton>
           </div>
         )}
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        <div className="mt-6 grid gap-3 sm:grid-cols-3">
           <button onClick={copySummary} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-950">
             <Copy size={16} />
             Copier
@@ -187,7 +249,13 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
             <Download size={16} />
             Export
           </button>
+          <button onClick={saveCalculation} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 px-4 py-3 text-sm font-semibold">
+            <Save size={16} />
+            Sauver
+          </button>
         </div>
+
+        {saveStatus ? <p className="mt-4 rounded-2xl bg-white/10 px-4 py-3 text-sm text-slate-200">{saveStatus}</p> : null}
       </aside>
     </section>
   );

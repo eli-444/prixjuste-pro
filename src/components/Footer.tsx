@@ -7,21 +7,24 @@ export function Footer() {
         <div>
           <p className="font-semibold text-slate-950">Tarifly</p>
           <p className="mt-2 max-w-sm">
-            Un outil professionnel pour fixer des prix rentables, cohérents et plus faciles à défendre.
+            Un outil professionnel pour fixer des prix rentables, coherents et plus faciles a defendre.
           </p>
         </div>
         <div className="flex flex-col gap-2">
           <Link href="/outil" className="hover:text-slate-950">
             Calculateur
           </Link>
+          <Link href="/mon-compte" className="hover:text-slate-950">
+            Mon compte
+          </Link>
           <Link href="/mentions-legales" className="hover:text-slate-950">
-            Mentions légales
+            Mentions legales
           </Link>
           <Link href="/conditions" className="hover:text-slate-950">
             Conditions
           </Link>
         </div>
-        <p className="md:text-right">© {new Date().getFullYear()} Tarifly. Tous droits réservés.</p>
+        <p className="md:text-right">© {new Date().getFullYear()} Tarifly. Tous droits reserves.</p>
       </div>
     </footer>
   );
