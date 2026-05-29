@@ -14,15 +14,16 @@ export default function ConditionsPage() {
               vous pouvez ecrire a aurorawebsec@gmail.com.
             </p>
             <p>
-              L'achat premium donne acces aux fonctionnalites avancees de Tarifly. Lorsque Supabase et Stripe sont
-              configures, cet acces est rattache au compte utilisateur connecte.
+              L'achat premium donne acces aux fonctionnalites avancees de Tarifly. Cet acces est rattache au compte
+              utilisateur connecte.
             </p>
             <p>
               Les calculs fournis sont bases sur les informations saisies par l'utilisateur. L'utilisateur reste seul
               responsable de ses decisions commerciales, tarifaires, comptables et fiscales.
             </p>
             <p>
-              Les paiements sont executes par Stripe. Tarifly ne collecte ni ne conserve les donnees de carte bancaire.
+              Les paiements sont executes par un prestataire de paiement securise. Tarifly ne collecte ni ne conserve
+              les donnees de carte bancaire.
             </p>
           </div>
         </article>

@@ -63,7 +63,7 @@ export function ToolForm() {
           window.localStorage.setItem(PREMIUM_KEY, 'true');
         }
       } catch {
-        // The calculator stays usable even before the Supabase SQL has been executed.
+        // The calculator stays usable even if account services are temporarily unavailable.
       }
     }
 
@@ -85,7 +85,7 @@ export function ToolForm() {
     setSaveStatus('');
 
     if (!getSupabaseConfig().isConfigured) {
-      setSaveStatus('Ajoutez Supabase dans .env.local pour sauvegarder.');
+      setSaveStatus('La sauvegarde est momentanement indisponible.');
       return;
     }
 

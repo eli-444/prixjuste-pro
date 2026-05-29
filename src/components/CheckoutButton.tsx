@@ -24,13 +24,13 @@ export function CheckoutButton({ className, children }: CheckoutButtonProps) {
       }
 
       if (!response.ok) {
-        throw new Error('Impossible de creer la session Stripe.');
+        throw new Error('Impossible de preparer le paiement pour le moment.');
       }
 
       const data = (await response.json()) as { url?: string };
 
       if (!data.url) {
-        throw new Error("Stripe n'a pas retourne d'URL de paiement.");
+        throw new Error("Impossible d'ouvrir la page de paiement.");
       }
 
       window.location.href = data.url;

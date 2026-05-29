@@ -24,7 +24,8 @@ export default function LegalPage() {
               conseil comptable, juridique ou fiscal.
             </p>
             <p>
-              Les paiements sont traites par Stripe. Aucune donnee bancaire n'est stockee par Tarifly.
+              Les paiements sont traites par un prestataire de paiement securise. Aucune donnee bancaire n'est stockee
+              par Tarifly.
             </p>
           </div>
         </article>

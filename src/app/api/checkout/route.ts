@@ -13,7 +13,7 @@ export async function POST() {
 
   if (!stripe || !priceId) {
     return NextResponse.json(
-      { error: 'Stripe est mal configure. Verifiez STRIPE_SECRET_KEY et NEXT_PUBLIC_STRIPE_PRICE_ID.' },
+      { error: 'Le paiement est momentanement indisponible.' },
       { status: 500 },
     );
   }
@@ -43,7 +43,7 @@ export async function POST() {
 
   if (!session.url) {
     return NextResponse.json(
-      { error: "Stripe n'a pas retourne d'URL de paiement." },
+      { error: "Impossible d'ouvrir la page de paiement." },
       { status: 500 },
     );
   }

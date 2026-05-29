@@ -28,7 +28,7 @@ export function AuthForm({ redirectTo = '/mon-compte' }: { redirectTo?: string }
     setMessage('');
 
     if (!isConfigured) {
-      setMessage('Ajoutez vos variables Supabase dans .env.local pour activer la connexion.');
+      setMessage("L'espace compte est momentanement indisponible. Merci de reessayer plus tard.");
       return;
     }
 
@@ -53,7 +53,7 @@ export function AuthForm({ redirectTo = '/mon-compte' }: { redirectTo?: string }
           throw error;
         }
 
-        setMessage('Compte cree. Verifiez votre email si Supabase demande une confirmation.');
+        setMessage('Compte cree. Verifiez votre email si une confirmation vous est demandee.');
         return;
       }
 

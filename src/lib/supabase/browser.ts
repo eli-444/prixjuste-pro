@@ -7,7 +7,7 @@ export function createBrowserSupabaseClient() {
   const { url, anonKey, isConfigured } = getSupabaseConfig();
 
   if (!isConfigured || !url || !anonKey) {
-    throw new Error('Supabase n est pas encore configure.');
+    throw new Error('Le service de compte est indisponible.');
   }
 
   return createBrowserClient(url, anonKey);

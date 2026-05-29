@@ -19,8 +19,7 @@ export default function LoginPage({
               Connectez-vous pour retrouver votre espace Tarifly.
             </h1>
             <p className="mt-5 max-w-xl leading-8 text-slate-600">
-              Votre compte servira a relier vos futurs calculs, vos informations premium et vos achats Stripe a une
-              vraie session utilisateur.
+              Retrouvez vos calculs sauvegardes, votre acces premium et vos informations de compte au meme endroit.
             </p>
           </div>
           <Suspense fallback={<div className="rounded-3xl bg-white p-8 shadow-soft">Chargement...</div>}>

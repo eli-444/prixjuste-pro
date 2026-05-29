@@ -15,8 +15,8 @@ export default function SuccessPage() {
         <CheckCircle2 className="mx-auto h-14 w-14 text-brand-600" />
         <h1 className="mt-5 text-3xl font-bold tracking-tight text-slate-950">Paiement valide</h1>
         <p className="mt-3 leading-7 text-slate-600">
-          Votre acces premium est active sur ce navigateur. Si le webhook Stripe est configure, il sera aussi rattache a
-          votre compte Supabase.
+          Votre acces premium est active. Vous pouvez maintenant utiliser le diagnostic complet et l'export
+          professionnel.
         </p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Link href="/outil" className="rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white">

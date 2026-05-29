@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   const stripe = createStripeClient();
 
   if (!signature || !webhookSecret || !stripe) {
-    return NextResponse.json({ error: 'Webhook Stripe non configure.' }, { status: 400 });
+    return NextResponse.json({ error: 'Configuration paiement invalide.' }, { status: 400 });
   }
 
   let event: Stripe.Event;
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Signature Stripe invalide.' },
+      { error: error instanceof Error ? error.message : 'Signature paiement invalide.' },
       { status: 400 },
     );
   }

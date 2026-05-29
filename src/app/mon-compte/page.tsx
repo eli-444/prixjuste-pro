@@ -19,8 +19,7 @@ export default async function AccountPage() {
           <section className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-8 shadow-soft">
             <h1 className="text-3xl font-bold tracking-tight text-slate-950">Mon compte</h1>
             <p className="mt-4 leading-7 text-slate-600">
-              La rubrique est prete. Ajoutez vos variables Supabase dans `.env.local`, lancez le script SQL dans
-              Supabase, puis la connexion sera active.
+              L'espace compte est momentanement indisponible. Merci de reessayer plus tard.
             </p>
           </section>
         </main>
@@ -81,11 +80,11 @@ export default async function AccountPage() {
               <div className="mt-5 space-y-3 text-slate-600">
                 <p className="flex gap-3">
                   <CheckCircle2 className="mt-1 h-5 w-5 text-brand-600" />
-                  Connexion, inscription et deconnexion sont branchees sur Supabase Auth.
+                  Votre session est active et securisee.
                 </p>
                 <p className="flex gap-3">
                   <CheckCircle2 className="mt-1 h-5 w-5 text-brand-600" />
-                  Le script SQL cree les tables necessaires pour relier calculs, achats Stripe et droits premium.
+                  Vos calculs sauvegardes et votre acces premium sont rattaches a votre compte.
                 </p>
               </div>
             </article>
