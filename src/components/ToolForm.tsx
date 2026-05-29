@@ -147,10 +147,9 @@ Checklist :
 ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
   }
 
-  function downloadExport() {
-    const blob = createTariflyPdf({
-      title: 'Diagnostic de prix',
-      subtitle: 'Synthese professionnelle generee a partir des donnees saisies dans Tarifly.',
+  async function downloadExport() {
+    const blob = await createTariflyPdf({
+      title: 'Rapport de rentabilite',
       generatedAt: new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeStyle: 'short' }).format(new Date()),
       metrics: [
         { label: 'Prix recommande TTC', value: formatCurrency(result.priceIncludingTax) },
