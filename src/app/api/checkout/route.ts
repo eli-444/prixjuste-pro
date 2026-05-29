@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import { createStripeClient } from '@/lib/stripe';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
-export async function POST() {
+export async function POST(request: Request) {
   const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+  const appUrl = new URL(request.url).origin;
   const stripe = createStripeClient();
   const supabase = await createServerSupabaseClient();
   const {

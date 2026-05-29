@@ -1,12 +1,41 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 
 export default function SuccessPage() {
+  const [status, setStatus] = useState('Activation de votre acces premium...');
+
   useEffect(() => {
-    window.localStorage.setItem('tarifly_premium', 'true');
+    const sessionId = new URLSearchParams(window.location.search).get('session_id');
+
+    if (!sessionId) {
+      setStatus('Paiement valide. Rechargez votre compte si votre acces premium ne s affiche pas encore.');
+      return;
+    }
+
+    fetch('/api/checkout/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId }),
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          const data = (await response.json().catch(() => ({}))) as { error?: string };
+          throw new Error(data.error ?? 'Activation impossible.');
+        }
+
+        window.localStorage.setItem('tarifly_premium', 'true');
+        setStatus('Votre acces premium est active.');
+      })
+      .catch((error) => {
+        setStatus(
+          error instanceof Error
+            ? `Paiement valide, mais activation en attente : ${error.message}`
+            : 'Paiement valide, mais activation en attente. Rechargez la page dans quelques secondes.',
+        );
+      });
   }, []);
 
   return (
@@ -15,8 +44,7 @@ export default function SuccessPage() {
         <CheckCircle2 className="mx-auto h-14 w-14 text-brand-600" />
         <h1 className="mt-5 text-3xl font-bold tracking-tight text-slate-950">Paiement valide</h1>
         <p className="mt-3 leading-7 text-slate-600">
-          Votre acces premium est active. Vous pouvez maintenant utiliser le diagnostic complet et l'export
-          professionnel.
+          {status} Vous pouvez ensuite utiliser le diagnostic complet et l'export professionnel.
         </p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Link href="/outil" className="rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white">

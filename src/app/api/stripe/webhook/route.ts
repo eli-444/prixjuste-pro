@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     const supabase = createSupabaseAdminClient();
 
     if (userId && supabase) {
-      const { data: purchase } = await supabase
+      const { data: purchase, error: purchaseError } = await supabase
         .from('purchases')
         .upsert(
           {
@@ -50,7 +50,12 @@ export async function POST(request: Request) {
         .select('id')
         .single();
 
-      await supabase.from('premium_entitlements').upsert(
+      if (purchaseError) {
+        console.error('Stripe webhook purchase upsert failed', purchaseError);
+        return NextResponse.json({ error: purchaseError.message }, { status: 500 });
+      }
+
+      const { error: entitlementError } = await supabase.from('premium_entitlements').upsert(
         {
           user_id: userId,
           purchase_id: purchase?.id,
@@ -59,6 +64,11 @@ export async function POST(request: Request) {
         },
         { onConflict: 'user_id,source' },
       );
+
+      if (entitlementError) {
+        console.error('Stripe webhook entitlement upsert failed', entitlementError);
+        return NextResponse.json({ error: entitlementError.message }, { status: 500 });
+      }
     }
   }
 
