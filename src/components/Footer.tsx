@@ -1,0 +1,28 @@
+import Link from 'next/link';
+
+export function Footer() {
+  return (
+    <footer className="border-t border-slate-200 bg-white">
+      <div className="mx-auto grid max-w-6xl gap-6 px-4 py-10 text-sm text-slate-600 md:grid-cols-3">
+        <div>
+          <p className="font-semibold text-slate-950">Tarifly</p>
+          <p className="mt-2 max-w-sm">
+            Un outil professionnel pour fixer des prix rentables, cohérents et plus faciles à défendre.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2">
+          <Link href="/outil" className="hover:text-slate-950">
+            Calculateur
+          </Link>
+          <Link href="/mentions-legales" className="hover:text-slate-950">
+            Mentions légales
+          </Link>
+          <Link href="/conditions" className="hover:text-slate-950">
+            Conditions
+          </Link>
+        </div>
+        <p className="md:text-right">© {new Date().getFullYear()} Tarifly. Tous droits réservés.</p>
+      </div>
+    </footer>
+  );
+}
