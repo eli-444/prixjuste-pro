@@ -4,6 +4,7 @@ import { CheckCircle2, Calculator, CreditCard, UserCircle } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { SignOutButton } from '@/components/SignOutButton';
+import { BillingPortalButton } from '@/components/BillingPortalButton';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getSupabaseConfig } from '@/lib/supabase/env';
 
@@ -40,7 +41,7 @@ export default async function AccountPage() {
     supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle(),
     supabase
       .from('premium_entitlements')
-      .select('status, source, valid_until')
+      .select('status, source, valid_until, updated_at')
       .eq('user_id', user.id)
       .eq('status', 'active')
       .maybeSingle(),
@@ -66,12 +67,7 @@ export default async function AccountPage() {
           <div className="mt-8 grid gap-5 md:grid-cols-3">
             <AccountMetric icon={<UserCircle />} label="Email" value={user.email ?? 'Non renseigne'} />
             <AccountMetric icon={<Calculator />} label="Calculs sauvegardes" value={`${calculationCount ?? 0}`} />
-            <AccountMetric
-              icon={<CreditCard />}
-              label="Premium"
-              value={entitlement ? 'Actif' : 'Non active'}
-              accent={Boolean(entitlement)}
-            />
+            <AccountMetric icon={<CreditCard />} label="Premium" value={entitlement ? 'Membre actif' : 'Non actif'} accent={Boolean(entitlement)} />
           </div>
 
           <div className="mt-8 grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
@@ -90,14 +86,33 @@ export default async function AccountPage() {
             </article>
 
             <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft md:p-8">
-              <h2 className="text-xl font-bold tracking-tight text-slate-950">Actions rapides</h2>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-bold tracking-tight text-slate-950">Abonnement</h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    {entitlement
+                      ? 'Votre abonnement mensuel Tarifly Premium est actif.'
+                      : "Vous n'avez pas encore d'abonnement premium actif."}
+                  </p>
+                </div>
+                {entitlement ? (
+                  <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-brand-600">
+                    Premium
+                  </span>
+                ) : null}
+              </div>
+
               <div className="mt-5 grid gap-3">
                 <Link href="/outil" className="rounded-2xl bg-slate-950 px-5 py-3 text-center text-sm font-semibold text-white">
                   Ouvrir le calculateur
                 </Link>
-                <Link href="/#tarifs" className="rounded-2xl border border-slate-200 px-5 py-3 text-center text-sm font-semibold text-slate-950">
-                  Voir l'offre premium
-                </Link>
+                {entitlement ? (
+                  <BillingPortalButton />
+                ) : (
+                  <Link href="/#tarifs" className="rounded-2xl border border-slate-200 px-5 py-3 text-center text-sm font-semibold text-slate-950">
+                    Voir l'offre premium
+                  </Link>
+                )}
               </div>
             </article>
           </div>

@@ -112,14 +112,15 @@ export default function HomePage() {
             <div>
               <SectionTitle
                 eyebrow="Accès"
-                title="Un achat unique pour mieux chiffrer vos prochaines prestations."
-                description="Testez le calcul gratuitement, puis débloquez le diagnostic complet lorsque vous voulez exploiter le résultat dans vos devis et échanges clients."
+                title="Un abonnement mensuel pour chiffrer vos prestations avec plus de methode."
+                description="Testez le calcul gratuitement, puis debloquez le diagnostic complet lorsque vous voulez exploiter le resultat dans vos devis et echanges clients. L'abonnement est mensuel, sans engagement et resiliable depuis votre compte."
               />
               <div className="mt-8 space-y-4">
                 {[
                   'Calcul gratuit pour obtenir une première estimation.',
                   'Diagnostic complet pour comprendre votre marge et votre niveau de risque.',
                   'Texte de justification professionnel pour accompagner votre proposition.',
+                  'Export PDF professionnel et abonnement mensuel resiliable en ligne.',
                 ].map((item) => (
                   <p key={item} className="flex items-center gap-3 text-slate-700">
                     <CheckCircle2 className="h-5 w-5 text-brand-600" />
@@ -146,7 +147,7 @@ export default function HomePage() {
               <Faq q="Quelles informations dois-je préparer ?" a="Quelques données suffisent : temps estimé, coûts directs, frais, marge souhaitée et taxes éventuelles. L'objectif est d'obtenir rapidement un prix exploitable, sans tableur complexe." />
               <Faq q="Puis-je utiliser le résultat dans mes devis ?" a="Oui. L'accès premium fournit une justification commerciale que vous pouvez reprendre dans vos échanges clients pour présenter un prix plus clair et plus professionnel." />
               <Faq q="Est-ce adapté si mes prestations changent souvent ?" a="Oui. Vous pouvez relancer un calcul pour chaque mission, ajuster vos hypothèses et comparer plusieurs scénarios avant d'envoyer votre proposition." />
-              <Faq q="Y a-t-il un abonnement ?" a="Non. L'accès premium fonctionne avec un paiement unique, pensé pour débloquer les informations utiles sans engagement récurrent." />
+              <Faq q="Y a-t-il un abonnement ?" a="Oui. Tarifly Premium est un abonnement mensuel sans engagement. Vous pouvez le resilier depuis votre espace compte." />
             </div>
           </div>
         </section>

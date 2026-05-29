@@ -7,6 +7,15 @@ export async function Header() {
   const {
     data: { user },
   } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
+  const { data: entitlement } =
+    user && supabase
+      ? await supabase
+          .from('premium_entitlements')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .maybeSingle()
+      : { data: null };
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/85 backdrop-blur">
@@ -28,6 +37,11 @@ export async function Header() {
           <Link href={user ? '/mon-compte' : '/connexion'} className="hover:text-slate-950">
             {user ? 'Mon compte' : 'Connexion'}
           </Link>
+          {entitlement ? (
+            <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-brand-600">
+              Premium
+            </span>
+          ) : null}
           <Link href="/outil" className="rounded-full bg-slate-950 px-4 py-2 text-white hover:bg-slate-800">
             Calculer un prix
           </Link>

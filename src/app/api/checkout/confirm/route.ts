@@ -63,6 +63,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: purchaseError.message }, { status: 500 });
   }
 
+  const stripeCustomerId = typeof session.customer === 'string' ? session.customer : session.customer?.id;
+
+  if (stripeCustomerId) {
+    const { error: customerError } = await supabaseAdmin.from('stripe_customers').upsert(
+      {
+        user_id: user.id,
+        stripe_customer_id: stripeCustomerId,
+      },
+      { onConflict: 'user_id' },
+    );
+
+    if (customerError) {
+      console.error('Stripe customer upsert failed', customerError);
+    }
+  }
+
   const { error: entitlementError } = await supabaseAdmin.from('premium_entitlements').upsert(
     {
       user_id: user.id,

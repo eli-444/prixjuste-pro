@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Copy, Download, Lock, Save, Sparkles } from 'lucide-react';
 import { calculatePricing, type PricingInput } from '@/lib/pricing';
 import { formatCurrency, formatPercent } from '@/lib/utils';
+import { createTariflyPdf } from '@/lib/pdf';
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser';
 import { getSupabaseConfig } from '@/lib/supabase/env';
 import { CheckoutButton } from './CheckoutButton';
@@ -147,11 +148,28 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
   }
 
   function downloadExport() {
-    const blob = new Blob([buildPremiumExport()], { type: 'text/plain;charset=utf-8' });
+    const blob = createTariflyPdf({
+      title: 'Diagnostic de prix',
+      subtitle: 'Synthese professionnelle generee a partir des donnees saisies dans Tarifly.',
+      generatedAt: new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeStyle: 'short' }).format(new Date()),
+      metrics: [
+        { label: 'Prix recommande TTC', value: formatCurrency(result.priceIncludingTax) },
+        { label: 'Prix hors taxes estime', value: formatCurrency(result.priceExcludingTax) },
+        { label: 'Profit net estime', value: formatCurrency(result.netProfit) },
+        { label: 'Marge reelle', value: formatPercent(result.marginRate) },
+        { label: 'Cout total estime', value: formatCurrency(result.baseCost) },
+        { label: 'Niveau de risque', value: result.riskLevel },
+      ],
+      sections: [
+        { title: 'Diagnostic', body: result.diagnosis },
+        { title: 'Justification client', body: result.clientJustification },
+        { title: 'Checklist avant envoi', body: result.checklist },
+      ],
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'diagnostic-tarifly.txt';
+    link.download = 'diagnostic-tarifly.pdf';
     link.click();
     URL.revokeObjectURL(url);
   }
@@ -228,10 +246,10 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-200">
               La version gratuite affiche le prix recommande. Le premium debloque la marge, le risque, le diagnostic et
-              l'export professionnel.
+              l'export PDF professionnel.
             </p>
             <CheckoutButton className="mt-4 w-full rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100">
-              Debloquer pour 9,90 EUR
+              Demarrer Premium - 9,90 EUR / mois
             </CheckoutButton>
           </div>
         )}
@@ -247,7 +265,7 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
             className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 px-4 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Download size={16} />
-            Export
+            PDF
           </button>
           <button onClick={saveCalculation} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 px-4 py-3 text-sm font-semibold">
             <Save size={16} />

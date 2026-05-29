@@ -55,6 +55,22 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: purchaseError.message }, { status: 500 });
       }
 
+      const stripeCustomerId = typeof session.customer === 'string' ? session.customer : session.customer?.id;
+
+      if (stripeCustomerId) {
+        const { error: customerError } = await supabase.from('stripe_customers').upsert(
+          {
+            user_id: userId,
+            stripe_customer_id: stripeCustomerId,
+          },
+          { onConflict: 'user_id' },
+        );
+
+        if (customerError) {
+          console.error('Stripe webhook customer upsert failed', customerError);
+        }
+      }
+
       const { error: entitlementError } = await supabase.from('premium_entitlements').upsert(
         {
           user_id: userId,
@@ -68,6 +84,34 @@ export async function POST(request: Request) {
       if (entitlementError) {
         console.error('Stripe webhook entitlement upsert failed', entitlementError);
         return NextResponse.json({ error: entitlementError.message }, { status: 500 });
+      }
+    }
+  }
+
+  if (event.type === 'customer.subscription.deleted') {
+    const subscription = event.data.object as Stripe.Subscription;
+    const stripeCustomerId =
+      typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id;
+    const supabase = createSupabaseAdminClient();
+
+    if (stripeCustomerId && supabase) {
+      const { data: customer } = await supabase
+        .from('stripe_customers')
+        .select('user_id')
+        .eq('stripe_customer_id', stripeCustomerId)
+        .maybeSingle();
+
+      if (customer?.user_id) {
+        const { error } = await supabase
+          .from('premium_entitlements')
+          .update({ status: 'revoked' })
+          .eq('user_id', customer.user_id)
+          .eq('source', 'stripe');
+
+        if (error) {
+          console.error('Stripe webhook entitlement revoke failed', error);
+          return NextResponse.json({ error: error.message }, { status: 500 });
+        }
       }
     }
   }
