@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { LogIn, UserPlus } from 'lucide-react';
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser';
 import { getSupabaseConfig } from '@/lib/supabase/env';
@@ -21,9 +22,10 @@ export function AuthForm({ redirectTo = '/mon-compte' }: { redirectTo?: string }
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin;
+    const nextUrl = mode === 'signup' ? '/auth/verifie' : redirectTo;
 
-    return `${appUrl}/auth/callback?next=${encodeURIComponent(redirectTo)}`;
-  }, [redirectTo]);
+    return `${appUrl}/auth/callback?next=${encodeURIComponent(nextUrl)}`;
+  }, [mode, redirectTo]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -38,10 +40,11 @@ export function AuthForm({ redirectTo = '/mon-compte' }: { redirectTo?: string }
 
     try {
       const supabase = createBrowserSupabaseClient();
+      const normalizedEmail = email.trim().toLowerCase();
 
       if (mode === 'signup') {
         const { error } = await supabase.auth.signUp({
-          email,
+          email: normalizedEmail,
           password,
           options: {
             emailRedirectTo: callbackUrl,
@@ -55,11 +58,11 @@ export function AuthForm({ redirectTo = '/mon-compte' }: { redirectTo?: string }
           throw error;
         }
 
-        setMessage('Compte cree. Verifiez votre email si une confirmation vous est demandee.');
+        setMessage('Compte cree. Ouvrez le lien recu par email pour verifier votre compte.');
         return;
       }
 
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
 
       if (error) {
         throw error;
@@ -139,6 +142,14 @@ export function AuthForm({ redirectTo = '/mon-compte' }: { redirectTo?: string }
       </div>
 
       {message ? <p className="mt-4 rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-700">{message}</p> : null}
+
+      {mode === 'login' ? (
+        <div className="mt-4 text-right">
+          <Link href="/mot-de-passe-oublie" className="text-sm font-semibold text-brand-600 hover:text-brand-700">
+            Mot de passe oublie ?
+          </Link>
+        </div>
+      ) : null}
 
       <button
         type="submit"
