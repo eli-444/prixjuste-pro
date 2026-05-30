@@ -14,6 +14,14 @@ create table if not exists public.profiles (
 create table if not exists public.pricing_calculations (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
+  title text,
+  client_name text,
+  opportunity_status text not null default 'to_price'
+    check (opportunity_status in ('new', 'to_price', 'proposal_sent', 'negotiation', 'won', 'lost')),
+  probability integer not null default 50 check (probability >= 0 and probability <= 100),
+  deadline date,
+  client_budget numeric(12, 2),
+  next_action text,
   activity_type text not null check (activity_type in ('service', 'product', 'mixed')),
   input jsonb not null,
   result jsonb not null,
@@ -155,6 +163,9 @@ using (auth.uid() = user_id);
 
 create index if not exists pricing_calculations_user_created_idx
 on public.pricing_calculations (user_id, created_at desc);
+
+create index if not exists pricing_calculations_user_status_idx
+on public.pricing_calculations (user_id, opportunity_status, created_at desc);
 
 create index if not exists purchases_user_created_idx
 on public.purchases (user_id, created_at desc);

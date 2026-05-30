@@ -7,6 +7,12 @@ import { formatCurrency, formatPercent } from '@/lib/utils';
 import { createTariflyPdf } from '@/lib/pdf';
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser';
 import { getSupabaseConfig } from '@/lib/supabase/env';
+import {
+  defaultOpportunityMeta,
+  statusLabels,
+  type OpportunityMeta,
+  type OpportunityStatus,
+} from '@/lib/opportunities';
 import { CheckoutButton } from './CheckoutButton';
 
 const PREMIUM_KEY = 'tarifly_premium';
@@ -23,18 +29,25 @@ const defaultInput: PricingInput = {
   competitorPrice: 0,
 };
 
-export function ToolForm() {
-  const [input, setInput] = useState<PricingInput>(defaultInput);
+export function ToolForm({
+  initialInput = defaultInput,
+  initialMeta = defaultOpportunityMeta,
+}: {
+  initialInput?: PricingInput;
+  initialMeta?: OpportunityMeta;
+}) {
+  const [input, setInput] = useState<PricingInput>(initialInput);
   const [fields, setFields] = useState<Record<keyof Omit<PricingInput, 'activityType'>, string>>({
-    productCost: String(defaultInput.productCost),
-    workHours: String(defaultInput.workHours),
-    hourlyRate: String(defaultInput.hourlyRate),
-    fixedFees: String(defaultInput.fixedFees),
-    transactionFeesPercent: String(defaultInput.transactionFeesPercent),
-    desiredMarginPercent: String(defaultInput.desiredMarginPercent),
-    taxPercent: String(defaultInput.taxPercent),
-    competitorPrice: String(defaultInput.competitorPrice),
+    productCost: String(initialInput.productCost),
+    workHours: String(initialInput.workHours),
+    hourlyRate: String(initialInput.hourlyRate),
+    fixedFees: String(initialInput.fixedFees),
+    transactionFeesPercent: String(initialInput.transactionFeesPercent),
+    desiredMarginPercent: String(initialInput.desiredMarginPercent),
+    taxPercent: String(initialInput.taxPercent),
+    competitorPrice: String(initialInput.competitorPrice),
   });
+  const [meta, setMeta] = useState<OpportunityMeta>(initialMeta);
   const [isPremium, setIsPremium] = useState(false);
   const [premiumStatus, setPremiumStatus] = useState<'loading' | 'free' | 'premium'>('loading');
   const [userId, setUserId] = useState<string | null>(null);
@@ -111,6 +124,13 @@ export function ToolForm() {
     }));
   }
 
+  function updateMeta<K extends keyof OpportunityMeta>(name: K, value: OpportunityMeta[K]) {
+    setMeta((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  }
+
   async function saveCalculation() {
     setSaveStatus('');
 
@@ -128,6 +148,13 @@ export function ToolForm() {
       const supabase = createBrowserSupabaseClient();
       const { error } = await supabase.from('pricing_calculations').insert({
         user_id: userId,
+        title: meta.title || 'Calcul sans titre',
+        client_name: meta.clientName || null,
+        opportunity_status: meta.status,
+        probability: meta.probability,
+        deadline: meta.deadline || null,
+        client_budget: meta.clientBudget || null,
+        next_action: meta.nextAction || null,
         activity_type: input.activityType,
         input,
         result,
@@ -218,6 +245,42 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
             </div>
             <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-950">
               {premiumStatus === 'loading' ? 'Verification premium...' : isPremium ? 'Premium actif' : 'Mode gratuit'}
+            </div>
+          </div>
+
+          <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+            <p className="text-sm font-bold uppercase tracking-[0.18em] text-slate-500">Opportunite</p>
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <TextField label="Nom de l'opportunite" value={meta.title} onChange={(value) => updateMeta('title', value)} placeholder="Site vitrine - client X" />
+              <TextField label="Client / prospect" value={meta.clientName} onChange={(value) => updateMeta('clientName', value)} placeholder="Nom du client" />
+              <label className="space-y-2">
+                <span className="text-sm font-semibold text-slate-700">Statut commercial</span>
+                <select
+                  value={meta.status}
+                  onChange={(event) => updateMeta('status', event.target.value as OpportunityStatus)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                >
+                  {Object.entries(statusLabels).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <NumberField label="Budget annonce par le client (EUR)" value={meta.clientBudget ? String(meta.clientBudget) : ''} onChange={(value) => updateMeta('clientBudget', value === '' ? 0 : Number(value))} />
+              <NumberField label="Probabilite de signature (%)" value={String(meta.probability)} onChange={(value) => updateMeta('probability', value === '' ? 0 : Number(value))} />
+              <label className="space-y-2">
+                <span className="text-sm font-semibold text-slate-700">Deadline</span>
+                <input
+                  type="date"
+                  value={meta.deadline}
+                  onChange={(event) => updateMeta('deadline', event.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                />
+              </label>
+              <div className="md:col-span-2">
+                <TextField label="Prochaine action" value={meta.nextAction} onChange={(value) => updateMeta('nextAction', value)} placeholder="Relancer mardi, envoyer une proposition..." />
+              </div>
             </div>
           </div>
 
@@ -317,6 +380,31 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
         {saveStatus ? <p className="mt-4 rounded-2xl bg-white/10 px-4 py-3 text-sm text-slate-200">{saveStatus}</p> : null}
       </aside>
     </section>
+  );
+}
+
+function TextField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <label className="space-y-2">
+      <span className="text-sm font-semibold text-slate-700">{label}</span>
+      <input
+        type="text"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+      />
+    </label>
   );
 }
 

@@ -70,10 +70,10 @@ export default async function AccountPage() {
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <Link
-                href="/outil"
+                href="/opportunites"
                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
               >
-                Ouvrir le calculateur
+                Ouvrir le pipeline
                 <ArrowUpRight size={16} />
               </Link>
               <SignOutButton />

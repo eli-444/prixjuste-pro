@@ -35,6 +35,9 @@ export async function Header() {
           <Link href="/#tarifs" className="hover:text-slate-950">
             Tarifs
           </Link>
+          <Link href="/opportunites" className="hover:text-slate-950">
+            Opportunites
+          </Link>
           <Link href={user ? '/mon-compte' : '/connexion'} className="hover:text-slate-950">
             {user ? 'Mon compte' : 'Connexion'}
           </Link>
