@@ -1,10 +1,21 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { ArrowRight, BarChart3, CheckCircle2, FileText, ShieldCheck, Sparkles, Timer } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { PricingCard } from '@/components/PricingCard';
 
-export default function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ code?: string }>;
+}) {
+  const params = await searchParams;
+
+  if (params?.code) {
+    redirect(`/auth/callback?code=${encodeURIComponent(params.code)}&next=${encodeURIComponent('/modifier-mot-de-passe')}`);
+  }
+
   return (
     <>
       <Header />
