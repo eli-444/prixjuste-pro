@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { CheckCircle2, Calculator, CreditCard, FileText, UserCircle } from 'lucide-react';
+import { ArrowUpRight, Calculator, CreditCard, FileText, ShieldCheck } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { SignOutButton } from '@/components/SignOutButton';
@@ -17,7 +17,7 @@ export default async function AccountPage() {
       <>
         <Header />
         <main className="bg-slate-100 px-4 py-16">
-          <section className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-8 shadow-soft">
+          <section className="mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white p-8 shadow-soft">
             <h1 className="text-3xl font-bold tracking-tight text-slate-950">Mon compte</h1>
             <p className="mt-4 leading-7 text-slate-600">
               L'espace compte est momentanement indisponible. Merci de reessayer plus tard.
@@ -55,140 +55,163 @@ export default async function AccountPage() {
   ]);
 
   const displayName = profile?.full_name || user.user_metadata?.full_name || user.email;
+  const isPremium = Boolean(entitlement);
 
   return (
     <>
       <Header />
-      <main className="bg-slate-100 px-4 py-16">
+      <main className="bg-slate-100 px-4 py-12 md:py-16">
         <section className="mx-auto max-w-6xl">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-sm font-bold uppercase tracking-[0.2em] text-brand-600">Espace client</p>
               <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-950">Mon compte</h1>
               <p className="mt-3 text-slate-600">{displayName}</p>
             </div>
-            <SignOutButton />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link
+                href="/outil"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+              >
+                Ouvrir le calculateur
+                <ArrowUpRight size={16} />
+              </Link>
+              <SignOutButton />
+            </div>
           </div>
 
-          <div className="mt-8 grid gap-5 md:grid-cols-3">
-            <AccountMetric icon={<UserCircle />} label="Email" value={user.email ?? 'Non renseigne'} />
-            <AccountMetric icon={<Calculator />} label="Calculs sauvegardes" value={`${calculationCount ?? 0}`} />
-            <AccountMetric icon={<CreditCard />} label="Premium" value={entitlement ? 'Membre actif' : 'Non actif'} accent={Boolean(entitlement)} />
-          </div>
-
-          <div className="mt-8 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft md:p-8">
-              <h2 className="text-2xl font-bold tracking-tight text-slate-950">Vue d'ensemble</h2>
-              <div className="mt-5 space-y-3 text-slate-600">
-                <p className="flex gap-3">
-                  <CheckCircle2 className="mt-1 h-5 w-5 text-brand-600" />
-                  Votre session est active et securisee.
-                </p>
-                <p className="flex gap-3">
-                  <CheckCircle2 className="mt-1 h-5 w-5 text-brand-600" />
-                  Vos calculs sauvegardes et votre acces premium sont rattaches a votre compte.
-                </p>
-              </div>
-            </article>
-
-            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft md:p-8">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-bold tracking-tight text-slate-950">Abonnement</h2>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
-                    {entitlement
-                      ? 'Votre abonnement mensuel Tarifly Premium est actif.'
-                      : "Vous n'avez pas encore d'abonnement premium actif."}
-                  </p>
+          <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-soft">
+            <div className="grid lg:grid-cols-[1.15fr_0.85fr]">
+              <section className="border-b border-slate-200 p-6 md:p-8 lg:border-b-0 lg:border-r">
+                <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-50 text-brand-600">
+                        <ShieldCheck size={20} />
+                      </span>
+                      <div>
+                        <h2 className="text-2xl font-bold tracking-tight text-slate-950">
+                          {isPremium ? 'Tarifly Premium est actif' : 'Tarifly Premium est inactif'}
+                        </h2>
+                        <p className="mt-1 text-sm text-slate-500">{user.email}</p>
+                      </div>
+                    </div>
+                    <p className="mt-5 max-w-2xl leading-7 text-slate-600">
+                      {isPremium
+                        ? 'Votre abonnement mensuel donne acces au diagnostic complet, aux exports PDF et aux sauvegardes de calculs.'
+                        : 'Passez en Premium pour debloquer le diagnostic complet, les exports PDF et les sauvegardes avancees.'}
+                    </p>
+                  </div>
+                  <StatusBadge active={isPremium} />
                 </div>
-                {entitlement ? (
-                  <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-brand-600">
-                    Premium
-                  </span>
-                ) : null}
-              </div>
 
-              <div className="mt-5 grid gap-3">
-                <Link href="/outil" className="rounded-2xl bg-slate-950 px-5 py-3 text-center text-sm font-semibold text-white">
-                  Ouvrir le calculateur
-                </Link>
-                {entitlement ? (
-                  <BillingPortalButton />
-                ) : (
-                  <Link href="/#tarifs" className="rounded-2xl border border-slate-200 px-5 py-3 text-center text-sm font-semibold text-slate-950">
-                    Voir l'offre premium
-                  </Link>
-                )}
-              </div>
-            </article>
-          </div>
-
-          <div className="mt-8 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft md:p-8">
-              <div className="flex items-center gap-3">
-                <span className="grid h-11 w-11 place-items-center rounded-xl bg-slate-100 text-slate-700">
-                  <CreditCard size={20} />
-                </span>
-                <div>
-                  <h2 className="text-xl font-bold tracking-tight text-slate-950">Facturation</h2>
-                  <p className="text-sm text-slate-500">Abonnement mensuel, carte et factures.</p>
+                <div className="mt-8 grid gap-4 sm:grid-cols-3">
+                  <SummaryItem icon={<Calculator />} label="Calculs sauvegardes" value={`${calculationCount ?? 0}`} />
+                  <SummaryItem icon={<CreditCard />} label="Abonnement" value={isPremium ? 'Actif' : 'Aucun'} />
+                  <SummaryItem icon={<FileText />} label="Documents" value={purchases?.length ? `${purchases.length}` : '0'} />
                 </div>
-              </div>
-              <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-sm font-semibold text-slate-500">Statut</p>
-                <p className="mt-1 text-lg font-bold text-slate-950">{entitlement ? 'Abonnement actif' : 'Aucun abonnement actif'}</p>
+              </section>
+
+              <aside className="p-6 md:p-8">
+                <h2 className="text-xl font-bold tracking-tight text-slate-950">Facturation</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  {entitlement
-                    ? 'La gestion de l abonnement, des moyens de paiement et des factures se fait dans le portail Stripe securise.'
-                    : 'Vous pouvez demarrer un abonnement depuis la page tarifs.'}
+                  {isPremium
+                    ? 'Gerez votre abonnement, vos moyens de paiement et vos factures depuis le portail securise Stripe.'
+                    : 'Aucun abonnement actif pour le moment. Vous pouvez demarrer Tarifly Premium depuis la page tarifs.'}
                 </p>
-              </div>
-              <div className="mt-5">
-                {entitlement ? (
-                  <BillingPortalButton />
-                ) : (
-                  <Link href="/#tarifs" className="inline-flex rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white">
-                    Voir les tarifs
-                  </Link>
-                )}
-              </div>
-            </article>
 
-            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft md:p-8">
-              <div className="flex items-center gap-3">
-                <span className="grid h-11 w-11 place-items-center rounded-xl bg-slate-100 text-slate-700">
-                  <FileText size={20} />
-                </span>
-                <div>
-                  <h2 className="text-xl font-bold tracking-tight text-slate-950">Historique des paiements</h2>
-                  <p className="text-sm text-slate-500">Les derniers paiements detectes par Tarifly.</p>
+                <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-semibold text-slate-500">Offre</p>
+                  <p className="mt-1 font-bold text-slate-950">Tarifly Premium</p>
+                  <p className="mt-1 text-sm text-slate-600">9,90 EUR TTC / mois, sans engagement.</p>
                 </div>
-              </div>
 
-              <div className="mt-5 overflow-hidden rounded-xl border border-slate-200">
-                {purchases && purchases.length > 0 ? (
-                  purchases.map((purchase) => (
-                    <div key={purchase.id} className="grid gap-2 border-b border-slate-200 p-4 text-sm last:border-b-0 md:grid-cols-[1fr_auto_auto] md:items-center">
+                <div className="mt-6">
+                  {isPremium ? (
+                    <BillingPortalButton />
+                  ) : (
+                    <Link
+                      href="/#tarifs"
+                      className="inline-flex w-full justify-center rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                    >
+                      Voir l'offre premium
+                    </Link>
+                  )}
+                </div>
+              </aside>
+            </div>
+          </div>
+
+          <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-soft md:p-8">
+            <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight text-slate-950">Historique</h2>
+                <p className="mt-2 text-sm text-slate-500">Les derniers paiements enregistres pour ce compte.</p>
+              </div>
+              {isPremium ? <BillingPortalButton /> : null}
+            </div>
+
+            <div className="mt-6 overflow-hidden rounded-xl border border-slate-200">
+              {purchases && purchases.length > 0 ? (
+                <div className="divide-y divide-slate-200">
+                  {purchases.map((purchase) => (
+                    <div key={purchase.id} className="grid gap-3 p-4 text-sm md:grid-cols-[1fr_auto_auto] md:items-center">
                       <div>
                         <p className="font-semibold text-slate-950">{formatDate(purchase.created_at)}</p>
-                        <p className="text-slate-500">Session {purchase.stripe_session_id?.slice(-8) ?? 'Stripe'}</p>
+                        <p className="mt-1 text-slate-500">Reference {purchase.stripe_session_id?.slice(-10) ?? purchase.id.slice(0, 8)}</p>
                       </div>
                       <p className="font-semibold text-slate-950">{formatAmount(purchase.amount_total, purchase.currency)}</p>
-                      <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-brand-600">
-                        {purchase.status}
-                      </span>
+                      <PaymentStatus status={purchase.status} />
                     </div>
-                  ))
-                ) : (
-                  <p className="p-4 text-sm leading-6 text-slate-600">Aucun paiement enregistre pour le moment.</p>
-                )}
-              </div>
-            </article>
-          </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-6 text-sm leading-6 text-slate-600">
+                  Aucun paiement n'est encore rattache a ce compte.
+                </div>
+              )}
+            </div>
+          </section>
         </section>
       </main>
       <Footer />
     </>
+  );
+}
+
+function StatusBadge({ active }: { active: boolean }) {
+  return (
+    <span
+      className={`inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] ${
+        active ? 'bg-brand-50 text-brand-600' : 'bg-slate-100 text-slate-500'
+      }`}
+    >
+      {active ? 'Premium' : 'Gratuit'}
+    </span>
+  );
+}
+
+function SummaryItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <div className="text-slate-500">{icon}</div>
+      <p className="mt-4 text-sm font-semibold text-slate-500">{label}</p>
+      <p className="mt-1 text-xl font-bold text-slate-950">{value}</p>
+    </div>
+  );
+}
+
+function PaymentStatus({ status }: { status: string }) {
+  const isPaid = status === 'paid';
+
+  return (
+    <span
+      className={`inline-flex justify-center rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] ${
+        isPaid ? 'bg-brand-50 text-brand-600' : 'bg-slate-100 text-slate-600'
+      }`}
+    >
+      {status}
+    </span>
   );
 }
 
@@ -209,26 +232,4 @@ function formatDate(value: string | null) {
   }
 
   return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(new Date(value));
-}
-
-function AccountMetric({
-  icon,
-  label,
-  value,
-  accent,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  accent?: boolean;
-}) {
-  return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
-      <div className={`grid h-11 w-11 place-items-center rounded-2xl ${accent ? 'bg-brand-50 text-brand-600' : 'bg-slate-100 text-slate-700'}`}>
-        {icon}
-      </div>
-      <p className="mt-5 text-sm font-semibold text-slate-500">{label}</p>
-      <p className="mt-1 break-words text-xl font-bold text-slate-950">{value}</p>
-    </div>
-  );
 }
