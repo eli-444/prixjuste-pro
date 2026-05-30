@@ -21,9 +21,29 @@ export function UpdatePasswordForm() {
     }
 
     const supabase = createBrowserSupabaseClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setHasSession(Boolean(data.user));
-    });
+
+    async function prepareRecoverySession() {
+      const code = new URLSearchParams(window.location.search).get('code');
+
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+        if (error) {
+          setMessage('Lien invalide ou expire. Demandez un nouveau lien de reinitialisation.');
+          setHasSession(false);
+          return;
+        }
+
+        window.history.replaceState({}, '', '/modifier-mot-de-passe');
+      }
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setHasSession(Boolean(user));
+    }
+
+    prepareRecoverySession();
   }, [isConfigured]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {

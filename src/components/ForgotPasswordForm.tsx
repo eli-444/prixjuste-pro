@@ -17,7 +17,7 @@ export function ForgotPasswordForm() {
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin;
-    return `${appUrl}/auth/callback?next=${encodeURIComponent('/modifier-mot-de-passe')}`;
+    return `${appUrl}/modifier-mot-de-passe`;
   }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {

@@ -12,8 +12,7 @@ export function AuthCodeRedirect() {
       return;
     }
 
-    const next = encodeURIComponent('/modifier-mot-de-passe');
-    window.location.replace(`/auth/callback?code=${encodeURIComponent(code)}&next=${next}`);
+    window.location.replace(`/modifier-mot-de-passe?code=${encodeURIComponent(code)}`);
   }, []);
 
   return null;
