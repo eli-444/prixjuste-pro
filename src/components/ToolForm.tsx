@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Copy, Download, Gauge, LayoutDashboard, Lock, Save, ShieldCheck, Sparkles } from 'lucide-react';
+import { Copy, Download, Lock, Save, Sparkles } from 'lucide-react';
 import { calculatePricing, type PricingInput } from '@/lib/pricing';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import { createTariflyPdf } from '@/lib/pdf';
@@ -184,46 +184,21 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
   }
 
   return (
-    <section className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)_390px]">
-      <aside className="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft lg:sticky lg:top-32 lg:self-start">
-        <div className="flex items-center gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-50 text-brand-600">
-            <LayoutDashboard size={18} />
-          </span>
-          <div>
-            <p className="font-bold text-slate-950">Workspace</p>
-            <p className="text-xs text-slate-500">Calcul de prix</p>
-          </div>
-        </div>
-        <div className="mt-6 grid gap-2 text-sm">
-          <a href="#hypotheses" className="rounded-xl bg-slate-950 px-3 py-2 font-semibold text-white">
-            Hypotheses
-          </a>
-          <a href="#rentabilite" className="rounded-xl px-3 py-2 font-semibold text-slate-600 hover:bg-slate-100">
-            Resultat
-          </a>
-          <a href="#exports" className="rounded-xl px-3 py-2 font-semibold text-slate-600 hover:bg-slate-100">
-            Exports
-          </a>
-        </div>
-        <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Statut</p>
-          <p className="mt-2 flex items-center gap-2 text-sm font-bold text-slate-950">
-            <ShieldCheck size={16} className={isPremium ? 'text-brand-600' : 'text-slate-400'} />
-            {premiumStatus === 'loading' ? 'Verification...' : isPremium ? 'Premium actif' : 'Gratuit'}
-          </p>
-        </div>
-      </aside>
-
+    <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_390px]">
       <div id="hypotheses" className="space-y-6">
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft md:p-8">
-          <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-50 text-brand-600">
-              <Sparkles size={18} />
-            </span>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-950">Calculateur de prix rentable</h1>
-              <p className="text-sm text-slate-500">Structurez vos couts, votre temps et votre marge cible.</p>
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-3">
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-50 text-brand-600">
+                <Sparkles size={18} />
+              </span>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-slate-950">Calculateur de prix rentable</h1>
+                <p className="text-sm text-slate-500">Structurez vos couts, votre temps et votre marge cible.</p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-950">
+              {premiumStatus === 'loading' ? 'Verification premium...' : isPremium ? 'Premium actif' : 'Mode gratuit'}
             </div>
           </div>
 

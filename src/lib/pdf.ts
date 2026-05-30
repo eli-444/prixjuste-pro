@@ -67,19 +67,19 @@ function getContext(canvas: HTMLCanvasElement) {
 }
 
 function drawHeader(ctx: CanvasRenderingContext2D, logo: HTMLImageElement, data: TariflyPdfData) {
-  const logoWidth = 230;
+  const logoWidth = 190;
   const logoHeight = Math.round((logo.height / logo.width) * logoWidth);
-  ctx.drawImage(logo, margin, 54, logoWidth, logoHeight);
+  ctx.drawImage(logo, margin, 30, logoWidth, logoHeight);
 
   ctx.fillStyle = '#64748b';
   ctx.font = '500 24px Arial';
   ctx.textAlign = 'right';
-  ctx.fillText(`Genere le ${data.generatedAt}`, pageWidth - margin, 72);
+  ctx.fillText(`Genere le ${data.generatedAt}`, pageWidth - margin, 58);
   ctx.textAlign = 'left';
 
   ctx.fillStyle = '#0f172a';
   ctx.font = '700 54px Arial';
-  ctx.fillText(data.title, margin, 180);
+  ctx.fillText(data.title, margin, 176);
 
   ctx.fillStyle = '#4f46e5';
   ctx.fillRect(margin, 250, 160, 8);
