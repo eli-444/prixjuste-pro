@@ -1,13 +1,5 @@
 import Link from 'next/link';
-import {
-  ArrowRight,
-  BarChart3,
-  CheckCircle2,
-  FileText,
-  ShieldCheck,
-  Sparkles,
-  Timer,
-} from 'lucide-react';
+import { ArrowRight, BarChart3, CheckCircle2, FileText, ShieldCheck, Sparkles, Timer } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { PricingCard } from '@/components/PricingCard';
@@ -27,9 +19,9 @@ export default function HomePage() {
                 Fixez le bon tarif avant d'envoyer votre devis.
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-                Tarifly transforme vos coûts, votre temps, vos frais et votre objectif de marge en un prix clair,
-                défendable et rentable. Vous gagnez du temps, vous sécurisez votre marge et vous présentez un tarif
-                cohérent à vos clients.
+                Tarifly transforme vos couts, votre temps, vos frais et votre objectif de marge en un prix clair,
+                defendable et rentable. Vous gagnez du temps, vous securisez votre marge et vous presentez un tarif
+                coherent a vos clients.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link href="/outil" className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-6 py-4 text-sm font-semibold text-white shadow-soft transition hover:bg-slate-800">
@@ -42,18 +34,18 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-soft">
-              <div className="rounded-3xl bg-slate-950 p-6 text-white">
-                <p className="text-sm text-slate-300">Prix recommandé</p>
-                <p className="mt-2 text-5xl font-bold">395 €</p>
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
+              <div className="rounded-2xl bg-slate-950 p-6 text-white">
+                <p className="text-sm text-slate-300">Prix recommande</p>
+                <p className="mt-2 text-5xl font-bold">395 EUR</p>
                 <div className="mt-6 grid gap-3 text-sm">
-                  <PreviewMetric label="Coûts intégrés" value="100 %" />
-                  <PreviewMetric label="Marge estimée" value="36 %" />
+                  <PreviewMetric label="Couts integres" value="100 %" />
+                  <PreviewMetric label="Marge estimee" value="36 %" />
                   <PreviewMetric label="Lecture du risque" value="Faible" />
                 </div>
               </div>
               <p className="mt-5 text-sm leading-6 text-slate-600">
-                Obtenez un prix recommandé, une lecture de rentabilité et une justification commerciale prête à reprendre
+                Obtenez un prix recommande, une lecture de rentabilite et une justification commerciale prete a reprendre
                 dans votre proposition.
               </p>
             </div>
@@ -63,14 +55,14 @@ export default function HomePage() {
         <section id="fonctionnement" className="bg-white py-20">
           <div className="mx-auto max-w-6xl px-4">
             <SectionTitle
-              eyebrow="Méthode"
-              title="Un calcul simple pour une décision de prix plus solide."
-              description="Tarifly remet de la méthode dans une décision souvent prise trop vite : combien facturer sans rogner sa marge ni perdre en crédibilité commerciale."
+              eyebrow="Methode"
+              title="Un calcul simple pour une decision de prix plus solide."
+              description="Tarifly remet de la methode dans une decision souvent prise trop vite : combien facturer sans rogner sa marge ni perdre en credibilite commerciale."
             />
             <div className="mt-10 grid gap-5 md:grid-cols-3">
-              <Feature icon={<Timer />} title="1. Renseignez vos données" text="Temps prévu, coûts directs, frais, taux horaire, marge souhaitée et taxes éventuelles." />
-              <Feature icon={<BarChart3 />} title="2. Analysez votre rentabilité" text="L'outil calcule un prix recommandé et met en évidence la marge réelle de votre prestation." />
-              <Feature icon={<FileText />} title="3. Présentez un tarif clair" text="Vous repartez avec une formulation professionnelle pour expliquer votre prix sans vous justifier maladroitement." />
+              <Feature icon={<Timer />} title="1. Renseignez vos donnees" text="Temps prevu, couts directs, frais, taux horaire, marge souhaitee et taxes eventuelles." />
+              <Feature icon={<BarChart3 />} title="2. Analysez votre rentabilite" text="L'outil calcule un prix recommande et met en evidence la marge reelle de votre prestation." />
+              <Feature icon={<FileText />} title="3. Presentez un tarif clair" text="Vous repartez avec une formulation professionnelle pour expliquer votre prix sans vous justifier maladroitement." />
             </div>
           </div>
         </section>
@@ -79,11 +71,11 @@ export default function HomePage() {
           <div className="mx-auto max-w-6xl px-4">
             <SectionTitle
               eyebrow="Profils"
-              title="Pensé pour ceux qui vendent leur temps, leur savoir-faire ou une prestation sur mesure."
-              description="Que vous soyez indépendant, artisan, consultant ou dirigeant de TPE, l'enjeu reste le même : vendre au bon prix, avec une marge maîtrisée."
+              title="Pense pour ceux qui vendent leur temps, leur savoir-faire ou une prestation sur mesure."
+              description="Que vous soyez independant, artisan, consultant ou dirigeant de TPE, l'enjeu reste le meme : vendre au bon prix, avec une marge maitrisee."
             />
             <div className="mt-10 grid gap-4 md:grid-cols-4">
-              {['Freelances', 'Artisans', 'Consultants', 'Créateurs', 'Formateurs', 'Coachings', 'Prestataires', 'TPE'].map((target) => (
+              {['Freelances', 'Artisans', 'Consultants', 'Createurs', 'Formateurs', 'Coachings', 'Prestataires', 'TPE'].map((target) => (
                 <div key={target} className="rounded-2xl border border-slate-200 bg-white p-5 font-semibold text-slate-800">
                   {target}
                 </div>
@@ -96,13 +88,13 @@ export default function HomePage() {
           <div className="mx-auto max-w-6xl px-4">
             <SectionTitle
               eyebrow="Valeur"
-              title="Arrêtez de fixer vos prix au feeling."
-              description="Un prix trop bas fatigue votre activité. Un prix mal expliqué fragilise la vente. Tarifly vous aide à poser un tarif argumenté, lisible et cohérent avec vos objectifs."
+              title="Arretez de fixer vos prix au feeling."
+              description="Un prix trop bas fatigue votre activite. Un prix mal explique fragilise la vente. Tarifly vous aide a poser un tarif argumente, lisible et coherent avec vos objectifs."
             />
             <div className="mt-10 grid gap-5 md:grid-cols-3">
-              <Feature icon={<ShieldCheck />} title="Protéger votre marge" text="Chaque prix tient compte de vos coûts réels, de votre temps et du niveau de rentabilité attendu." />
-              <Feature icon={<Sparkles />} title="Gagner en crédibilité" text="Vous présentez un tarif structuré, moins improvisé, plus facile à assumer face au client." />
-              <Feature icon={<CheckCircle2 />} title="Décider plus vite" text="Vous remplacez les hésitations et les calculs dispersés par une recommandation exploitable immédiatement." />
+              <Feature icon={<ShieldCheck />} title="Proteger votre marge" text="Chaque prix tient compte de vos couts reels, de votre temps et du niveau de rentabilite attendu." />
+              <Feature icon={<Sparkles />} title="Gagner en credibilite" text="Vous presentez un tarif structure, moins improvise, plus facile a assumer face au client." />
+              <Feature icon={<CheckCircle2 />} title="Decider plus vite" text="Vous remplacez les hesitations et les calculs disperses par une recommandation exploitable immediatement." />
             </div>
           </div>
         </section>
@@ -111,13 +103,13 @@ export default function HomePage() {
           <div className="mx-auto grid max-w-6xl gap-10 px-4 lg:grid-cols-[0.9fr_1.1fr]">
             <div>
               <SectionTitle
-                eyebrow="Accès"
+                eyebrow="Acces"
                 title="Un abonnement mensuel pour chiffrer vos prestations avec plus de methode."
                 description="Testez le calcul gratuitement, puis debloquez le diagnostic complet lorsque vous voulez exploiter le resultat dans vos devis et echanges clients. L'abonnement est mensuel, sans engagement et resiliable depuis votre compte."
               />
               <div className="mt-8 space-y-4">
                 {[
-                  'Calcul gratuit pour obtenir une première estimation.',
+                  'Calcul gratuit pour obtenir une premiere estimation.',
                   'Diagnostic complet pour comprendre votre marge et votre niveau de risque.',
                   'Texte de justification professionnel pour accompagner votre proposition.',
                   'Export PDF professionnel et abonnement mensuel resiliable en ligne.',
@@ -137,16 +129,16 @@ export default function HomePage() {
           <div className="mx-auto max-w-6xl px-4">
             <SectionTitle
               eyebrow="FAQ"
-              title="Questions fréquentes"
-              description="Les réponses essentielles avant d'utiliser Tarifly pour préparer vos prix et vos devis."
+              title="Questions frequentes"
+              description="Les reponses essentielles avant d'utiliser Tarifly pour preparer vos prix et vos devis."
               dark
             />
             <div className="mt-10 grid gap-4 md:grid-cols-2">
-              <Faq q="À qui s'adresse Tarifly ?" a="Aux professionnels qui doivent chiffrer une prestation, un produit ou une offre sur mesure : indépendants, artisans, consultants, formateurs, créateurs et petites entreprises." />
-              <Faq q="L'outil remplace-t-il un expert-comptable ?" a="Non. Tarifly vous aide à structurer votre prix de vente et à vérifier votre rentabilité. Pour les décisions comptables, fiscales ou juridiques, votre conseiller reste la référence." />
-              <Faq q="Quelles informations dois-je préparer ?" a="Quelques données suffisent : temps estimé, coûts directs, frais, marge souhaitée et taxes éventuelles. L'objectif est d'obtenir rapidement un prix exploitable, sans tableur complexe." />
-              <Faq q="Puis-je utiliser le résultat dans mes devis ?" a="Oui. L'accès premium fournit une justification commerciale que vous pouvez reprendre dans vos échanges clients pour présenter un prix plus clair et plus professionnel." />
-              <Faq q="Est-ce adapté si mes prestations changent souvent ?" a="Oui. Vous pouvez relancer un calcul pour chaque mission, ajuster vos hypothèses et comparer plusieurs scénarios avant d'envoyer votre proposition." />
+              <Faq q="A qui s'adresse Tarifly ?" a="Aux professionnels qui doivent chiffrer une prestation, un produit ou une offre sur mesure : independants, artisans, consultants, formateurs, createurs et petites entreprises." />
+              <Faq q="L'outil remplace-t-il un expert-comptable ?" a="Non. Tarifly vous aide a structurer votre prix de vente et a verifier votre rentabilite. Pour les decisions comptables, fiscales ou juridiques, votre conseiller reste la reference." />
+              <Faq q="Quelles informations dois-je preparer ?" a="Quelques donnees suffisent : temps estime, couts directs, frais, marge souhaitee et taxes eventuelles. L'objectif est d'obtenir rapidement un prix exploitable, sans tableur complexe." />
+              <Faq q="Puis-je utiliser le resultat dans mes devis ?" a="Oui. L'acces premium fournit une justification commerciale que vous pouvez reprendre dans vos echanges clients pour presenter un prix plus clair et plus professionnel." />
+              <Faq q="Est-ce adapte si mes prestations changent souvent ?" a="Oui. Vous pouvez relancer un calcul pour chaque mission, ajuster vos hypotheses et comparer plusieurs scenarios avant d'envoyer votre proposition." />
               <Faq q="Y a-t-il un abonnement ?" a="Oui. Tarifly Premium est un abonnement mensuel sans engagement. Vous pouvez le resilier depuis votre espace compte." />
             </div>
           </div>
@@ -190,8 +182,8 @@ function SectionTitle({
 
 function Feature({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
-      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-brand-50 text-brand-600">{icon}</div>
+    <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
+      <div className="grid h-12 w-12 place-items-center rounded-xl bg-brand-50 text-brand-600">{icon}</div>
       <h3 className="mt-5 text-lg font-bold text-slate-950">{title}</h3>
       <p className="mt-2 leading-7 text-slate-600">{text}</p>
     </div>
@@ -200,7 +192,7 @@ function Feature({ icon, title, text }: { icon: React.ReactNode; title: string; 
 
 function Faq({ q, a }: { q: string; a: string }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
       <h3 className="font-semibold">{q}</h3>
       <p className="mt-2 text-sm leading-6 text-slate-300">{a}</p>
     </div>

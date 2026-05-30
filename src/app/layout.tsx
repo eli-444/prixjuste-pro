@@ -4,7 +4,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Tarifly - Calculez un prix rentable pour vos prestations',
   description:
-    'Un calculateur professionnel pour fixer un tarif rentable, intégrer vos coûts et présenter un prix clair à vos clients.',
+    'Un calculateur professionnel pour fixer un tarif rentable, integrer vos couts et presenter un prix clair a vos clients.',
   icons: {
     icon: '/favicon.ico',
   },

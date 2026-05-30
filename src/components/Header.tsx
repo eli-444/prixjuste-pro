@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { MobileNav } from './MobileNav';
 
 export async function Header() {
   const supabase = await createServerSupabaseClient();
@@ -47,9 +48,7 @@ export async function Header() {
           </Link>
         </nav>
 
-        <Link href={user ? '/mon-compte' : '/connexion'} className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white md:hidden">
-          Compte
-        </Link>
+        <MobileNav isPremium={Boolean(entitlement)} isSignedIn={Boolean(user)} />
       </div>
     </header>
   );

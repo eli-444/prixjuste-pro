@@ -17,6 +17,7 @@ export async function createTariflyPdf(data: TariflyPdfData) {
   let y = drawHeader(ctx, logo, data);
 
   function newPage() {
+    drawFooter(ctx, pages.length + 1);
     pages.push(dataUrlToBytes(canvas.toDataURL('image/jpeg', 0.92)));
     canvas = createPage();
     ctx = getContext(canvas);
@@ -37,6 +38,7 @@ export async function createTariflyPdf(data: TariflyPdfData) {
     y = drawSection(ctx, section, y, ensureSpace);
   });
 
+  drawFooter(ctx, pages.length + 1);
   pages.push(dataUrlToBytes(canvas.toDataURL('image/jpeg', 0.92)));
   return buildImagePdf(pages);
 }
@@ -56,6 +58,8 @@ function getContext(canvas: HTMLCanvasElement) {
 
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, pageWidth, pageHeight);
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillRect(0, 0, pageWidth, 310);
   ctx.strokeStyle = '#e2e8f0';
   ctx.fillStyle = '#0f172a';
   ctx.textBaseline = 'top';
@@ -76,6 +80,9 @@ function drawHeader(ctx: CanvasRenderingContext2D, logo: HTMLImageElement, data:
   ctx.fillStyle = '#0f172a';
   ctx.font = '700 54px Arial';
   ctx.fillText(data.title, margin, 180);
+
+  ctx.fillStyle = '#4f46e5';
+  ctx.fillRect(margin, 250, 160, 8);
 
   ctx.strokeStyle = '#cbd5e1';
   ctx.lineWidth = 2;
@@ -147,6 +154,29 @@ function drawSection(
   ctx.stroke();
 
   return y + 42;
+}
+
+function drawFooter(ctx: CanvasRenderingContext2D, pageNumber: number) {
+  const footerY = pageHeight - 82;
+
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(margin, footerY);
+  ctx.lineTo(pageWidth - margin, footerY);
+  ctx.stroke();
+
+  ctx.fillStyle = '#64748b';
+  ctx.font = '400 18px Arial';
+  ctx.fillText(
+    'Document indicatif. Ne remplace pas un conseil comptable, fiscal, juridique ou financier.',
+    margin,
+    footerY + 28,
+  );
+
+  ctx.textAlign = 'right';
+  ctx.fillText(`Page ${pageNumber}`, pageWidth - margin, footerY + 28);
+  ctx.textAlign = 'left';
 }
 
 function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, fontSize: number) {
