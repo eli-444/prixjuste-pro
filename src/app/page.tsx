@@ -4,6 +4,7 @@ import { ArrowRight, BarChart3, CheckCircle2, FileText, ShieldCheck, Sparkles, T
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { PricingCard } from '@/components/PricingCard';
+import { AuthCodeRedirect } from '@/components/AuthCodeRedirect';
 
 export default async function HomePage({
   searchParams,
@@ -18,6 +19,7 @@ export default async function HomePage({
 
   return (
     <>
+      <AuthCodeRedirect />
       <Header />
       <main>
         <section className="relative overflow-hidden bg-gradient-to-b from-white to-slate-100">
