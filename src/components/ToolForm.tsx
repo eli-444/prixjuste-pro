@@ -25,6 +25,16 @@ const defaultInput: PricingInput = {
 
 export function ToolForm() {
   const [input, setInput] = useState<PricingInput>(defaultInput);
+  const [fields, setFields] = useState<Record<keyof Omit<PricingInput, 'activityType'>, string>>({
+    productCost: String(defaultInput.productCost),
+    workHours: String(defaultInput.workHours),
+    hourlyRate: String(defaultInput.hourlyRate),
+    fixedFees: String(defaultInput.fixedFees),
+    transactionFeesPercent: String(defaultInput.transactionFeesPercent),
+    desiredMarginPercent: String(defaultInput.desiredMarginPercent),
+    taxPercent: String(defaultInput.taxPercent),
+    competitorPrice: String(defaultInput.competitorPrice),
+  });
   const [isPremium, setIsPremium] = useState(false);
   const [premiumStatus, setPremiumStatus] = useState<'loading' | 'free' | 'premium'>('loading');
   const [userId, setUserId] = useState<string | null>(null);
@@ -86,9 +96,18 @@ export function ToolForm() {
   }, []);
 
   function updateNumber(name: keyof PricingInput, value: string) {
+    if (name === 'activityType') {
+      return;
+    }
+
+    setFields((current) => ({
+      ...current,
+      [name]: value,
+    }));
+
     setInput((current) => ({
       ...current,
-      [name]: Number(value),
+      [name]: value === '' ? 0 : Number(value),
     }));
   }
 
@@ -221,14 +240,14 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
               </select>
             </label>
 
-            <NumberField label="Cout matiere / achat (EUR)" value={input.productCost} onChange={(value) => updateNumber('productCost', value)} />
-            <NumberField label="Temps de travail (heures)" value={input.workHours} onChange={(value) => updateNumber('workHours', value)} />
-            <NumberField label="Valeur horaire souhaitee (EUR)" value={input.hourlyRate} onChange={(value) => updateNumber('hourlyRate', value)} />
-            <NumberField label="Frais fixes a integrer (EUR)" value={input.fixedFees} onChange={(value) => updateNumber('fixedFees', value)} />
-            <NumberField label="Frais paiement / plateforme (%)" value={input.transactionFeesPercent} onChange={(value) => updateNumber('transactionFeesPercent', value)} />
-            <NumberField label="Marge cible (%)" value={input.desiredMarginPercent} onChange={(value) => updateNumber('desiredMarginPercent', value)} />
-            <NumberField label="TVA / taxe (%)" value={input.taxPercent} onChange={(value) => updateNumber('taxPercent', value)} />
-            <NumberField label="Prix concurrent optionnel (EUR)" value={input.competitorPrice} onChange={(value) => updateNumber('competitorPrice', value)} />
+            <NumberField label="Cout matiere / achat (EUR)" value={fields.productCost} onChange={(value) => updateNumber('productCost', value)} />
+            <NumberField label="Temps de travail (heures)" value={fields.workHours} onChange={(value) => updateNumber('workHours', value)} />
+            <NumberField label="Valeur horaire souhaitee (EUR)" value={fields.hourlyRate} onChange={(value) => updateNumber('hourlyRate', value)} />
+            <NumberField label="Frais fixes a integrer (EUR)" value={fields.fixedFees} onChange={(value) => updateNumber('fixedFees', value)} />
+            <NumberField label="Frais paiement / plateforme (%)" value={fields.transactionFeesPercent} onChange={(value) => updateNumber('transactionFeesPercent', value)} />
+            <NumberField label="Marge cible (%)" value={fields.desiredMarginPercent} onChange={(value) => updateNumber('desiredMarginPercent', value)} />
+            <NumberField label="TVA / taxe (%)" value={fields.taxPercent} onChange={(value) => updateNumber('taxPercent', value)} />
+            <NumberField label="Prix concurrent optionnel (EUR)" value={fields.competitorPrice} onChange={(value) => updateNumber('competitorPrice', value)} />
           </div>
         </section>
       </div>
@@ -307,7 +326,7 @@ function NumberField({
   onChange,
 }: {
   label: string;
-  value: number;
+  value: string;
   onChange: (value: string) => void;
 }) {
   return (

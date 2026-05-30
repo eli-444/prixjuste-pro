@@ -23,10 +23,7 @@ export default async function HomePage({
         <section className="relative overflow-hidden bg-gradient-to-b from-white to-slate-100">
           <div className="mx-auto grid max-w-6xl gap-10 px-4 py-20 md:grid-cols-[1.1fr_0.9fr] md:py-28">
             <div>
-              <div className="inline-flex rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">
-                Calculateur de prix rentable pour professionnels
-              </div>
-              <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-950 md:text-6xl">
+              <h1 className="text-4xl font-bold tracking-tight text-slate-950 md:text-6xl">
                 Fixez le bon tarif avant d'envoyer votre devis.
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
