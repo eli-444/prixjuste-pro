@@ -8,6 +8,7 @@ export type PricingInput = {
   desiredMarginPercent: number;
   taxPercent: number;
   competitorPrice: number;
+  proposedPrice: number;
 };
 
 export type PricingResult = {
@@ -23,6 +24,16 @@ export type PricingResult = {
   riskLevel: 'Faible' | 'Moyen' | 'Élevé';
   clientJustification: string;
   checklist: string[];
+};
+
+export type ProposedPriceAnalysis = {
+  priceIncludingTax: number;
+  priceExcludingTax: number;
+  taxAmount: number;
+  transactionFees: number;
+  netProfit: number;
+  marginRate: number;
+  hourlyReality: number;
 };
 
 function safeNumber(value: number) {
@@ -87,5 +98,30 @@ export function calculatePricing(input: PricingInput): PricingResult {
       'Les frais de paiement sont anticipés.',
       'Le prix final est arrondi pour rester lisible commercialement.',
     ],
+  };
+}
+
+export function analyzeProposedPrice(input: PricingInput): ProposedPriceAnalysis {
+  const productCost = safeNumber(input.productCost);
+  const laborCost = safeNumber(input.workHours) * safeNumber(input.hourlyRate);
+  const fixedFees = safeNumber(input.fixedFees);
+  const transactionRate = Math.max(0, input.transactionFeesPercent) / 100;
+  const taxRate = Math.max(0, input.taxPercent) / 100;
+  const priceIncludingTax = safeNumber(input.proposedPrice);
+  const priceExcludingTax = taxRate >= 1 ? priceIncludingTax : priceIncludingTax / (1 + taxRate);
+  const transactionFees = priceExcludingTax * transactionRate;
+  const baseCost = productCost + laborCost + fixedFees;
+  const netProfit = priceExcludingTax - baseCost - transactionFees;
+  const marginRate = priceExcludingTax > 0 ? (netProfit / priceExcludingTax) * 100 : 0;
+  const hourlyReality = safeNumber(input.workHours) > 0 ? (netProfit + laborCost) / safeNumber(input.workHours) : 0;
+
+  return {
+    priceIncludingTax,
+    priceExcludingTax,
+    taxAmount: priceIncludingTax - priceExcludingTax,
+    transactionFees,
+    netProfit,
+    marginRate,
+    hourlyReality,
   };
 }

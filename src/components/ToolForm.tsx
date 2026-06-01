@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Copy, Download, Lock, Save, Sparkles } from 'lucide-react';
-import { calculatePricing, type PricingInput } from '@/lib/pricing';
+import { analyzeProposedPrice, calculatePricing, type PricingInput } from '@/lib/pricing';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import { createTariflyPdf } from '@/lib/pdf';
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser';
@@ -40,6 +40,7 @@ const defaultInput: PricingInput = {
   desiredMarginPercent: 35,
   taxPercent: 20,
   competitorPrice: 0,
+  proposedPrice: 0,
 };
 
 export function ToolForm({
@@ -57,16 +58,18 @@ export function ToolForm({
   marketRates?: MarketRate[];
   marketRateStats?: MarketRateStat[];
 }) {
-  const [input, setInput] = useState<PricingInput>(initialInput);
+  const normalizedInitialInput = { ...defaultInput, ...initialInput };
+  const [input, setInput] = useState<PricingInput>(normalizedInitialInput);
   const [fields, setFields] = useState<Record<keyof Omit<PricingInput, 'activityType'>, string>>({
-    productCost: String(initialInput.productCost),
-    workHours: String(initialInput.workHours),
-    hourlyRate: String(initialInput.hourlyRate),
-    fixedFees: String(initialInput.fixedFees),
-    transactionFeesPercent: String(initialInput.transactionFeesPercent),
-    desiredMarginPercent: String(initialInput.desiredMarginPercent),
-    taxPercent: String(initialInput.taxPercent),
-    competitorPrice: String(initialInput.competitorPrice),
+    productCost: String(normalizedInitialInput.productCost),
+    workHours: String(normalizedInitialInput.workHours),
+    hourlyRate: String(normalizedInitialInput.hourlyRate),
+    fixedFees: String(normalizedInitialInput.fixedFees),
+    transactionFeesPercent: String(normalizedInitialInput.transactionFeesPercent),
+    desiredMarginPercent: String(normalizedInitialInput.desiredMarginPercent),
+    taxPercent: String(normalizedInitialInput.taxPercent),
+    competitorPrice: String(normalizedInitialInput.competitorPrice),
+    proposedPrice: String(normalizedInitialInput.proposedPrice || ''),
   });
   const [meta, setMeta] = useState<OpportunityMeta>(initialMeta);
   const [market, setMarket] = useState<MarketBenchmarkInput>(initialMarket);
@@ -75,7 +78,9 @@ export function ToolForm({
   const [userId, setUserId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState('');
   const result = useMemo(() => calculatePricing(input), [input]);
-  const autoMarketReferencePrice = getAutoMarketReferencePrice(market.unit, input, result);
+  const proposedAnalysis = useMemo(() => analyzeProposedPrice(input), [input]);
+  const activePrice = input.proposedPrice > 0 ? input.proposedPrice : result.priceIncludingTax;
+  const autoMarketReferencePrice = getAutoMarketReferencePrice(market.unit, input, activePrice);
   const marketReferencePrice =
     market.referenceMode === 'manual' ? Number(market.manualPrice || autoMarketReferencePrice) : autoMarketReferencePrice;
   const matchingMarketRate = useMemo(() => findMarketRate(marketRates, market), [marketRates, market]);
@@ -200,8 +205,11 @@ export function ToolForm({
         market_snapshot: matchingMarketRate ?? null,
         activity_type: input.activityType,
         input,
-        result,
-        recommended_price: result.priceIncludingTax,
+        result: {
+          ...result,
+          proposedAnalysis,
+        },
+        recommended_price: activePrice,
       });
 
       if (error) {
@@ -293,7 +301,7 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
 
           <FormSection
             number="01"
-            title="Opportunite commerciale"
+            title="Client"
             description="Identifiez le prospect, l'etape du pipeline et le contexte de decision."
             tone="dark"
           >
@@ -347,7 +355,61 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
 
           <FormSection
             number="02"
-            title="Positionnement marche"
+            title="Couts"
+            description="Renseignez les couts directs, le temps prevu et les frais necessaires pour produire la mission."
+          >
+          <div className="mt-5 grid gap-5 md:grid-cols-2">
+            <label className="space-y-2 md:col-span-2">
+              <span className="text-sm font-semibold text-slate-700">Type d'activite</span>
+              <select
+                value={input.activityType}
+                onChange={(event) =>
+                  setInput((current) => ({
+                    ...current,
+                    activityType: event.target.value as PricingInput['activityType'],
+                  }))
+                }
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+              >
+                <option value="service">Service</option>
+                <option value="product">Produit</option>
+                <option value="mixed">Mixte</option>
+              </select>
+            </label>
+
+            <NumberField label="Cout matiere / achat (EUR)" value={fields.productCost} onChange={(value) => updateNumber('productCost', value)} />
+            <NumberField label="Temps de travail (heures)" value={fields.workHours} onChange={(value) => updateNumber('workHours', value)} />
+            <NumberField label="Valeur horaire souhaitee (EUR)" value={fields.hourlyRate} onChange={(value) => updateNumber('hourlyRate', value)} />
+            <NumberField label="Frais fixes a integrer (EUR)" value={fields.fixedFees} onChange={(value) => updateNumber('fixedFees', value)} />
+            <NumberField label="Frais paiement / plateforme (%)" value={fields.transactionFeesPercent} onChange={(value) => updateNumber('transactionFeesPercent', value)} />
+            <NumberField label="TVA / taxe (%)" value={fields.taxPercent} onChange={(value) => updateNumber('taxPercent', value)} />
+          </div>
+          </FormSection>
+
+          <FormSection
+            number="03"
+            title="Prix propose"
+            description="Indiquez le prix que vous comptez annoncer au client. Tarifly calcule automatiquement la marge reelle."
+            tone="muted"
+          >
+          <div className="mt-5 grid gap-5 md:grid-cols-2">
+            <NumberField label="Prix propose au client (EUR TTC)" value={fields.proposedPrice} onChange={(value) => updateNumber('proposedPrice', value)} />
+            <NumberField label="Prix concurrent optionnel (EUR)" value={fields.competitorPrice} onChange={(value) => updateNumber('competitorPrice', value)} />
+            <details className="rounded-xl border border-slate-200 bg-white p-4 md:col-span-2">
+              <summary className="cursor-pointer text-sm font-bold text-slate-950">Option : laisser Tarifly recommander un prix avec une marge cible</summary>
+              <div className="mt-4 max-w-sm">
+                <NumberField label="Marge cible (%)" value={fields.desiredMarginPercent} onChange={(value) => updateNumber('desiredMarginPercent', value)} />
+              </div>
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                Prix recommande par Tarifly avec cette marge cible : {formatCurrency(result.priceIncludingTax)}.
+              </p>
+            </details>
+          </div>
+          </FormSection>
+
+          <FormSection
+            number="04"
+            title="Comparaison marche"
             description="Choisissez le metier et la zone pour comparer votre prix a une fourchette indicative."
           >
             <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -440,51 +502,6 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
             </div>
           </FormSection>
 
-          <FormSection
-            number="03"
-            title="Couts et temps de production"
-            description="Renseignez les couts directs, le temps prevu et les frais necessaires pour produire la mission."
-          >
-          <div className="mt-5 grid gap-5 md:grid-cols-2">
-            <label className="space-y-2 md:col-span-2">
-              <span className="text-sm font-semibold text-slate-700">Type d'activite</span>
-              <select
-                value={input.activityType}
-                onChange={(event) =>
-                  setInput((current) => ({
-                    ...current,
-                    activityType: event.target.value as PricingInput['activityType'],
-                  }))
-                }
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-              >
-                <option value="service">Service</option>
-                <option value="product">Produit</option>
-                <option value="mixed">Mixte</option>
-              </select>
-            </label>
-
-            <NumberField label="Cout matiere / achat (EUR)" value={fields.productCost} onChange={(value) => updateNumber('productCost', value)} />
-            <NumberField label="Temps de travail (heures)" value={fields.workHours} onChange={(value) => updateNumber('workHours', value)} />
-            <NumberField label="Valeur horaire souhaitee (EUR)" value={fields.hourlyRate} onChange={(value) => updateNumber('hourlyRate', value)} />
-            <NumberField label="Frais fixes a integrer (EUR)" value={fields.fixedFees} onChange={(value) => updateNumber('fixedFees', value)} />
-            <NumberField label="Frais paiement / plateforme (%)" value={fields.transactionFeesPercent} onChange={(value) => updateNumber('transactionFeesPercent', value)} />
-            <NumberField label="TVA / taxe (%)" value={fields.taxPercent} onChange={(value) => updateNumber('taxPercent', value)} />
-          </div>
-          </FormSection>
-
-          <FormSection
-            number="04"
-            title="Strategie de prix"
-            description="Fixez votre objectif de marge et, si vous en avez un, un prix concurrent ou budget de comparaison."
-            tone="muted"
-          >
-          <div className="mt-5 grid gap-5 md:grid-cols-2">
-            <NumberField label="Marge cible (%)" value={fields.desiredMarginPercent} onChange={(value) => updateNumber('desiredMarginPercent', value)} />
-            <NumberField label="Prix concurrent optionnel (EUR)" value={fields.competitorPrice} onChange={(value) => updateNumber('competitorPrice', value)} />
-          </div>
-          </FormSection>
-
           <div className="mt-8">
             <MarketBenchmarkCard
               rate={matchingMarketRate}
@@ -499,8 +516,11 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
       <aside id="rentabilite" className="rounded-2xl border border-slate-200 bg-slate-950 p-6 text-white shadow-soft md:p-8 lg:sticky lg:top-32 lg:self-start">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-100">Resultat</p>
         <div className="mt-5">
-          <p className="text-sm text-slate-300">Prix recommande</p>
-          <p className="mt-1 text-5xl font-bold tracking-tight">{formatCurrency(result.priceIncludingTax)}</p>
+          <p className="text-sm text-slate-300">{input.proposedPrice > 0 ? 'Prix propose' : 'Prix recommande'}</p>
+          <p className="mt-1 text-5xl font-bold tracking-tight">{formatCurrency(activePrice)}</p>
+          {input.proposedPrice > 0 ? (
+            <p className="mt-2 text-sm text-slate-300">Recommandation Tarifly : {formatCurrency(result.priceIncludingTax)}</p>
+          ) : null}
         </div>
 
         {premiumStatus === 'loading' ? (
@@ -511,8 +531,9 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
 
         <div className="mt-6 grid gap-3 text-sm">
           <Metric label="Cout total estime" value={formatCurrency(result.baseCost)} />
-          <Metric label="Profit net estime" value={isPremium ? formatCurrency(result.netProfit) : 'Premium'} locked={!isPremium} />
-          <Metric label="Marge reelle" value={isPremium ? formatPercent(result.marginRate) : 'Premium'} locked={!isPremium} />
+          <Metric label="Profit net estime" value={isPremium ? formatCurrency(input.proposedPrice > 0 ? proposedAnalysis.netProfit : result.netProfit) : 'Premium'} locked={!isPremium} />
+          <Metric label="Marge reelle" value={isPremium ? formatPercent(input.proposedPrice > 0 ? proposedAnalysis.marginRate : result.marginRate) : 'Premium'} locked={!isPremium} />
+          <Metric label="Taux horaire reel" value={isPremium ? formatCurrency(proposedAnalysis.hourlyReality) : 'Premium'} locked={!isPremium} />
           <Metric label="Niveau de risque" value={isPremium ? result.riskLevel : 'Premium'} locked={!isPremium} />
         </div>
 
@@ -664,12 +685,12 @@ function MarketBenchmarkCard({
   );
 }
 
-function getAutoMarketReferencePrice(unit: MarketUnit, input: PricingInput, result: ReturnType<typeof calculatePricing>) {
+function getAutoMarketReferencePrice(unit: MarketUnit, input: PricingInput, activePrice: number) {
   if (unit === 'hour') {
     return input.hourlyRate;
   }
 
-  return result.priceIncludingTax;
+  return activePrice;
 }
 
 function getComparisonLabel(unit: MarketUnit, label: string) {
