@@ -7,6 +7,7 @@ import { SavedCalculationActions } from '@/components/SavedCalculationActions';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import { getOpportunityScore, statusLabels, type OpportunityStatus } from '@/lib/opportunities';
+import { compareToMarket, marketUnitLabels, type MarketRate, type MarketUnit } from '@/lib/market';
 import type { PricingInput, PricingResult } from '@/lib/pricing';
 
 type CalculationDetail = {
@@ -18,6 +19,13 @@ type CalculationDetail = {
   deadline: string | null;
   client_budget: number | null;
   next_action: string | null;
+  quote_validated: boolean | null;
+  quote_validated_at: string | null;
+  market_profession_slug: string | null;
+  market_city: string | null;
+  market_unit: MarketUnit | null;
+  market_reference_price: number | null;
+  market_snapshot: MarketRate | null;
   activity_type: PricingInput['activityType'];
   input: PricingInput;
   result: PricingResult;
@@ -42,7 +50,7 @@ export default async function OpportunityDetailPage({
 
   const { data } = await supabase
     .from('pricing_calculations')
-    .select('id, title, client_name, opportunity_status, probability, deadline, client_budget, next_action, activity_type, input, result, recommended_price, created_at')
+    .select('id, title, client_name, opportunity_status, probability, deadline, client_budget, next_action, quote_validated, quote_validated_at, market_profession_slug, market_city, market_unit, market_reference_price, market_snapshot, activity_type, input, result, recommended_price, created_at')
     .eq('id', id)
     .eq('user_id', user.id)
     .maybeSingle();
@@ -53,6 +61,7 @@ export default async function OpportunityDetailPage({
 
   const calculation = data as CalculationDetail;
   const title = calculation.title || 'Calcul sans titre';
+  const marketComparison = compareToMarket(Number(calculation.market_reference_price ?? 0), calculation.market_snapshot);
   const score = getOpportunityScore({
     marginRate: calculation.result.marginRate,
     probability: calculation.probability ?? 0,
@@ -107,9 +116,31 @@ export default async function OpportunityDetailPage({
                 <div className="mt-5 space-y-4 text-sm">
                   <InfoRow label="Budget client" value={calculation.client_budget ? formatCurrency(calculation.client_budget) : 'Non renseigne'} />
                   <InfoRow label="Probabilite" value={`${calculation.probability ?? 0} %`} />
+                  <InfoRow label="Devis valide" value={calculation.quote_validated ? 'Oui' : 'Non'} />
                   <InfoRow label="Prochaine action" value={calculation.next_action || 'Non renseignee'} />
                   <InfoRow label="Deadline" value={calculation.deadline ? formatDate(calculation.deadline) : 'Non renseignee'} />
                 </div>
+              </section>
+
+              <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
+                <h2 className="font-bold text-slate-950">Benchmark marche</h2>
+                {calculation.market_snapshot ? (
+                  <div className="mt-5 space-y-4 text-sm">
+                    <InfoRow label="Zone" value={calculation.market_city || calculation.market_snapshot.city || 'France'} />
+                    <InfoRow label="Unite" value={marketUnitLabels[calculation.market_unit ?? calculation.market_snapshot.unit]} />
+                    <InfoRow label="Votre prix" value={formatCurrency(Number(calculation.market_reference_price ?? 0))} />
+                    <InfoRow label="Median indicatif" value={formatCurrency(calculation.market_snapshot.price_median)} />
+                    <InfoRow label="Fourchette" value={`${formatCurrency(calculation.market_snapshot.price_low)} - ${formatCurrency(calculation.market_snapshot.price_high)}`} />
+                    {marketComparison ? (
+                      <div className="rounded-xl bg-slate-50 p-4">
+                        <p className="font-bold text-slate-950">{marketComparison.title}</p>
+                        <p className="mt-2 leading-6 text-slate-600">{marketComparison.message}</p>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm leading-6 text-slate-600">Aucun benchmark marche n'etait disponible lors de la sauvegarde.</p>
+                )}
               </section>
 
               <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">

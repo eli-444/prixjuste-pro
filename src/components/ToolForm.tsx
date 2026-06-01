@@ -13,6 +13,18 @@ import {
   type OpportunityMeta,
   type OpportunityStatus,
 } from '@/lib/opportunities';
+import {
+  compareToMarket,
+  defaultMarketBenchmark,
+  findMarketRate,
+  findMarketRateStat,
+  marketUnitLabels,
+  type MarketBenchmarkInput,
+  type MarketRate,
+  type MarketRateStat,
+  type MarketUnit,
+  type Profession,
+} from '@/lib/market';
 import { CheckoutButton } from './CheckoutButton';
 
 const PREMIUM_KEY = 'tarifly_premium';
@@ -32,9 +44,17 @@ const defaultInput: PricingInput = {
 export function ToolForm({
   initialInput = defaultInput,
   initialMeta = defaultOpportunityMeta,
+  initialMarket = defaultMarketBenchmark,
+  professions = [],
+  marketRates = [],
+  marketRateStats = [],
 }: {
   initialInput?: PricingInput;
   initialMeta?: OpportunityMeta;
+  initialMarket?: MarketBenchmarkInput;
+  professions?: Profession[];
+  marketRates?: MarketRate[];
+  marketRateStats?: MarketRateStat[];
 }) {
   const [input, setInput] = useState<PricingInput>(initialInput);
   const [fields, setFields] = useState<Record<keyof Omit<PricingInput, 'activityType'>, string>>({
@@ -48,11 +68,16 @@ export function ToolForm({
     competitorPrice: String(initialInput.competitorPrice),
   });
   const [meta, setMeta] = useState<OpportunityMeta>(initialMeta);
+  const [market, setMarket] = useState<MarketBenchmarkInput>(initialMarket);
   const [isPremium, setIsPremium] = useState(false);
   const [premiumStatus, setPremiumStatus] = useState<'loading' | 'free' | 'premium'>('loading');
   const [userId, setUserId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState('');
   const result = useMemo(() => calculatePricing(input), [input]);
+  const marketReferencePrice = Number(market.referencePrice || result.priceIncludingTax);
+  const matchingMarketRate = useMemo(() => findMarketRate(marketRates, market), [marketRates, market]);
+  const matchingMarketStat = useMemo(() => findMarketRateStat(marketRateStats, market), [marketRateStats, market]);
+  const marketComparison = compareToMarket(marketReferencePrice, matchingMarketRate);
 
   useEffect(() => {
     let isMounted = true;
@@ -131,6 +156,13 @@ export function ToolForm({
     }));
   }
 
+  function updateMarket<K extends keyof MarketBenchmarkInput>(name: K, value: MarketBenchmarkInput[K]) {
+    setMarket((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  }
+
   async function saveCalculation() {
     setSaveStatus('');
 
@@ -155,6 +187,13 @@ export function ToolForm({
         deadline: meta.deadline || null,
         client_budget: meta.clientBudget || null,
         next_action: meta.nextAction || null,
+        quote_validated: meta.quoteValidated,
+        quote_validated_at: meta.quoteValidated ? new Date().toISOString() : null,
+        market_profession_slug: market.professionSlug || null,
+        market_city: market.city || null,
+        market_unit: market.unit,
+        market_reference_price: marketReferencePrice || null,
+        market_snapshot: matchingMarketRate ?? null,
         activity_type: input.activityType,
         input,
         result,
@@ -281,7 +320,68 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
               <div className="md:col-span-2">
                 <TextField label="Prochaine action" value={meta.nextAction} onChange={(value) => updateMeta('nextAction', value)} placeholder="Relancer mardi, envoyer une proposition..." />
               </div>
+              <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 md:col-span-2">
+                <input
+                  type="checkbox"
+                  checked={meta.quoteValidated}
+                  onChange={(event) => updateMeta('quoteValidated', event.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-slate-300"
+                />
+                <span>
+                  <span className="block text-sm font-bold text-slate-950">Devis valide / prix accepte</span>
+                  <span className="mt-1 block text-sm leading-6 text-slate-600">
+                    Ce prix alimentera les statistiques anonymisees Tarifly pour ce metier, cette zone et cette unite.
+                  </span>
+                </span>
+              </label>
             </div>
+          </div>
+
+          <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-5">
+            <p className="text-sm font-bold uppercase tracking-[0.18em] text-slate-500">Benchmark marche</p>
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <label className="space-y-2">
+                <span className="text-sm font-semibold text-slate-700">Metier</span>
+                <select
+                  value={market.professionSlug}
+                  onChange={(event) => updateMarket('professionSlug', event.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                >
+                  <option value="">Selectionner un metier</option>
+                  {professions.map((profession) => (
+                    <option key={profession.slug} value={profession.slug}>
+                      {profession.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <TextField label="Ville / zone" value={market.city} onChange={(value) => updateMarket('city', value)} placeholder="Lyon, Paris, Lille..." />
+              <label className="space-y-2">
+                <span className="text-sm font-semibold text-slate-700">Unite comparee</span>
+                <select
+                  value={market.unit}
+                  onChange={(event) => updateMarket('unit', event.target.value as MarketUnit)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                >
+                  {Object.entries(marketUnitLabels).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <NumberField
+                label="Prix a comparer (EUR)"
+                value={market.referencePrice}
+                onChange={(value) => updateMarket('referencePrice', value)}
+              />
+            </div>
+            <MarketBenchmarkCard
+              rate={matchingMarketRate}
+              stat={matchingMarketStat}
+              comparison={marketComparison}
+              referencePrice={marketReferencePrice}
+            />
           </div>
 
           <div className="mt-8 grid gap-5 md:grid-cols-2">
@@ -380,6 +480,74 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
         {saveStatus ? <p className="mt-4 rounded-2xl bg-white/10 px-4 py-3 text-sm text-slate-200">{saveStatus}</p> : null}
       </aside>
     </section>
+  );
+}
+
+function MarketBenchmarkCard({
+  rate,
+  stat,
+  comparison,
+  referencePrice,
+}: {
+  rate: MarketRate | null;
+  stat: MarketRateStat | null;
+  comparison: ReturnType<typeof compareToMarket>;
+  referencePrice: number;
+}) {
+  if (!rate) {
+    return (
+      <div className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+        Aucun benchmark trouve pour cette combinaison metier / zone / unite. Le calcul reste disponible, et vous pourrez
+        enrichir la base marche dans Supabase.
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <div className="grid gap-3 text-sm md:grid-cols-4">
+        <BenchmarkMetric label="Prix bas" value={formatCurrency(rate.price_low)} />
+        <BenchmarkMetric label="Median" value={formatCurrency(rate.price_median)} />
+        <BenchmarkMetric label="Prix haut" value={formatCurrency(rate.price_high)} />
+        <BenchmarkMetric label="Votre prix" value={formatCurrency(referencePrice)} />
+      </div>
+      {comparison ? (
+        <div
+          className={`mt-4 rounded-xl border p-4 ${
+            comparison.level === 'above'
+              ? 'border-amber-200 bg-amber-50 text-amber-950'
+              : comparison.level === 'below'
+                ? 'border-rose-200 bg-rose-50 text-rose-950'
+                : 'border-emerald-200 bg-emerald-50 text-emerald-950'
+          }`}
+        >
+          <p className="font-bold">{comparison.title}</p>
+          <p className="mt-1 text-sm leading-6">{comparison.message}</p>
+          <p className="mt-2 text-xs font-semibold uppercase tracking-[0.16em] opacity-70">
+            Ecart median : {formatPercent(comparison.gapToMedian)}
+          </p>
+        </div>
+      ) : null}
+      {stat ? (
+        <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+          <p className="text-sm font-bold text-slate-950">Donnees utilisateurs validees</p>
+          <div className="mt-3 grid gap-3 text-sm md:grid-cols-3">
+            <BenchmarkMetric label="Moyenne observee" value={formatCurrency(stat.average_price)} />
+            <BenchmarkMetric label="Mediane observee" value={formatCurrency(stat.median_price)} />
+            <BenchmarkMetric label="Devis valides" value={`${stat.sample_count}`} />
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function BenchmarkMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">{label}</p>
+      <p className="mt-1 font-bold text-slate-950">{value}</p>
+    </div>
   );
 }
 

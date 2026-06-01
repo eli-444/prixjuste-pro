@@ -10,6 +10,7 @@ export type OpportunityMeta = {
   deadline: string;
   clientBudget: number;
   nextAction: string;
+  quoteValidated: boolean;
 };
 
 export const defaultOpportunityMeta: OpportunityMeta = {
@@ -20,6 +21,7 @@ export const defaultOpportunityMeta: OpportunityMeta = {
   deadline: '',
   clientBudget: 0,
   nextAction: '',
+  quoteValidated: false,
 };
 
 export const statusLabels: Record<OpportunityStatus, string> = {
