@@ -3,7 +3,7 @@ import { Header } from '@/components/Header';
 import { ToolForm } from '@/components/ToolForm';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { defaultOpportunityMeta, type OpportunityMeta } from '@/lib/opportunities';
-import { defaultMarketBenchmark, type MarketBenchmarkInput, type MarketRate, type MarketRateStat, type Profession } from '@/lib/market';
+import { defaultMarketBenchmark, type MarketBenchmarkInput, type Profession } from '@/lib/market';
 import type { PricingInput } from '@/lib/pricing';
 
 export default async function ToolPage({
@@ -17,25 +17,16 @@ export default async function ToolPage({
   let initialMeta: OpportunityMeta | undefined;
   let initialMarket: MarketBenchmarkInput | undefined;
   let professions: Profession[] = [];
-  let marketRates: MarketRate[] = [];
-  let marketRateStats: MarketRateStat[] = [];
   const supabase = await createServerSupabaseClient();
 
   if (supabase) {
-    const [{ data: professionRows }, { data: rateRows }, { data: statRows }] = await Promise.all([
-      supabase.from('professions').select('slug, label, activity_type').order('label', { ascending: true }),
-      supabase
-        .from('market_rates')
-        .select('id, profession_slug, unit, country, region, department, city, price_low, price_median, price_high, confidence_score, source_label, updated_at')
-        .order('updated_at', { ascending: false }),
-      supabase
-        .from('market_rate_stats')
-        .select('profession_slug, unit, country, region, city, sample_count, average_price, median_price, price_low, price_high, updated_at'),
-    ]);
+    const { data: professionRows } = await supabase
+      .from('professions')
+      .select('slug, label, activity_type')
+      .eq('active', true)
+      .order('label', { ascending: true });
 
     professions = (professionRows ?? []) as Profession[];
-    marketRates = (rateRows ?? []) as MarketRate[];
-    marketRateStats = (statRows ?? []) as MarketRateStat[];
   }
 
   if (calculationId) {
@@ -87,8 +78,6 @@ export default async function ToolPage({
             initialMeta={initialMeta}
             initialMarket={initialMarket}
             professions={professions}
-            marketRates={marketRates}
-            marketRateStats={marketRateStats}
           />
         </div>
       </main>

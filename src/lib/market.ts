@@ -55,19 +55,24 @@ export const defaultMarketBenchmark: MarketBenchmarkInput = {
 };
 
 export const franceRegions = [
-  'Auvergne-Rhone-Alpes',
-  'Bourgogne-Franche-Comte',
+  'Auvergne-Rhône-Alpes',
+  'Bourgogne-Franche-Comté',
   'Bretagne',
   'Centre-Val de Loire',
   'Corse',
   'Grand Est',
   'Hauts-de-France',
-  'Ile-de-France',
+  'Île-de-France',
   'Normandie',
   'Nouvelle-Aquitaine',
   'Occitanie',
   'Pays de la Loire',
-  "Provence-Alpes-Cote d'Azur",
+  "Provence-Alpes-Côte d’Azur",
+  'La Réunion',
+  'Guadeloupe',
+  'Martinique',
+  'Guyane',
+  'Mayotte',
 ] as const;
 
 export const marketUnitLabels: Record<MarketUnit, string> = {
@@ -85,34 +90,27 @@ export function findMarketRate(rates: MarketRate[], benchmark: MarketBenchmarkIn
 
   const normalizedCity = normalize(benchmark.city);
   const normalizedRegion = normalize(benchmark.region);
-  const exactCity = rates.find(
+  const scopedRates = rates.filter(
     (rate) =>
       rate.profession_slug === benchmark.professionSlug &&
       rate.unit === benchmark.unit &&
-      normalize(rate.city ?? '') === normalizedCity,
+      (!benchmark.region || normalize(rate.region ?? '') === normalizedRegion),
   );
+  const exactCity = benchmark.city
+    ? scopedRates.find((rate) => normalize(rate.city ?? '') === normalizedCity)
+    : null;
 
   if (exactCity) {
     return exactCity;
   }
 
-  const exactRegion = rates.find(
-    (rate) =>
-      rate.profession_slug === benchmark.professionSlug &&
-      rate.unit === benchmark.unit &&
-      !rate.city &&
-      normalize(rate.region ?? '') === normalizedRegion,
-  );
+  const exactRegion = scopedRates.find((rate) => !rate.city);
 
   if (exactRegion) {
     return exactRegion;
   }
 
-  return (
-    rates.find((rate) => rate.profession_slug === benchmark.professionSlug && rate.unit === benchmark.unit && !rate.city) ??
-    rates.find((rate) => rate.profession_slug === benchmark.professionSlug && rate.unit === benchmark.unit) ??
-    null
-  );
+  return aggregateMarketRates(scopedRates) ?? null;
 }
 
 export function findMarketRateStat(stats: MarketRateStat[], benchmark: MarketBenchmarkInput) {
@@ -122,33 +120,27 @@ export function findMarketRateStat(stats: MarketRateStat[], benchmark: MarketBen
 
   const normalizedCity = normalize(benchmark.city);
   const normalizedRegion = normalize(benchmark.region);
-  const exactCity = stats.find(
+  const scopedStats = stats.filter(
     (stat) =>
       stat.profession_slug === benchmark.professionSlug &&
       stat.unit === benchmark.unit &&
-      normalize(stat.city ?? '') === normalizedCity,
+      (!benchmark.region || normalize(stat.region ?? '') === normalizedRegion),
   );
+  const exactCity = benchmark.city
+    ? scopedStats.find((stat) => normalize(stat.city ?? '') === normalizedCity)
+    : null;
 
   if (exactCity) {
     return exactCity;
   }
 
-  const exactRegion = stats.find(
-    (stat) =>
-      stat.profession_slug === benchmark.professionSlug &&
-      stat.unit === benchmark.unit &&
-      normalize(stat.region ?? '') === normalizedRegion &&
-      !stat.city,
-  );
+  const exactRegion = scopedStats.find((stat) => !stat.city);
 
   if (exactRegion) {
     return exactRegion;
   }
 
-  return (
-    stats.find((stat) => stat.profession_slug === benchmark.professionSlug && stat.unit === benchmark.unit && !stat.city) ??
-    null
-  );
+  return aggregateMarketRateStats(scopedStats) ?? null;
 }
 
 export function compareToMarket(referencePrice: number, rate: MarketRate | null) {
@@ -185,4 +177,44 @@ function normalize(value: string) {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
+}
+
+function aggregateMarketRates(rates: MarketRate[]) {
+  if (rates.length === 0) {
+    return null;
+  }
+
+  const sample = rates[0];
+  const average = (values: number[]) => values.reduce((total, value) => total + Number(value || 0), 0) / values.length;
+
+  return {
+    ...sample,
+    id: `${sample.profession_slug}-${sample.region ?? 'region'}-${sample.unit}-aggregate`,
+    city: null,
+    price_low: average(rates.map((rate) => rate.price_low)),
+    price_median: average(rates.map((rate) => rate.price_median)),
+    price_high: average(rates.map((rate) => rate.price_high)),
+    confidence_score: Math.round(average(rates.map((rate) => rate.confidence_score))),
+    source_label: 'Moyenne regionale',
+  };
+}
+
+function aggregateMarketRateStats(stats: MarketRateStat[]) {
+  if (stats.length === 0) {
+    return null;
+  }
+
+  const sample = stats[0];
+  const sampleCount = stats.reduce((total, stat) => total + Number(stat.sample_count || 0), 0);
+  const average = (values: number[]) => values.reduce((total, value) => total + Number(value || 0), 0) / values.length;
+
+  return {
+    ...sample,
+    city: '',
+    sample_count: sampleCount,
+    average_price: average(stats.map((stat) => stat.average_price)),
+    median_price: average(stats.map((stat) => stat.median_price)),
+    price_low: average(stats.map((stat) => stat.price_low)),
+    price_high: average(stats.map((stat) => stat.price_high)),
+  };
 }

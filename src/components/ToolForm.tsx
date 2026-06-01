@@ -90,6 +90,9 @@ export function ToolForm({
   const [premiumStatus, setPremiumStatus] = useState<'loading' | 'free' | 'premium'>('loading');
   const [userId, setUserId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState('');
+  const [marketRateRows, setMarketRateRows] = useState<MarketRate[]>(marketRates);
+  const [marketRateStatRows, setMarketRateStatRows] = useState<MarketRateStat[]>(marketRateStats);
+  const [marketDataStatus, setMarketDataStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
   const [quoteError, setQuoteError] = useState('');
   const [quoteForm, setQuoteForm] = useState<QuoteForm>(() => ({
@@ -108,14 +111,14 @@ export function ToolForm({
   const proposedAnalysis = useMemo(() => analyzeProposedPrice(input), [input]);
   const activePrice = getClientPrice(input);
   const availableMarketUnits = useMemo(
-    () => getAvailableMarketUnits(marketRates, market),
-    [marketRates, market.professionSlug, market.region, market.city],
+    () => getAvailableMarketUnits(marketRateRows, market),
+    [marketRateRows, market.professionSlug, market.region, market.city],
   );
   const autoMarketReferencePrice = getAutoMarketReferencePrice(market.unit, input, activePrice);
   const marketReferencePrice =
     market.referenceMode === 'manual' ? Number(market.manualPrice || autoMarketReferencePrice) : autoMarketReferencePrice;
-  const matchingMarketRate = useMemo(() => findMarketRate(marketRates, market), [marketRates, market]);
-  const matchingMarketStat = useMemo(() => findMarketRateStat(marketRateStats, market), [marketRateStats, market]);
+  const matchingMarketRate = useMemo(() => findMarketRate(marketRateRows, market), [marketRateRows, market]);
+  const matchingMarketStat = useMemo(() => findMarketRateStat(marketRateStatRows, market), [marketRateStatRows, market]);
   const marketComparison = compareToMarket(marketReferencePrice, matchingMarketRate);
   const effectiveRiskLevel = getRiskLevel(proposedAnalysis.marginRate);
   const effectiveDiagnosis = getDiagnosis(proposedAnalysis.marginRate);
@@ -132,6 +135,123 @@ export function ToolForm({
       unit: availableMarketUnits[0],
     }));
   }, [availableMarketUnits, market.professionSlug, market.unit]);
+
+  useEffect(() => {
+    if (!market.city) {
+      return;
+    }
+
+    const availableCities = getCitiesForRegion(marketRateRows, market.region, market.professionSlug);
+    if (!availableCities.includes(market.city)) {
+      setMarket((current) => ({
+        ...current,
+        city: '',
+      }));
+    }
+  }, [market.city, market.professionSlug, market.region, marketRateRows]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadFilteredMarketRates() {
+      if (!market.professionSlug || !market.region) {
+        setMarketRateRows([]);
+        setMarketRateStatRows([]);
+        setMarketDataStatus('idle');
+        return;
+      }
+
+      if (!getSupabaseConfig().isConfigured) {
+        setMarketDataStatus('error');
+        return;
+      }
+
+      setMarketDataStatus('loading');
+
+      try {
+        const supabase = createBrowserSupabaseClient();
+        const marketRateQuery = supabase
+          .from('market_rates')
+          .select('id, profession_slug, unit, country, region, department, city, price_low, price_median, price_high, confidence_score, source_label, updated_at')
+          .eq('profession_slug', market.professionSlug)
+          .eq('region', market.region)
+          .order('city', { ascending: true });
+
+        const statQuery = supabase
+          .from('market_rate_stats')
+          .select('profession_slug, unit, country, region, city, sample_count, average_price, median_price, price_low, price_high, updated_at')
+          .eq('profession_slug', market.professionSlug)
+          .eq('region', market.region)
+          .order('city', { ascending: true });
+
+        const [{ data: rateData, error: rateError }, { data: statData, error: statError }] = await Promise.all([
+          marketRateQuery,
+          statQuery,
+        ]);
+
+        if (process.env.NODE_ENV === 'development') {
+          console.info('[Tarifly market_rates]', {
+            selectedProfessionSlug: market.professionSlug,
+            selectedRegion: market.region,
+            selectedCity: market.city || 'Moyenne regionale',
+            query: {
+              table: 'market_rates',
+              filters: {
+                profession_slug: market.professionSlug,
+                region: market.region,
+              },
+              order: 'city',
+            },
+            data: rateData,
+            error: rateError,
+          });
+          console.info('[Tarifly market_rate_stats]', {
+            selectedProfessionSlug: market.professionSlug,
+            selectedRegion: market.region,
+            selectedCity: market.city || 'Moyenne regionale',
+            data: statData,
+            error: statError,
+          });
+        }
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (rateError) {
+          setMarketRateRows([]);
+          setMarketRateStatRows([]);
+          setMarketDataStatus('error');
+          return;
+        }
+
+        setMarketRateRows((rateData ?? []) as MarketRate[]);
+        setMarketRateStatRows(statError ? [] : ((statData ?? []) as MarketRateStat[]));
+        setMarketDataStatus('ready');
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.info('[Tarifly market_rates]', {
+            selectedProfessionSlug: market.professionSlug,
+            selectedRegion: market.region,
+            selectedCity: market.city || 'Moyenne regionale',
+            error,
+          });
+        }
+
+        if (isMounted) {
+          setMarketRateRows([]);
+          setMarketRateStatRows([]);
+          setMarketDataStatus('error');
+        }
+      }
+    }
+
+    loadFilteredMarketRates();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [market.professionSlug, market.region]);
 
   useEffect(() => {
     const storedCompany = window.localStorage.getItem(QUOTE_COMPANY_KEY);
@@ -649,7 +769,7 @@ export function ToolForm({
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
                 >
                   <option value="">Moyenne regionale</option>
-                  {getCitiesForRegion(marketRates, market.region, market.professionSlug).map((city) => (
+                  {getCitiesForRegion(marketRateRows, market.region, market.professionSlug).map((city) => (
                     <option key={city} value={city}>
                       {city}
                     </option>
@@ -698,6 +818,16 @@ export function ToolForm({
                   <p className="mt-1 font-bold text-slate-950">{formatCurrency(marketReferencePrice)}</p>
                 </div>
               )}
+              {marketDataStatus === 'loading' ? (
+                <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500 md:col-span-2">
+                  Chargement des donnees marche...
+                </p>
+              ) : null}
+              {marketDataStatus === 'error' ? (
+                <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 md:col-span-2">
+                  Impossible de charger les donnees marche pour cette selection.
+                </p>
+              ) : null}
             </div>
           </FormSection>
 
