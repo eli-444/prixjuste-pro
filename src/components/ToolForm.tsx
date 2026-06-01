@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Copy, Download, Lock, Save } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText, Lock, Save, X } from 'lucide-react';
 import { analyzeProposedPrice, calculatePricing, getClientPrice, type PricingInput } from '@/lib/pricing';
 import { formatCurrency, formatPercent } from '@/lib/utils';
-import { createTariflyPdf } from '@/lib/pdf';
+import { createQuotePdf, createTariflyPdf } from '@/lib/pdf';
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser';
 import { getSupabaseConfig } from '@/lib/supabase/env';
 import {
@@ -29,6 +29,20 @@ import {
 import { CheckoutButton } from './CheckoutButton';
 
 const PREMIUM_KEY = 'tarifly_premium';
+const QUOTE_COMPANY_KEY = 'tarifly_quote_company';
+
+type QuoteForm = {
+  companyName: string;
+  companyAddress: string;
+  companyEmail: string;
+  companyPhone: string;
+  quoteNumber: string;
+  clientName: string;
+  clientAddress: string;
+  clientEmail: string;
+  description: string;
+  validityDays: string;
+};
 
 const defaultInput: PricingInput = {
   activityType: 'service',
@@ -76,6 +90,20 @@ export function ToolForm({
   const [premiumStatus, setPremiumStatus] = useState<'loading' | 'free' | 'premium'>('loading');
   const [userId, setUserId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState('');
+  const [quoteModalOpen, setQuoteModalOpen] = useState(false);
+  const [quoteError, setQuoteError] = useState('');
+  const [quoteForm, setQuoteForm] = useState<QuoteForm>(() => ({
+    companyName: '',
+    companyAddress: '',
+    companyEmail: '',
+    companyPhone: '',
+    quoteNumber: getDefaultQuoteNumber(),
+    clientName: normalizedInitialInput ? initialMeta.clientName : '',
+    clientAddress: '',
+    clientEmail: '',
+    description: initialMeta.title || 'Prestation',
+    validityDays: '30',
+  }));
   const result = useMemo(() => calculatePricing(input), [input]);
   const proposedAnalysis = useMemo(() => analyzeProposedPrice(input), [input]);
   const activePrice = getClientPrice(input);
@@ -92,6 +120,7 @@ export function ToolForm({
   const effectiveRiskLevel = getRiskLevel(proposedAnalysis.marginRate);
   const effectiveDiagnosis = getDiagnosis(proposedAnalysis.marginRate);
   const effectiveJustification = getClientJustification(input, activePrice);
+  const selectedProfession = professions.find((profession) => profession.slug === market.professionSlug);
 
   useEffect(() => {
     if (!market.professionSlug || availableMarketUnits.length === 0 || availableMarketUnits.includes(market.unit)) {
@@ -103,6 +132,26 @@ export function ToolForm({
       unit: availableMarketUnits[0],
     }));
   }, [availableMarketUnits, market.professionSlug, market.unit]);
+
+  useEffect(() => {
+    const storedCompany = window.localStorage.getItem(QUOTE_COMPANY_KEY);
+    if (!storedCompany) {
+      return;
+    }
+
+    try {
+      const company = JSON.parse(storedCompany) as Partial<QuoteForm>;
+      setQuoteForm((current) => ({
+        ...current,
+        companyName: company.companyName ?? current.companyName,
+        companyAddress: company.companyAddress ?? current.companyAddress,
+        companyEmail: company.companyEmail ?? current.companyEmail,
+        companyPhone: company.companyPhone ?? current.companyPhone,
+      }));
+    } catch {
+      window.localStorage.removeItem(QUOTE_COMPANY_KEY);
+    }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -242,38 +291,6 @@ export function ToolForm({
     }
   }
 
-  function copySummary() {
-    const content = isPremium
-      ? buildPremiumExport()
-      : `Prix client : ${formatCurrency(activePrice)}. Marge estimee : ${formatPercent(
-          proposedAnalysis.marginRate,
-        )}.`;
-    navigator.clipboard.writeText(content);
-    alert('Resultat copie.');
-  }
-
-  function buildPremiumExport() {
-    return `Diagnostic Tarifly
-
-Prix client : ${formatCurrency(activePrice)}
-Couts renseignes : ${formatCurrency(result.baseCost)}
-Frais de paiement estimes : ${formatCurrency(proposedAnalysis.transactionFees)}
-Prix HT estime : ${formatCurrency(proposedAnalysis.priceExcludingTax)}
-Taxe estimee : ${formatCurrency(proposedAnalysis.taxAmount)}
-Profit net estime : ${formatCurrency(proposedAnalysis.netProfit)}
-Marge reelle : ${formatPercent(proposedAnalysis.marginRate)}
-Niveau de risque : ${effectiveRiskLevel}
-
-Diagnostic :
-${effectiveDiagnosis}
-
-Justification client :
-${effectiveJustification}
-
-Checklist :
-${result.checklist.map((item) => `- ${item}`).join('\n')}`;
-  }
-
   async function downloadExport() {
     const blob = await createTariflyPdf({
       title: 'Rapport de rentabilite',
@@ -287,6 +304,41 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
         { label: 'Niveau de risque', value: effectiveRiskLevel },
       ],
       sections: [
+        {
+          title: 'Resume du formulaire',
+          body: [
+            `Opportunite : ${meta.title || 'Calcul sans titre'}`,
+            `Client : ${meta.clientName || 'Non renseigne'}`,
+            `Statut : ${statusLabels[meta.status]}`,
+            `Budget client : ${formatCurrency(Number(meta.clientBudget || 0))}`,
+            `Probabilite : ${formatPercent(meta.probability)}`,
+            `Mode de facturation : ${input.billingMode === 'hourly' ? 'A l heure' : 'Forfait'}`,
+            `Prix client TTC : ${formatCurrency(activePrice)}`,
+          ],
+        },
+        {
+          title: 'Couts et facturation',
+          body: [
+            `Type d activite : ${getActivityTypeLabel(input.activityType)}`,
+            `Cout matiere / achat : ${formatCurrency(input.productCost)}`,
+            `Frais fixes : ${formatCurrency(input.fixedFees)}`,
+            `Frais paiement / plateforme : ${formatPercent(input.transactionFeesPercent)}`,
+            `TVA / taxe : ${formatPercent(input.taxPercent)}`,
+            `Temps prevu : ${input.workHours} h`,
+            `Tarif horaire facture : ${formatCurrency(input.hourlyRate)}`,
+          ],
+        },
+        {
+          title: 'Veille concurrentielle',
+          body: buildMarketExportLines(
+            selectedProfession?.label,
+            market,
+            matchingMarketRate,
+            matchingMarketStat,
+            marketComparison,
+            marketReferencePrice,
+          ),
+        },
         { title: 'Diagnostic', body: effectiveDiagnosis },
         { title: 'Justification client', body: effectiveJustification },
         { title: 'Checklist avant envoi', body: result.checklist },
@@ -300,7 +352,114 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
     URL.revokeObjectURL(url);
   }
 
+  function downloadCsvExport() {
+    const rows = [
+      ['Section', 'Champ', 'Valeur'],
+      ['Client', 'Opportunite', meta.title || 'Calcul sans titre'],
+      ['Client', 'Client / prospect', meta.clientName || 'Non renseigne'],
+      ['Client', 'Statut', statusLabels[meta.status]],
+      ['Client', 'Budget annonce', formatCurrency(Number(meta.clientBudget || 0))],
+      ['Client', 'Probabilite', formatPercent(meta.probability)],
+      ['Couts', 'Type activite', getActivityTypeLabel(input.activityType)],
+      ['Couts', 'Cout matiere / achat', formatCurrency(input.productCost)],
+      ['Couts', 'Frais fixes', formatCurrency(input.fixedFees)],
+      ['Couts', 'Frais paiement / plateforme', formatPercent(input.transactionFeesPercent)],
+      ['Couts', 'TVA / taxe', formatPercent(input.taxPercent)],
+      ['Facturation', 'Mode', input.billingMode === 'hourly' ? 'A l heure' : 'Forfait'],
+      ['Facturation', 'Temps prevu', `${input.workHours} h`],
+      ['Facturation', 'Tarif horaire facture', formatCurrency(input.hourlyRate)],
+      ['Facturation', 'Prix client TTC', formatCurrency(activePrice)],
+      ['Rentabilite', 'Prix HT estime', formatCurrency(proposedAnalysis.priceExcludingTax)],
+      ['Rentabilite', 'Profit net estime', formatCurrency(proposedAnalysis.netProfit)],
+      ['Rentabilite', 'Marge reelle', formatPercent(proposedAnalysis.marginRate)],
+      ['Rentabilite', 'Niveau de risque', effectiveRiskLevel],
+      ...buildMarketCsvRows(selectedProfession?.label, market, matchingMarketRate, matchingMarketStat, marketReferencePrice),
+    ];
+    const csv = rows.map((row) => row.map(escapeCsvValue).join(';')).join('\n');
+    downloadBlob(new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' }), 'resume-tarifly.csv');
+  }
+
+  function openQuoteModal() {
+    setQuoteError('');
+    setQuoteForm((current) => ({
+      ...current,
+      clientName: current.clientName || meta.clientName,
+      description: current.description || meta.title || 'Prestation',
+    }));
+    setQuoteModalOpen(true);
+  }
+
+  function updateQuoteField(name: keyof QuoteForm, value: string) {
+    setQuoteForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  }
+
+  async function generateQuotePdf() {
+    const requiredFields: Array<keyof QuoteForm> = ['companyName', 'companyAddress', 'quoteNumber', 'clientName', 'clientAddress'];
+    const missingField = requiredFields.find((field) => !quoteForm[field].trim());
+
+    if (missingField) {
+      setQuoteError('Merci de remplir les informations entreprise, client et numero de devis.');
+      return;
+    }
+
+    window.localStorage.setItem(
+      QUOTE_COMPANY_KEY,
+      JSON.stringify({
+        companyName: quoteForm.companyName,
+        companyAddress: quoteForm.companyAddress,
+        companyEmail: quoteForm.companyEmail,
+        companyPhone: quoteForm.companyPhone,
+      }),
+    );
+
+    const taxRate = Math.max(0, input.taxPercent) / 100;
+    const quantity = input.billingMode === 'hourly' ? Math.max(0, input.workHours) : 1;
+    const unitPriceExcludingTax =
+      input.billingMode === 'hourly'
+        ? taxRate >= 1
+          ? input.hourlyRate
+          : input.hourlyRate / (1 + taxRate)
+        : proposedAnalysis.priceExcludingTax;
+
+    const blob = await createQuotePdf({
+      quoteNumber: quoteForm.quoteNumber,
+      quoteDate: new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' }).format(new Date()),
+      company: {
+        name: quoteForm.companyName,
+        address: quoteForm.companyAddress,
+        email: quoteForm.companyEmail,
+        phone: quoteForm.companyPhone,
+      },
+      client: {
+        name: quoteForm.clientName,
+        address: quoteForm.clientAddress,
+        email: quoteForm.clientEmail,
+      },
+      line: {
+        description: quoteForm.description || meta.title || 'Prestation',
+        quantity: input.billingMode === 'hourly' ? `${quantity}` : '1',
+        unit: input.billingMode === 'hourly' ? 'heure' : 'forfait',
+        unitPriceExcludingTax: formatCurrency(unitPriceExcludingTax),
+        totalExcludingTax: formatCurrency(proposedAnalysis.priceExcludingTax),
+      },
+      totals: {
+        subtotalExcludingTax: formatCurrency(proposedAnalysis.priceExcludingTax),
+        taxRate: formatPercent(input.taxPercent),
+        taxAmount: formatCurrency(proposedAnalysis.taxAmount),
+        totalIncludingTax: formatCurrency(activePrice),
+      },
+      validityDays: quoteForm.validityDays || '30',
+    });
+
+    downloadBlob(blob, `devis-${sanitizeFilename(quoteForm.quoteNumber)}.pdf`);
+    setQuoteModalOpen(false);
+  }
+
   return (
+    <>
     <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_390px]">
       <div id="hypotheses" className="space-y-6">
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft md:p-8">
@@ -600,28 +759,127 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
           </div>
         )}
 
-        <div id="exports" className="mt-6 grid gap-3 sm:grid-cols-3">
-          <button onClick={copySummary} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-950">
-            <Copy size={16} />
-            Copier
-          </button>
+        <div id="exports" className="mt-6 grid gap-3 sm:grid-cols-2">
           <button
             onClick={isPremium ? downloadExport : undefined}
             disabled={!isPremium}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 px-4 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Download size={16} />
-            PDF
+            Export PDF
           </button>
-          <button onClick={saveCalculation} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 px-4 py-3 text-sm font-semibold">
+          <button
+            onClick={isPremium ? downloadCsvExport : undefined}
+            disabled={!isPremium}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 px-4 py-3 text-sm font-semibold transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <FileSpreadsheet size={16} />
+            Export CSV
+          </button>
+          <button onClick={saveCalculation} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 px-4 py-3 text-sm font-semibold transition hover:bg-white/10">
             <Save size={16} />
-            Sauver
+            Sauvegarder cette opportunite
+          </button>
+          <button type="button" onClick={openQuoteModal} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 px-4 py-3 text-sm font-semibold transition hover:bg-white/10">
+            <FileText size={16} />
+            Generer devis
           </button>
         </div>
 
         {saveStatus ? <p className="mt-4 rounded-2xl bg-white/10 px-4 py-3 text-sm text-slate-200">{saveStatus}</p> : null}
       </aside>
     </section>
+    {quoteModalOpen ? (
+      <QuoteModal
+        form={quoteForm}
+        error={quoteError}
+        onChange={updateQuoteField}
+        onClose={() => setQuoteModalOpen(false)}
+        onGenerate={generateQuotePdf}
+      />
+    ) : null}
+    </>
+  );
+}
+
+function QuoteModal({
+  form,
+  error,
+  onChange,
+  onClose,
+  onGenerate,
+}: {
+  form: QuoteForm;
+  error: string;
+  onChange: (name: keyof QuoteForm, value: string) => void;
+  onClose: () => void;
+  onGenerate: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[90] overflow-y-auto bg-slate-950/40 px-4 py-8">
+      <div className="mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white p-6 shadow-soft md:p-8">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight text-slate-950">Generer un devis</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Le PDF client contient uniquement les informations commerciales du devis.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Fermer"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="mt-6 grid gap-6 md:grid-cols-2">
+          <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <h3 className="font-bold text-slate-950">Votre entreprise</h3>
+            <TextField label="Nom entreprise" value={form.companyName} onChange={(value) => onChange('companyName', value)} />
+            <TextAreaField label="Adresse entreprise" value={form.companyAddress} onChange={(value) => onChange('companyAddress', value)} />
+            <TextField label="Email" value={form.companyEmail} onChange={(value) => onChange('companyEmail', value)} />
+            <TextField label="Telephone" value={form.companyPhone} onChange={(value) => onChange('companyPhone', value)} />
+          </div>
+
+          <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <h3 className="font-bold text-slate-950">Client</h3>
+            <TextField label="Nom client" value={form.clientName} onChange={(value) => onChange('clientName', value)} />
+            <TextAreaField label="Adresse client" value={form.clientAddress} onChange={(value) => onChange('clientAddress', value)} />
+            <TextField label="Email client" value={form.clientEmail} onChange={(value) => onChange('clientEmail', value)} />
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <TextField label="Numero du devis" value={form.quoteNumber} onChange={(value) => onChange('quoteNumber', value)} />
+          <TextField label="Validite (jours)" value={form.validityDays} onChange={(value) => onChange('validityDays', value)} />
+          <div className="md:col-span-3">
+            <TextAreaField label="Intitule de la prestation" value={form.description} onChange={(value) => onChange('description', value)} />
+          </div>
+        </div>
+
+        {error ? <p className="mt-5 rounded-xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{error}</p> : null}
+
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            onClick={onGenerate}
+            className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+          >
+            Generer devis
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -690,6 +948,112 @@ function getClientJustification(input: PricingInput, activePrice: number) {
   }
 
   return `Prix client : ${formatCurrency(activePrice)}. Ce montant correspond au forfait du devis, avec une rentabilite controlee a partir des couts directs, frais fixes, frais de paiement et taxes renseignes.`;
+}
+
+function getActivityTypeLabel(activityType: PricingInput['activityType']) {
+  const labels: Record<PricingInput['activityType'], string> = {
+    service: 'Service',
+    product: 'Produit',
+    mixed: 'Mixte',
+  };
+
+  return labels[activityType];
+}
+
+function buildMarketExportLines(
+  professionLabel: string | undefined,
+  market: MarketBenchmarkInput,
+  rate: MarketRate | null,
+  stat: MarketRateStat | null,
+  comparison: ReturnType<typeof compareToMarket>,
+  referencePrice: number,
+) {
+  const lines = [
+    `Metier : ${professionLabel || 'Non renseigne'}`,
+    `Region : ${market.region || 'Non renseignee'}`,
+    `Ville : ${market.city || 'Moyenne regionale'}`,
+    `Unite comparee : ${marketUnitLabels[market.unit]}`,
+    `Prix utilise : ${formatCurrency(referencePrice)}`,
+  ];
+
+  if (rate) {
+    lines.push(`Prix bas marche : ${formatCurrency(rate.price_low)}`);
+    lines.push(`Prix median marche : ${formatCurrency(rate.price_median)}`);
+    lines.push(`Prix haut marche : ${formatCurrency(rate.price_high)}`);
+  } else {
+    lines.push('Benchmark marche : non disponible pour cette combinaison');
+  }
+
+  if (comparison) {
+    lines.push(`Positionnement : ${comparison.title}`);
+    lines.push(`Ecart median : ${formatPercent(comparison.gapToMedian)}`);
+  }
+
+  if (stat) {
+    lines.push(`Moyenne utilisateurs validee : ${formatCurrency(stat.average_price)}`);
+    lines.push(`Mediane utilisateurs validee : ${formatCurrency(stat.median_price)}`);
+    lines.push(`Devis utilisateurs valides : ${stat.sample_count}`);
+  }
+
+  return lines;
+}
+
+function buildMarketCsvRows(
+  professionLabel: string | undefined,
+  market: MarketBenchmarkInput,
+  rate: MarketRate | null,
+  stat: MarketRateStat | null,
+  referencePrice: number,
+) {
+  const rows = [
+    ['Veille marche', 'Metier', professionLabel || 'Non renseigne'],
+    ['Veille marche', 'Region', market.region || 'Non renseignee'],
+    ['Veille marche', 'Ville', market.city || 'Moyenne regionale'],
+    ['Veille marche', 'Unite comparee', marketUnitLabels[market.unit]],
+    ['Veille marche', 'Prix utilise', formatCurrency(referencePrice)],
+  ];
+
+  if (rate) {
+    rows.push(['Veille marche', 'Prix bas marche', formatCurrency(rate.price_low)]);
+    rows.push(['Veille marche', 'Prix median marche', formatCurrency(rate.price_median)]);
+    rows.push(['Veille marche', 'Prix haut marche', formatCurrency(rate.price_high)]);
+  }
+
+  if (stat) {
+    rows.push(['Veille marche', 'Moyenne utilisateurs validee', formatCurrency(stat.average_price)]);
+    rows.push(['Veille marche', 'Mediane utilisateurs validee', formatCurrency(stat.median_price)]);
+    rows.push(['Veille marche', 'Devis utilisateurs valides', String(stat.sample_count)]);
+  }
+
+  return rows;
+}
+
+function escapeCsvValue(value: string) {
+  return `"${value.replace(/"/g, '""')}"`;
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function getDefaultQuoteNumber() {
+  const now = new Date();
+  const datePart = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+  const timePart = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+  return `DEV-${datePart}-${timePart}`;
+}
+
+function sanitizeFilename(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'devis';
 }
 
 function MarketBenchmarkCard({
@@ -845,6 +1209,28 @@ function TextField({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+      />
+    </label>
+  );
+}
+
+function TextAreaField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="space-y-2">
+      <span className="text-sm font-semibold text-slate-700">{label}</span>
+      <textarea
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        rows={3}
+        className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
       />
     </label>
   );

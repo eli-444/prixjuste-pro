@@ -5,6 +5,36 @@ export type TariflyPdfData = {
   sections: Array<{ title: string; body: string | string[] }>;
 };
 
+export type TariflyQuoteData = {
+  quoteNumber: string;
+  quoteDate: string;
+  company: {
+    name: string;
+    address: string;
+    email?: string;
+    phone?: string;
+  };
+  client: {
+    name: string;
+    address: string;
+    email?: string;
+  };
+  line: {
+    description: string;
+    quantity: string;
+    unit: string;
+    unitPriceExcludingTax: string;
+    totalExcludingTax: string;
+  };
+  totals: {
+    subtotalExcludingTax: string;
+    taxRate: string;
+    taxAmount: string;
+    totalIncludingTax: string;
+  };
+  validityDays: string;
+};
+
 const pageWidth = 1240;
 const pageHeight = 1754;
 const margin = 96;
@@ -41,6 +71,112 @@ export async function createTariflyPdf(data: TariflyPdfData) {
   drawFooter(ctx, pages.length + 1);
   pages.push(dataUrlToBytes(canvas.toDataURL('image/jpeg', 0.92)));
   return buildImagePdf(pages);
+}
+
+export async function createQuotePdf(data: TariflyQuoteData) {
+  const logo = await loadImage('/logo-nav.png');
+  const canvas = createPage();
+  const ctx = canvas.getContext('2d');
+
+  if (!ctx) {
+    throw new Error('Export PDF indisponible sur ce navigateur.');
+  }
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, pageWidth, pageHeight);
+  ctx.textBaseline = 'top';
+
+  const logoWidth = 250;
+  const logoHeight = Math.round((logo.height / logo.width) * logoWidth);
+  ctx.drawImage(logo, margin, 64, logoWidth, logoHeight);
+
+  ctx.fillStyle = '#0f172a';
+  ctx.font = '700 58px Arial';
+  ctx.textAlign = 'right';
+  ctx.fillText('DEVIS', pageWidth - margin, 70);
+  ctx.font = '600 24px Arial';
+  ctx.fillStyle = '#64748b';
+  ctx.fillText(`N° ${data.quoteNumber}`, pageWidth - margin, 146);
+  ctx.fillText(data.quoteDate, pageWidth - margin, 184);
+  ctx.textAlign = 'left';
+
+  drawQuoteParty(ctx, 'Emetteur', data.company.name, data.company.address, [data.company.email, data.company.phone], margin, 270);
+  drawQuoteParty(ctx, 'Client', data.client.name, data.client.address, [data.client.email], 672, 270);
+
+  let y = 560;
+  ctx.fillStyle = '#0f172a';
+  ctx.font = '700 30px Arial';
+  ctx.fillText('Prestation', margin, y);
+  y += 56;
+
+  roundedRect(ctx, margin, y, pageWidth - margin * 2, 88, 16);
+  ctx.fillStyle = '#0f172a';
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '700 20px Arial';
+  ctx.fillText('Description', margin + 28, y + 32);
+  ctx.fillText('Qté', 720, y + 32);
+  ctx.fillText('Unité', 810, y + 32);
+  ctx.fillText('PU HT', 930, y + 32);
+  ctx.textAlign = 'right';
+  ctx.fillText('Total HT', pageWidth - margin - 28, y + 32);
+  ctx.textAlign = 'left';
+  y += 88;
+
+  roundedRect(ctx, margin, y, pageWidth - margin * 2, 150, 16);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#0f172a';
+  ctx.font = '600 22px Arial';
+  wrapText(ctx, data.line.description, 560, 22).slice(0, 3).forEach((line, index) => {
+    ctx.fillText(line, margin + 28, y + 34 + index * 32);
+  });
+  ctx.font = '500 21px Arial';
+  ctx.fillText(data.line.quantity, 720, y + 40);
+  ctx.fillText(data.line.unit, 810, y + 40);
+  ctx.fillText(data.line.unitPriceExcludingTax, 930, y + 40);
+  ctx.textAlign = 'right';
+  ctx.fillText(data.line.totalExcludingTax, pageWidth - margin - 28, y + 40);
+  ctx.textAlign = 'left';
+  y += 210;
+
+  const totalsX = 720;
+  drawQuoteTotal(ctx, 'Total HT', data.totals.subtotalExcludingTax, totalsX, y);
+  drawQuoteTotal(ctx, `TVA (${data.totals.taxRate})`, data.totals.taxAmount, totalsX, y + 62);
+  roundedRect(ctx, totalsX, y + 132, pageWidth - margin - totalsX, 86, 16);
+  ctx.fillStyle = '#0f172a';
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '700 24px Arial';
+  ctx.fillText('Total TTC', totalsX + 28, y + 162);
+  ctx.textAlign = 'right';
+  ctx.fillText(data.totals.totalIncludingTax, pageWidth - margin - 28, y + 162);
+  ctx.textAlign = 'left';
+
+  y += 290;
+  ctx.fillStyle = '#334155';
+  ctx.font = '500 22px Arial';
+  ctx.fillText(`Devis valable ${data.validityDays || '30'} jours a compter de sa date d emission.`, margin, y);
+  ctx.fillText('Bon pour accord :', margin, y + 70);
+  ctx.strokeStyle = '#cbd5e1';
+  ctx.beginPath();
+  ctx.moveTo(margin, y + 150);
+  ctx.lineTo(margin + 360, y + 150);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.beginPath();
+  ctx.moveTo(margin, pageHeight - 120);
+  ctx.lineTo(pageWidth - margin, pageHeight - 120);
+  ctx.stroke();
+  ctx.fillStyle = '#64748b';
+  ctx.font = '400 18px Arial';
+  ctx.fillText('Document client genere depuis Tarifly.', margin, pageHeight - 86);
+
+  return buildImagePdf([dataUrlToBytes(canvas.toDataURL('image/jpeg', 0.94))]);
 }
 
 function createPage() {
@@ -176,6 +312,52 @@ function drawFooter(ctx: CanvasRenderingContext2D, pageNumber: number) {
 
   ctx.textAlign = 'right';
   ctx.fillText(`Page ${pageNumber}`, pageWidth - margin, footerY + 28);
+  ctx.textAlign = 'left';
+}
+
+function drawQuoteParty(
+  ctx: CanvasRenderingContext2D,
+  label: string,
+  name: string,
+  address: string,
+  details: Array<string | undefined>,
+  x: number,
+  y: number,
+) {
+  roundedRect(ctx, x, y, 472, 210, 18);
+  ctx.fillStyle = '#f8fafc';
+  ctx.fill();
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.fillStyle = '#64748b';
+  ctx.font = '700 18px Arial';
+  ctx.fillText(label.toUpperCase(), x + 28, y + 26);
+  ctx.fillStyle = '#0f172a';
+  ctx.font = '700 26px Arial';
+  ctx.fillText(name, x + 28, y + 62);
+
+  ctx.fillStyle = '#334155';
+  ctx.font = '400 20px Arial';
+  const addressLines = address.split('\n').flatMap((line) => wrapText(ctx, line, 400, 20));
+  addressLines.slice(0, 3).forEach((line, index) => {
+    ctx.fillText(line, x + 28, y + 104 + index * 28);
+  });
+
+  details.filter(Boolean).forEach((detail, index) => {
+    ctx.fillText(detail as string, x + 28, y + 176 + index * 26);
+  });
+}
+
+function drawQuoteTotal(ctx: CanvasRenderingContext2D, label: string, value: string, x: number, y: number) {
+  ctx.fillStyle = '#64748b';
+  ctx.font = '600 22px Arial';
+  ctx.fillText(label, x + 28, y);
+  ctx.fillStyle = '#0f172a';
+  ctx.font = '700 24px Arial';
+  ctx.textAlign = 'right';
+  ctx.fillText(value, pageWidth - margin - 28, y);
   ctx.textAlign = 'left';
 }
 
