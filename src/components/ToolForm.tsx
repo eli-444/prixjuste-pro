@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Copy, Download, Lock, Save, Sparkles } from 'lucide-react';
-import { analyzeProposedPrice, calculatePricing, type PricingInput } from '@/lib/pricing';
+import { analyzeProposedPrice, calculatePricing, getClientPrice, type PricingInput } from '@/lib/pricing';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import { createTariflyPdf } from '@/lib/pdf';
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser';
@@ -32,6 +32,7 @@ const PREMIUM_KEY = 'tarifly_premium';
 
 const defaultInput: PricingInput = {
   activityType: 'service',
+  billingMode: 'hourly',
   productCost: 50,
   workHours: 3,
   hourlyRate: 45,
@@ -60,7 +61,7 @@ export function ToolForm({
 }) {
   const normalizedInitialInput = { ...defaultInput, ...initialInput };
   const [input, setInput] = useState<PricingInput>(normalizedInitialInput);
-  const [fields, setFields] = useState<Record<keyof Omit<PricingInput, 'activityType'>, string>>({
+  const [fields, setFields] = useState<Record<keyof Omit<PricingInput, 'activityType' | 'billingMode'>, string>>({
     productCost: String(normalizedInitialInput.productCost),
     workHours: String(normalizedInitialInput.workHours),
     hourlyRate: String(normalizedInitialInput.hourlyRate),
@@ -79,13 +80,16 @@ export function ToolForm({
   const [saveStatus, setSaveStatus] = useState('');
   const result = useMemo(() => calculatePricing(input), [input]);
   const proposedAnalysis = useMemo(() => analyzeProposedPrice(input), [input]);
-  const activePrice = input.proposedPrice > 0 ? input.proposedPrice : result.priceIncludingTax;
+  const activePrice = getClientPrice(input);
   const autoMarketReferencePrice = getAutoMarketReferencePrice(market.unit, input, activePrice);
   const marketReferencePrice =
     market.referenceMode === 'manual' ? Number(market.manualPrice || autoMarketReferencePrice) : autoMarketReferencePrice;
   const matchingMarketRate = useMemo(() => findMarketRate(marketRates, market), [marketRates, market]);
   const matchingMarketStat = useMemo(() => findMarketRateStat(marketRateStats, market), [marketRateStats, market]);
   const marketComparison = compareToMarket(marketReferencePrice, matchingMarketRate);
+  const effectiveRiskLevel = getRiskLevel(proposedAnalysis.marginRate);
+  const effectiveDiagnosis = getDiagnosis(proposedAnalysis.marginRate);
+  const effectiveJustification = getClientJustification(input, activePrice);
 
   useEffect(() => {
     let isMounted = true;
@@ -142,7 +146,7 @@ export function ToolForm({
   }, []);
 
   function updateNumber(name: keyof PricingInput, value: string) {
-    if (name === 'activityType') {
+    if (name === 'activityType' || name === 'billingMode') {
       return;
     }
 
@@ -208,6 +212,9 @@ export function ToolForm({
         result: {
           ...result,
           proposedAnalysis,
+          effectiveRiskLevel,
+          effectiveDiagnosis,
+          effectiveJustification,
         },
         recommended_price: activePrice,
       });
@@ -225,8 +232,8 @@ export function ToolForm({
   function copySummary() {
     const content = isPremium
       ? buildPremiumExport()
-      : `Prix recommande : ${formatCurrency(result.priceIncludingTax)}. Marge estimee : ${formatPercent(
-          result.marginRate,
+      : `Prix client : ${formatCurrency(activePrice)}. Marge estimee : ${formatPercent(
+          proposedAnalysis.marginRate,
         )}.`;
     navigator.clipboard.writeText(content);
     alert('Resultat copie.');
@@ -235,20 +242,20 @@ export function ToolForm({
   function buildPremiumExport() {
     return `Diagnostic Tarifly
 
-Prix recommande : ${formatCurrency(result.priceIncludingTax)}
-Cout total estime : ${formatCurrency(result.baseCost)}
-Frais de paiement estimes : ${formatCurrency(result.transactionFees)}
-Prix HT estime : ${formatCurrency(result.priceExcludingTax)}
-Taxe estimee : ${formatCurrency(result.taxAmount)}
-Profit net estime : ${formatCurrency(result.netProfit)}
-Marge reelle : ${formatPercent(result.marginRate)}
-Niveau de risque : ${result.riskLevel}
+Prix client : ${formatCurrency(activePrice)}
+Couts renseignes : ${formatCurrency(result.baseCost)}
+Frais de paiement estimes : ${formatCurrency(proposedAnalysis.transactionFees)}
+Prix HT estime : ${formatCurrency(proposedAnalysis.priceExcludingTax)}
+Taxe estimee : ${formatCurrency(proposedAnalysis.taxAmount)}
+Profit net estime : ${formatCurrency(proposedAnalysis.netProfit)}
+Marge reelle : ${formatPercent(proposedAnalysis.marginRate)}
+Niveau de risque : ${effectiveRiskLevel}
 
 Diagnostic :
-${result.diagnosis}
+${effectiveDiagnosis}
 
 Justification client :
-${result.clientJustification}
+${effectiveJustification}
 
 Checklist :
 ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
@@ -259,16 +266,16 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
       title: 'Rapport de rentabilite',
       generatedAt: new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeStyle: 'short' }).format(new Date()),
       metrics: [
-        { label: 'Prix recommande TTC', value: formatCurrency(result.priceIncludingTax) },
-        { label: 'Prix hors taxes estime', value: formatCurrency(result.priceExcludingTax) },
-        { label: 'Profit net estime', value: formatCurrency(result.netProfit) },
-        { label: 'Marge reelle', value: formatPercent(result.marginRate) },
-        { label: 'Cout total estime', value: formatCurrency(result.baseCost) },
-        { label: 'Niveau de risque', value: result.riskLevel },
+        { label: 'Prix client TTC', value: formatCurrency(activePrice) },
+        { label: 'Prix hors taxes estime', value: formatCurrency(proposedAnalysis.priceExcludingTax) },
+        { label: 'Profit net estime', value: formatCurrency(proposedAnalysis.netProfit) },
+        { label: 'Marge reelle', value: formatPercent(proposedAnalysis.marginRate) },
+        { label: 'Couts renseignes', value: formatCurrency(result.baseCost) },
+        { label: 'Niveau de risque', value: effectiveRiskLevel },
       ],
       sections: [
-        { title: 'Diagnostic', body: result.diagnosis },
-        { title: 'Justification client', body: result.clientJustification },
+        { title: 'Diagnostic', body: effectiveDiagnosis },
+        { title: 'Justification client', body: effectiveJustification },
         { title: 'Checklist avant envoi', body: result.checklist },
       ],
     });
@@ -291,7 +298,7 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
               </span>
               <div>
                 <h1 className="text-2xl font-bold tracking-tight text-slate-950">Calculateur de prix rentable</h1>
-                <p className="text-sm text-slate-500">Structurez vos couts, votre temps et votre marge cible.</p>
+                <p className="text-sm text-slate-500">Structurez vos couts, votre facturation et votre rentabilite.</p>
               </div>
             </div>
             <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-950">
@@ -356,7 +363,7 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
           <FormSection
             number="02"
             title="Couts"
-            description="Renseignez les couts directs, le temps prevu et les frais necessaires pour produire la mission."
+            description="Renseignez uniquement ce que la mission vous coute reellement, hors temps vendu au client."
           >
           <div className="mt-5 grid gap-5 md:grid-cols-2">
             <label className="space-y-2 md:col-span-2">
@@ -378,8 +385,6 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
             </label>
 
             <NumberField label="Cout matiere / achat (EUR)" value={fields.productCost} onChange={(value) => updateNumber('productCost', value)} />
-            <NumberField label="Temps de travail (heures)" value={fields.workHours} onChange={(value) => updateNumber('workHours', value)} />
-            <NumberField label="Valeur horaire souhaitee (EUR)" value={fields.hourlyRate} onChange={(value) => updateNumber('hourlyRate', value)} />
             <NumberField label="Frais fixes a integrer (EUR)" value={fields.fixedFees} onChange={(value) => updateNumber('fixedFees', value)} />
             <NumberField label="Frais paiement / plateforme (%)" value={fields.transactionFeesPercent} onChange={(value) => updateNumber('transactionFeesPercent', value)} />
             <NumberField label="TVA / taxe (%)" value={fields.taxPercent} onChange={(value) => updateNumber('taxPercent', value)} />
@@ -388,20 +393,59 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
 
           <FormSection
             number="03"
-            title="Prix propose"
-            description="Indiquez le prix que vous comptez annoncer au client. Tarifly calcule automatiquement la marge reelle."
+            title="Facturation client"
+            description="Choisissez comment vous facturez. Le prix final et la marge se calculent automatiquement."
             tone="muted"
           >
           <div className="mt-5 grid gap-5 md:grid-cols-2">
-            <NumberField label="Prix propose au client (EUR TTC)" value={fields.proposedPrice} onChange={(value) => updateNumber('proposedPrice', value)} />
+            <label className="space-y-2 md:col-span-2">
+              <span className="text-sm font-semibold text-slate-700">Mode de facturation</span>
+              <select
+                value={input.billingMode}
+                onChange={(event) =>
+                  setInput((current) => ({
+                    ...current,
+                    billingMode: event.target.value as PricingInput['billingMode'],
+                  }))
+                }
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+              >
+                <option value="hourly">A l'heure : tarif horaire x temps prevu</option>
+                <option value="fixed">Au forfait : montant global du devis</option>
+              </select>
+            </label>
+            {input.billingMode === 'hourly' ? (
+              <>
+                <NumberField label="Tarif horaire facture au client (EUR)" value={fields.hourlyRate} onChange={(value) => updateNumber('hourlyRate', value)} />
+                <NumberField label="Temps prevu (heures)" value={fields.workHours} onChange={(value) => updateNumber('workHours', value)} />
+              </>
+            ) : (
+              <>
+                <NumberField label="Montant global du devis (EUR TTC)" value={fields.proposedPrice} onChange={(value) => updateNumber('proposedPrice', value)} />
+                <NumberField label="Temps prevu (heures)" value={fields.workHours} onChange={(value) => updateNumber('workHours', value)} />
+              </>
+            )}
             <NumberField label="Prix concurrent optionnel (EUR)" value={fields.competitorPrice} onChange={(value) => updateNumber('competitorPrice', value)} />
+            <div className="rounded-xl border border-slate-200 bg-white p-4 md:col-span-2">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Prix calcule</p>
+              <p className="mt-2 text-2xl font-bold text-slate-950">{formatCurrency(activePrice)}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                {input.billingMode === 'hourly'
+                  ? 'Ce montant vient directement du tarif horaire facture multiplie par le temps prevu.'
+                  : 'Ce montant vient du devis forfaitaire saisi. Le temps sert a mesurer votre rentabilite horaire.'}
+              </p>
+            </div>
             <details className="rounded-xl border border-slate-200 bg-white p-4 md:col-span-2">
-              <summary className="cursor-pointer text-sm font-bold text-slate-950">Option : laisser Tarifly recommander un prix avec une marge cible</summary>
-              <div className="mt-4 max-w-sm">
+              <summary className="cursor-pointer text-sm font-bold text-slate-950">Option : objectif de marge pour simulation</summary>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <NumberField label="Marge cible (%)" value={fields.desiredMarginPercent} onChange={(value) => updateNumber('desiredMarginPercent', value)} />
+                <div className="rounded-xl bg-slate-50 px-4 py-3">
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Simulation</p>
+                  <p className="mt-1 font-bold text-slate-950">{formatCurrency(result.priceIncludingTax)}</p>
+                </div>
               </div>
               <p className="mt-3 text-sm leading-6 text-slate-600">
-                Prix recommande par Tarifly avec cette marge cible : {formatCurrency(result.priceIncludingTax)}.
+                Cette option sert uniquement a tester un objectif. La marge reelle affichee a droite reste calculee sur votre prix client.
               </p>
             </details>
           </div>
@@ -516,11 +560,11 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
       <aside id="rentabilite" className="rounded-2xl border border-slate-200 bg-slate-950 p-6 text-white shadow-soft md:p-8 lg:sticky lg:top-32 lg:self-start">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-100">Resultat</p>
         <div className="mt-5">
-          <p className="text-sm text-slate-300">{input.proposedPrice > 0 ? 'Prix propose' : 'Prix recommande'}</p>
+          <p className="text-sm text-slate-300">Prix client calcule</p>
           <p className="mt-1 text-5xl font-bold tracking-tight">{formatCurrency(activePrice)}</p>
-          {input.proposedPrice > 0 ? (
-            <p className="mt-2 text-sm text-slate-300">Recommandation Tarifly : {formatCurrency(result.priceIncludingTax)}</p>
-          ) : null}
+          <p className="mt-2 text-sm text-slate-300">
+            {input.billingMode === 'hourly' ? 'Tarif horaire x temps prevu' : 'Montant forfaitaire du devis'}
+          </p>
         </div>
 
         {premiumStatus === 'loading' ? (
@@ -530,19 +574,19 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
         ) : null}
 
         <div className="mt-6 grid gap-3 text-sm">
-          <Metric label="Cout total estime" value={formatCurrency(result.baseCost)} />
-          <Metric label="Profit net estime" value={isPremium ? formatCurrency(input.proposedPrice > 0 ? proposedAnalysis.netProfit : result.netProfit) : 'Premium'} locked={!isPremium} />
-          <Metric label="Marge reelle" value={isPremium ? formatPercent(input.proposedPrice > 0 ? proposedAnalysis.marginRate : result.marginRate) : 'Premium'} locked={!isPremium} />
-          <Metric label="Taux horaire reel" value={isPremium ? formatCurrency(proposedAnalysis.hourlyReality) : 'Premium'} locked={!isPremium} />
-          <Metric label="Niveau de risque" value={isPremium ? result.riskLevel : 'Premium'} locked={!isPremium} />
+          <Metric label="Couts renseignes" value={formatCurrency(result.baseCost)} />
+          <Metric label="Profit net estime" value={isPremium ? formatCurrency(proposedAnalysis.netProfit) : 'Premium'} locked={!isPremium} />
+          <Metric label="Marge reelle" value={isPremium ? formatPercent(proposedAnalysis.marginRate) : 'Premium'} locked={!isPremium} />
+          <Metric label="Rentabilite horaire" value={isPremium ? formatCurrency(proposedAnalysis.hourlyReality) : 'Premium'} locked={!isPremium} />
+          <Metric label="Niveau de risque" value={isPremium ? effectiveRiskLevel : 'Premium'} locked={!isPremium} />
         </div>
 
         {isPremium ? (
           <div className="mt-6 rounded-2xl bg-white/10 p-4">
             <p className="font-semibold">Diagnostic</p>
-            <p className="mt-2 text-sm leading-6 text-slate-200">{result.diagnosis}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-200">{effectiveDiagnosis}</p>
             <p className="mt-4 font-semibold">Justification client</p>
-            <p className="mt-2 text-sm leading-6 text-slate-200">{result.clientJustification}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-200">{effectiveJustification}</p>
           </div>
         ) : (
           <div className="mt-6 rounded-2xl border border-white/15 bg-white/10 p-4">
@@ -551,7 +595,7 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
               Analyse complete verrouillee
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-200">
-              La version gratuite affiche le prix recommande. Le premium debloque la marge, le risque, le diagnostic et
+              La version gratuite affiche le prix client. Le premium debloque la marge, le risque, le diagnostic et
               l'export PDF professionnel.
             </p>
             <CheckoutButton className="mt-4 w-full rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100">
@@ -618,6 +662,38 @@ function FormSection({
       {children}
     </section>
   );
+}
+
+function getRiskLevel(marginRate: number) {
+  if (marginRate < 15) {
+    return 'Eleve';
+  }
+
+  if (marginRate < 30) {
+    return 'Moyen';
+  }
+
+  return 'Faible';
+}
+
+function getDiagnosis(marginRate: number) {
+  if (marginRate < 15) {
+    return 'La rentabilite est fragile : le prix client couvre difficilement les couts renseignes et laisse peu de marge pour les imprevus.';
+  }
+
+  if (marginRate < 30) {
+    return 'La rentabilite est correcte mais limitee. Verifiez les frais annexes, le temps reel et les ajustements possibles avant d envoyer le devis.';
+  }
+
+  return 'La rentabilite est saine : le prix client couvre les couts renseignes et conserve une marge confortable pour executer la mission proprement.';
+}
+
+function getClientJustification(input: PricingInput, activePrice: number) {
+  if (input.billingMode === 'hourly') {
+    return `Prix client : ${formatCurrency(activePrice)}. Ce montant correspond au tarif horaire facture multiplie par le temps estime, avec les couts directs et frais renseignes controles dans la marge.`;
+  }
+
+  return `Prix client : ${formatCurrency(activePrice)}. Ce montant correspond au forfait du devis, avec une rentabilite controlee a partir des couts directs, frais fixes, frais de paiement et taxes renseignes.`;
 }
 
 function MarketBenchmarkCard({
@@ -711,18 +787,18 @@ function getComparisonLabel(unit: MarketUnit, label: string) {
 
 function getAutoSourceLabel(unit: MarketUnit) {
   if (unit === 'hour') {
-    return 'Utiliser la valeur horaire saisie';
+    return 'Utiliser le tarif horaire facture';
   }
 
-  return 'Utiliser le prix recommande';
+  return 'Utiliser le prix client calcule';
 }
 
 function getAutoExplanation(unit: MarketUnit) {
   if (unit === 'hour') {
-    return 'Ce prix vient du champ valeur horaire souhaitee.';
+    return 'Ce prix vient du tarif horaire facture au client.';
   }
 
-  return 'Ce prix vient du resultat calcule par Tarifly.';
+  return 'Ce prix vient de votre mode de facturation client.';
 }
 
 function BenchmarkMetric({ label, value }: { label: string; value: string }) {

@@ -1,5 +1,6 @@
 export type PricingInput = {
   activityType: 'service' | 'product' | 'mixed';
+  billingMode: 'hourly' | 'fixed';
   productCost: number;
   workHours: number;
   hourlyRate: number;
@@ -40,16 +41,26 @@ function safeNumber(value: number) {
   return Number.isFinite(value) && value > 0 ? value : 0;
 }
 
+export function getClientPrice(input: PricingInput) {
+  if (input.billingMode === 'fixed') {
+    return safeNumber(input.proposedPrice);
+  }
+
+  return safeNumber(input.workHours) * safeNumber(input.hourlyRate);
+}
+
 export function calculatePricing(input: PricingInput): PricingResult {
   const productCost = safeNumber(input.productCost);
-  const laborCost = safeNumber(input.workHours) * safeNumber(input.hourlyRate);
+  const clientLaborPrice = safeNumber(input.workHours) * safeNumber(input.hourlyRate);
   const fixedFees = safeNumber(input.fixedFees);
   const desiredMargin = Math.max(0, input.desiredMarginPercent) / 100;
   const transactionRate = Math.max(0, input.transactionFeesPercent) / 100;
   const taxRate = Math.max(0, input.taxPercent) / 100;
 
-  const baseCost = productCost + laborCost + fixedFees;
-  const priceBeforeFees = desiredMargin >= 1 ? baseCost * 2 : baseCost / (1 - desiredMargin);
+  const baseCost = productCost + fixedFees;
+  const servicePrice = input.billingMode === 'hourly' ? clientLaborPrice : 0;
+  const pricedCosts = desiredMargin >= 1 ? baseCost * 2 : baseCost / (1 - desiredMargin);
+  const priceBeforeFees = servicePrice + pricedCosts;
   const priceExcludingTax = transactionRate >= 1 ? priceBeforeFees : priceBeforeFees / (1 - transactionRate);
   const transactionFees = priceExcludingTax * transactionRate;
   const taxAmount = priceExcludingTax * taxRate;
@@ -103,17 +114,16 @@ export function calculatePricing(input: PricingInput): PricingResult {
 
 export function analyzeProposedPrice(input: PricingInput): ProposedPriceAnalysis {
   const productCost = safeNumber(input.productCost);
-  const laborCost = safeNumber(input.workHours) * safeNumber(input.hourlyRate);
   const fixedFees = safeNumber(input.fixedFees);
   const transactionRate = Math.max(0, input.transactionFeesPercent) / 100;
   const taxRate = Math.max(0, input.taxPercent) / 100;
-  const priceIncludingTax = safeNumber(input.proposedPrice);
+  const priceIncludingTax = getClientPrice(input);
   const priceExcludingTax = taxRate >= 1 ? priceIncludingTax : priceIncludingTax / (1 + taxRate);
   const transactionFees = priceExcludingTax * transactionRate;
-  const baseCost = productCost + laborCost + fixedFees;
+  const baseCost = productCost + fixedFees;
   const netProfit = priceExcludingTax - baseCost - transactionFees;
   const marginRate = priceExcludingTax > 0 ? (netProfit / priceExcludingTax) * 100 : 0;
-  const hourlyReality = safeNumber(input.workHours) > 0 ? (netProfit + laborCost) / safeNumber(input.workHours) : 0;
+  const hourlyReality = safeNumber(input.workHours) > 0 ? netProfit / safeNumber(input.workHours) : 0;
 
   return {
     priceIncludingTax,
