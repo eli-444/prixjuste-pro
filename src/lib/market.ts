@@ -41,7 +41,8 @@ export type MarketBenchmarkInput = {
   region: string;
   city: string;
   unit: MarketUnit;
-  referencePrice: string;
+  referenceMode: 'auto' | 'manual';
+  manualPrice: string;
 };
 
 export const defaultMarketBenchmark: MarketBenchmarkInput = {
@@ -49,7 +50,8 @@ export const defaultMarketBenchmark: MarketBenchmarkInput = {
   region: '',
   city: '',
   unit: 'hour',
-  referencePrice: '',
+  referenceMode: 'auto',
+  manualPrice: '',
 };
 
 export const franceRegions = [

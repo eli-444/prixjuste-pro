@@ -75,7 +75,9 @@ export function ToolForm({
   const [userId, setUserId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState('');
   const result = useMemo(() => calculatePricing(input), [input]);
-  const marketReferencePrice = Number(market.referencePrice || result.priceIncludingTax);
+  const autoMarketReferencePrice = getAutoMarketReferencePrice(market.unit, input, result);
+  const marketReferencePrice =
+    market.referenceMode === 'manual' ? Number(market.manualPrice || autoMarketReferencePrice) : autoMarketReferencePrice;
   const matchingMarketRate = useMemo(() => findMarketRate(marketRates, market), [marketRates, market]);
   const matchingMarketStat = useMemo(() => findMarketRateStat(marketRateStats, market), [marketRateStats, market]);
   const marketComparison = compareToMarket(marketReferencePrice, matchingMarketRate);
@@ -391,7 +393,7 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
                 </select>
               </label>
               <label className="space-y-2">
-                <span className="text-sm font-semibold text-slate-700">Unite comparee</span>
+                <span className="text-sm font-semibold text-slate-700">Prix compare</span>
                 <select
                   value={market.unit}
                   onChange={(event) => updateMarket('unit', event.target.value as MarketUnit)}
@@ -399,23 +401,36 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
                 >
                   {Object.entries(marketUnitLabels).map(([value, label]) => (
                     <option key={value} value={value}>
-                      {label}
+                      {getComparisonLabel(value as MarketUnit, label)}
                     </option>
                   ))}
                 </select>
               </label>
-              <NumberField
-                label="Prix a comparer (EUR)"
-                value={market.referencePrice}
-                onChange={(value) => updateMarket('referencePrice', value)}
-              />
+              <label className="space-y-2">
+                <span className="text-sm font-semibold text-slate-700">Source du prix</span>
+                <select
+                  value={market.referenceMode}
+                  onChange={(event) => updateMarket('referenceMode', event.target.value as MarketBenchmarkInput['referenceMode'])}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                >
+                  <option value="auto">{getAutoSourceLabel(market.unit)}</option>
+                  <option value="manual">Saisir un autre prix</option>
+                </select>
+              </label>
+              {market.referenceMode === 'manual' ? (
+                <NumberField
+                  label={`Prix ${marketUnitLabels[market.unit].toLowerCase()} a comparer (EUR)`}
+                  value={market.manualPrice}
+                  onChange={(value) => updateMarket('manualPrice', value)}
+                />
+              ) : (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Prix utilise</p>
+                  <p className="mt-1 font-bold text-slate-950">{formatCurrency(marketReferencePrice)}</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">{getAutoExplanation(market.unit)}</p>
+                </div>
+              )}
             </div>
-            <MarketBenchmarkCard
-              rate={matchingMarketRate}
-              stat={matchingMarketStat}
-              comparison={marketComparison}
-              referencePrice={marketReferencePrice}
-            />
           </div>
 
           <div className="mt-8 grid gap-5 md:grid-cols-2">
@@ -445,6 +460,15 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
             <NumberField label="Marge cible (%)" value={fields.desiredMarginPercent} onChange={(value) => updateNumber('desiredMarginPercent', value)} />
             <NumberField label="TVA / taxe (%)" value={fields.taxPercent} onChange={(value) => updateNumber('taxPercent', value)} />
             <NumberField label="Prix concurrent optionnel (EUR)" value={fields.competitorPrice} onChange={(value) => updateNumber('competitorPrice', value)} />
+          </div>
+
+          <div className="mt-8">
+            <MarketBenchmarkCard
+              rate={matchingMarketRate}
+              stat={matchingMarketStat}
+              comparison={marketComparison}
+              referencePrice={marketReferencePrice}
+            />
           </div>
         </section>
       </div>
@@ -530,7 +554,7 @@ function MarketBenchmarkCard({
 }) {
   if (!rate) {
     return (
-      <div className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
         Aucun benchmark trouve pour cette combinaison metier / zone / unite. Le calcul reste disponible, et vous pourrez
         enrichir la base marche dans Supabase.
       </div>
@@ -538,7 +562,13 @@ function MarketBenchmarkCard({
   }
 
   return (
-    <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+      <div className="mb-4 flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-sm font-bold uppercase tracking-[0.18em] text-slate-500">Comparatif marche</p>
+          <p className="mt-1 text-sm text-slate-600">Fourchette indicative issue de la base Tarifly.</p>
+        </div>
+      </div>
       <div className="grid gap-3 text-sm md:grid-cols-4">
         <BenchmarkMetric label="Prix bas" value={formatCurrency(rate.price_low)} />
         <BenchmarkMetric label="Median" value={formatCurrency(rate.price_median)} />
@@ -574,6 +604,46 @@ function MarketBenchmarkCard({
       ) : null}
     </div>
   );
+}
+
+function getAutoMarketReferencePrice(unit: MarketUnit, input: PricingInput, result: ReturnType<typeof calculatePricing>) {
+  if (unit === 'hour') {
+    return input.hourlyRate;
+  }
+
+  return result.priceIncludingTax;
+}
+
+function getComparisonLabel(unit: MarketUnit, label: string) {
+  if (unit === 'hour') {
+    return `${label} - compare votre taux horaire`;
+  }
+
+  if (unit === 'day') {
+    return `${label} - compare votre prix jour`;
+  }
+
+  if (unit === 'sqm') {
+    return `${label} - compare un prix au m2`;
+  }
+
+  return `${label} - compare le prix final`;
+}
+
+function getAutoSourceLabel(unit: MarketUnit) {
+  if (unit === 'hour') {
+    return 'Utiliser la valeur horaire saisie';
+  }
+
+  return 'Utiliser le prix recommande';
+}
+
+function getAutoExplanation(unit: MarketUnit) {
+  if (unit === 'hour') {
+    return 'Ce prix vient du champ valeur horaire souhaitee.';
+  }
+
+  return 'Ce prix vient du resultat calcule par Tarifly.';
 }
 
 function BenchmarkMetric({ label, value }: { label: string; value: string }) {

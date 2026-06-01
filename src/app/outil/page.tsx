@@ -70,7 +70,8 @@ export default async function ToolPage({
           region: calculation.market_region ?? '',
           city: calculation.market_city ?? '',
           unit: calculation.market_unit ?? defaultMarketBenchmark.unit,
-          referencePrice: calculation.market_reference_price ? String(calculation.market_reference_price) : '',
+          referenceMode: 'manual',
+          manualPrice: calculation.market_reference_price ? String(calculation.market_reference_price) : '',
         };
       }
     }
