@@ -291,8 +291,12 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
             </div>
           </div>
 
-          <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <p className="text-sm font-bold uppercase tracking-[0.18em] text-slate-500">Opportunite</p>
+          <FormSection
+            number="01"
+            title="Opportunite commerciale"
+            description="Identifiez le prospect, l'etape du pipeline et le contexte de decision."
+            tone="dark"
+          >
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <TextField label="Nom de l'opportunite" value={meta.title} onChange={(value) => updateMeta('title', value)} placeholder="Site vitrine - client X" />
               <TextField label="Client / prospect" value={meta.clientName} onChange={(value) => updateMeta('clientName', value)} placeholder="Nom du client" />
@@ -339,10 +343,13 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
                 </span>
               </label>
             </div>
-          </div>
+          </FormSection>
 
-          <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-5">
-            <p className="text-sm font-bold uppercase tracking-[0.18em] text-slate-500">Benchmark marche</p>
+          <FormSection
+            number="02"
+            title="Positionnement marche"
+            description="Choisissez le metier et la zone pour comparer votre prix a une fourchette indicative."
+          >
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <label className="space-y-2">
                 <span className="text-sm font-semibold text-slate-700">Metier</span>
@@ -431,9 +438,14 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
                 </div>
               )}
             </div>
-          </div>
+          </FormSection>
 
-          <div className="mt-8 grid gap-5 md:grid-cols-2">
+          <FormSection
+            number="03"
+            title="Couts et temps de production"
+            description="Renseignez les couts directs, le temps prevu et les frais necessaires pour produire la mission."
+          >
+          <div className="mt-5 grid gap-5 md:grid-cols-2">
             <label className="space-y-2 md:col-span-2">
               <span className="text-sm font-semibold text-slate-700">Type d'activite</span>
               <select
@@ -457,10 +469,21 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
             <NumberField label="Valeur horaire souhaitee (EUR)" value={fields.hourlyRate} onChange={(value) => updateNumber('hourlyRate', value)} />
             <NumberField label="Frais fixes a integrer (EUR)" value={fields.fixedFees} onChange={(value) => updateNumber('fixedFees', value)} />
             <NumberField label="Frais paiement / plateforme (%)" value={fields.transactionFeesPercent} onChange={(value) => updateNumber('transactionFeesPercent', value)} />
-            <NumberField label="Marge cible (%)" value={fields.desiredMarginPercent} onChange={(value) => updateNumber('desiredMarginPercent', value)} />
             <NumberField label="TVA / taxe (%)" value={fields.taxPercent} onChange={(value) => updateNumber('taxPercent', value)} />
+          </div>
+          </FormSection>
+
+          <FormSection
+            number="04"
+            title="Strategie de prix"
+            description="Fixez votre objectif de marge et, si vous en avez un, un prix concurrent ou budget de comparaison."
+            tone="muted"
+          >
+          <div className="mt-5 grid gap-5 md:grid-cols-2">
+            <NumberField label="Marge cible (%)" value={fields.desiredMarginPercent} onChange={(value) => updateNumber('desiredMarginPercent', value)} />
             <NumberField label="Prix concurrent optionnel (EUR)" value={fields.competitorPrice} onChange={(value) => updateNumber('competitorPrice', value)} />
           </div>
+          </FormSection>
 
           <div className="mt-8">
             <MarketBenchmarkCard
@@ -537,6 +560,41 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
 
         {saveStatus ? <p className="mt-4 rounded-2xl bg-white/10 px-4 py-3 text-sm text-slate-200">{saveStatus}</p> : null}
       </aside>
+    </section>
+  );
+}
+
+function FormSection({
+  number,
+  title,
+  description,
+  children,
+  tone = 'light',
+}: {
+  number: string;
+  title: string;
+  description: string;
+  children: React.ReactNode;
+  tone?: 'light' | 'muted' | 'dark';
+}) {
+  const styles = {
+    light: 'border-slate-200 bg-white',
+    muted: 'border-slate-200 bg-slate-50',
+    dark: 'border-slate-950 bg-slate-950 text-white',
+  };
+  const mutedText = tone === 'dark' ? 'text-slate-300' : 'text-slate-500';
+  const pill = tone === 'dark' ? 'bg-white text-slate-950' : 'bg-slate-950 text-white';
+
+  return (
+    <section className={`mt-8 rounded-2xl border p-5 ${styles[tone]}`}>
+      <div className="flex items-start gap-4">
+        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-sm font-bold ${pill}`}>{number}</span>
+        <div>
+          <h2 className="text-lg font-bold tracking-tight">{title}</h2>
+          <p className={`mt-1 text-sm leading-6 ${mutedText}`}>{description}</p>
+        </div>
+      </div>
+      {children}
     </section>
   );
 }
