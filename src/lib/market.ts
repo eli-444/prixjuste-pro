@@ -26,6 +26,7 @@ export type MarketRateStat = {
   profession_slug: string;
   unit: MarketUnit;
   country: string;
+  region: string | null;
   city: string | null;
   sample_count: number;
   average_price: number;
@@ -37,6 +38,7 @@ export type MarketRateStat = {
 
 export type MarketBenchmarkInput = {
   professionSlug: string;
+  region: string;
   city: string;
   unit: MarketUnit;
   referencePrice: string;
@@ -44,10 +46,27 @@ export type MarketBenchmarkInput = {
 
 export const defaultMarketBenchmark: MarketBenchmarkInput = {
   professionSlug: '',
+  region: '',
   city: '',
   unit: 'hour',
   referencePrice: '',
 };
+
+export const franceRegions = [
+  'Auvergne-Rhone-Alpes',
+  'Bourgogne-Franche-Comte',
+  'Bretagne',
+  'Centre-Val de Loire',
+  'Corse',
+  'Grand Est',
+  'Hauts-de-France',
+  'Ile-de-France',
+  'Normandie',
+  'Nouvelle-Aquitaine',
+  'Occitanie',
+  'Pays de la Loire',
+  "Provence-Alpes-Cote d'Azur",
+] as const;
 
 export const marketUnitLabels: Record<MarketUnit, string> = {
   hour: 'Heure',
@@ -63,6 +82,7 @@ export function findMarketRate(rates: MarketRate[], benchmark: MarketBenchmarkIn
   }
 
   const normalizedCity = normalize(benchmark.city);
+  const normalizedRegion = normalize(benchmark.region);
   const exactCity = rates.find(
     (rate) =>
       rate.profession_slug === benchmark.professionSlug &&
@@ -72,6 +92,18 @@ export function findMarketRate(rates: MarketRate[], benchmark: MarketBenchmarkIn
 
   if (exactCity) {
     return exactCity;
+  }
+
+  const exactRegion = rates.find(
+    (rate) =>
+      rate.profession_slug === benchmark.professionSlug &&
+      rate.unit === benchmark.unit &&
+      !rate.city &&
+      normalize(rate.region ?? '') === normalizedRegion,
+  );
+
+  if (exactRegion) {
+    return exactRegion;
   }
 
   return (
@@ -87,6 +119,7 @@ export function findMarketRateStat(stats: MarketRateStat[], benchmark: MarketBen
   }
 
   const normalizedCity = normalize(benchmark.city);
+  const normalizedRegion = normalize(benchmark.region);
   const exactCity = stats.find(
     (stat) =>
       stat.profession_slug === benchmark.professionSlug &&
@@ -96,6 +129,18 @@ export function findMarketRateStat(stats: MarketRateStat[], benchmark: MarketBen
 
   if (exactCity) {
     return exactCity;
+  }
+
+  const exactRegion = stats.find(
+    (stat) =>
+      stat.profession_slug === benchmark.professionSlug &&
+      stat.unit === benchmark.unit &&
+      normalize(stat.region ?? '') === normalizedRegion &&
+      !stat.city,
+  );
+
+  if (exactRegion) {
+    return exactRegion;
   }
 
   return (

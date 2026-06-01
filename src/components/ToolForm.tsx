@@ -18,6 +18,7 @@ import {
   defaultMarketBenchmark,
   findMarketRate,
   findMarketRateStat,
+  franceRegions,
   marketUnitLabels,
   type MarketBenchmarkInput,
   type MarketRate,
@@ -190,6 +191,7 @@ export function ToolForm({
         quote_validated: meta.quoteValidated,
         quote_validated_at: meta.quoteValidated ? new Date().toISOString() : null,
         market_profession_slug: market.professionSlug || null,
+        market_region: market.region || null,
         market_city: market.city || null,
         market_unit: market.unit,
         market_reference_price: marketReferencePrice || null,
@@ -355,7 +357,39 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
                   ))}
                 </select>
               </label>
-              <TextField label="Ville / zone" value={market.city} onChange={(value) => updateMarket('city', value)} placeholder="Lyon, Paris, Lille..." />
+              <label className="space-y-2">
+                <span className="text-sm font-semibold text-slate-700">Region</span>
+                <select
+                  value={market.region}
+                  onChange={(event) => {
+                    updateMarket('region', event.target.value);
+                    updateMarket('city', '');
+                  }}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                >
+                  <option value="">Selectionner une region</option>
+                  {franceRegions.map((region) => (
+                    <option key={region} value={region}>
+                      {region}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="space-y-2">
+                <span className="text-sm font-semibold text-slate-700">Ville optionnelle</span>
+                <select
+                  value={market.city}
+                  onChange={(event) => updateMarket('city', event.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                >
+                  <option value="">Moyenne regionale</option>
+                  {getCitiesForRegion(marketRates, market.region).map((city) => (
+                    <option key={city} value={city}>
+                      {city}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <label className="space-y-2">
                 <span className="text-sm font-semibold text-slate-700">Unite comparee</span>
                 <select
@@ -549,6 +583,29 @@ function BenchmarkMetric({ label, value }: { label: string; value: string }) {
       <p className="mt-1 font-bold text-slate-950">{value}</p>
     </div>
   );
+}
+
+function getCitiesForRegion(rates: MarketRate[], region: string) {
+  if (!region) {
+    return [];
+  }
+
+  const normalizedRegion = normalize(region);
+  return Array.from(
+    new Set(
+      rates
+        .filter((rate) => normalize(rate.region ?? '') === normalizedRegion && rate.city)
+        .map((rate) => rate.city as string),
+    ),
+  ).sort((a, b) => a.localeCompare(b, 'fr'));
+}
+
+function normalize(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
 }
 
 function TextField({

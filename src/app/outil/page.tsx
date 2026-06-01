@@ -30,7 +30,7 @@ export default async function ToolPage({
         .order('updated_at', { ascending: false }),
       supabase
         .from('market_rate_stats')
-        .select('profession_slug, unit, country, city, sample_count, average_price, median_price, price_low, price_high, updated_at'),
+        .select('profession_slug, unit, country, region, city, sample_count, average_price, median_price, price_low, price_high, updated_at'),
     ]);
 
     professions = (professionRows ?? []) as Profession[];
@@ -46,7 +46,7 @@ export default async function ToolPage({
     if (supabase && user) {
       const { data: calculation } = await supabase
         .from('pricing_calculations')
-        .select('input, title, client_name, opportunity_status, probability, deadline, client_budget, next_action, quote_validated, market_profession_slug, market_city, market_unit, market_reference_price')
+        .select('input, title, client_name, opportunity_status, probability, deadline, client_budget, next_action, quote_validated, market_profession_slug, market_region, market_city, market_unit, market_reference_price')
         .eq('id', calculationId)
         .eq('user_id', user.id)
         .maybeSingle();
@@ -67,6 +67,7 @@ export default async function ToolPage({
         initialMarket = {
           ...defaultMarketBenchmark,
           professionSlug: calculation.market_profession_slug ?? '',
+          region: calculation.market_region ?? '',
           city: calculation.market_city ?? '',
           unit: calculation.market_unit ?? defaultMarketBenchmark.unit,
           referencePrice: calculation.market_reference_price ? String(calculation.market_reference_price) : '',
