@@ -22,7 +22,7 @@ export async function Header() {
     <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-1.5">
         <Link href="/" className="flex items-center gap-3 font-semibold tracking-tight text-slate-950">
-          <Image src="/logo.png" alt="Tarifly" width={320} height={116} className="h-20 w-auto object-contain md:h-24" priority />
+          <Image src="/logo-nav.png" alt="Tarifly" width={1054} height={330} className="h-12 w-auto object-contain md:h-14" priority />
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
@@ -41,14 +41,14 @@ export async function Header() {
           <Link href={user ? '/mon-compte' : '/connexion'} className="hover:text-slate-950">
             {user ? 'Mon compte' : 'Connexion'}
           </Link>
+          <Link href="/outil" className="rounded-full bg-slate-950 px-4 py-2 text-white hover:bg-slate-800">
+            Nouveau calcul
+          </Link>
           {entitlement ? (
             <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-brand-600">
               Premium
             </span>
           ) : null}
-          <Link href="/outil" className="rounded-full bg-slate-950 px-4 py-2 text-white hover:bg-slate-800">
-            Calculer un prix
-          </Link>
         </nav>
 
         <MobileNav isPremium={Boolean(entitlement)} isSignedIn={Boolean(user)} />

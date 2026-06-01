@@ -148,7 +148,6 @@ export default async function AccountPage() {
                 <h2 className="text-2xl font-bold tracking-tight text-slate-950">Historique</h2>
                 <p className="mt-2 text-sm text-slate-500">Les derniers paiements enregistres pour ce compte.</p>
               </div>
-              {isPremium ? <BillingPortalButton /> : null}
             </div>
 
             <div className="mt-6 overflow-hidden rounded-xl border border-slate-200">

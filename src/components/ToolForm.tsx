@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Copy, Download, Lock, Save, Sparkles } from 'lucide-react';
+import { Copy, Download, Lock, Save } from 'lucide-react';
 import { analyzeProposedPrice, calculatePricing, getClientPrice, type PricingInput } from '@/lib/pricing';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import { createTariflyPdf } from '@/lib/pdf';
@@ -304,21 +304,6 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
     <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_390px]">
       <div id="hypotheses" className="space-y-6">
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft md:p-8">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-50 text-brand-600">
-                <Sparkles size={18} />
-              </span>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-950">Calculateur de prix rentable</h1>
-                <p className="text-sm text-slate-500">Structurez vos couts, votre facturation et votre rentabilite.</p>
-              </div>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-950">
-              {premiumStatus === 'loading' ? 'Verification premium...' : isPremium ? 'Premium actif' : 'Mode gratuit'}
-            </div>
-          </div>
-
           <FormSection
             number="01"
             title="Client"
@@ -376,7 +361,6 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
           <FormSection
             number="02"
             title="Couts"
-            description="Renseignez uniquement ce que la mission vous coute reellement, hors temps vendu au client."
           >
           <div className="mt-5 grid gap-5 md:grid-cols-2">
             <label className="space-y-2 md:col-span-2">
@@ -407,7 +391,6 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
           <FormSection
             number="03"
             title="Facturation client"
-            description="Choisissez comment vous facturez. Le prix final et la marge se calculent automatiquement."
             tone="muted"
           >
           <div className="mt-5 grid gap-5 md:grid-cols-2">
@@ -461,7 +444,6 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
           <FormSection
             number="04"
             title="Comparaison marche"
-            description="Choisissez le metier et la zone pour comparer votre prix a une fourchette indicative."
           >
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <label className="space-y-2">
@@ -652,7 +634,7 @@ function FormSection({
 }: {
   number: string;
   title: string;
-  description: string;
+  description?: string;
   children: React.ReactNode;
   tone?: 'light' | 'muted' | 'dark';
 }) {
@@ -670,7 +652,7 @@ function FormSection({
         <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-sm font-bold ${pill}`}>{number}</span>
         <div>
           <h2 className="text-lg font-bold tracking-tight">{title}</h2>
-          <p className={`mt-1 text-sm leading-6 ${mutedText}`}>{description}</p>
+          {description ? <p className={`mt-1 text-sm leading-6 ${mutedText}`}>{description}</p> : null}
         </div>
       </div>
       {children}
@@ -724,8 +706,7 @@ function MarketBenchmarkCard({
   if (!rate) {
     return (
       <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
-        Aucun benchmark trouve pour cette combinaison. Le calcul reste disponible, et vous pourrez enrichir la base marche
-        dans Supabase.
+        Aucun benchmark trouve pour cette combinaison. 
       </div>
     );
   }

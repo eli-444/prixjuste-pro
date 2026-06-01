@@ -22,7 +22,7 @@ export function MobileNav({ isPremium, isSignedIn }: { isPremium: boolean; isSig
         <div className="absolute left-4 right-4 top-[88px] rounded-2xl border border-slate-200 bg-white p-4 shadow-soft">
           <div className="grid gap-2 text-sm font-semibold text-slate-700">
             <Link href="/outil" className="rounded-xl px-3 py-3 hover:bg-slate-100" onClick={() => setOpen(false)}>
-              Calculateur
+              Nouveau calcul
             </Link>
             <Link href="/#tarifs" className="rounded-xl px-3 py-3 hover:bg-slate-100" onClick={() => setOpen(false)}>
               Tarifs

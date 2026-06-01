@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ArrowUpRight, KanbanSquare, Plus } from 'lucide-react';
+import { revalidatePath } from 'next/cache';
+import { ArrowUpRight, KanbanSquare } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { DeleteOpportunityButton } from '@/components/DeleteOpportunityButton';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import { getOpportunityScore, statusLabels, type OpportunityStatus } from '@/lib/opportunities';
@@ -44,6 +46,27 @@ export default async function OpportunitiesPage() {
   const averageMargin =
     rows.length > 0 ? rows.reduce((total, row) => total + Number(row.result?.marginRate ?? 0), 0) / rows.length : 0;
 
+  async function deleteOpportunity(formData: FormData) {
+    'use server';
+
+    const id = String(formData.get('id') ?? '');
+    if (!id) {
+      return;
+    }
+
+    const actionSupabase = await createServerSupabaseClient();
+    const {
+      data: { user: actionUser },
+    } = actionSupabase ? await actionSupabase.auth.getUser() : { data: { user: null } };
+
+    if (!actionSupabase || !actionUser) {
+      return;
+    }
+
+    await actionSupabase.from('pricing_calculations').delete().eq('id', id).eq('user_id', actionUser.id);
+    revalidatePath('/opportunites');
+  }
+
   return (
     <>
       <Header />
@@ -57,10 +80,6 @@ export default async function OpportunitiesPage() {
                 Suivez vos prospects, appels d'offres et calculs sauvegardes avec une lecture orientee rentabilite.
               </p>
             </div>
-            <Link href="/outil" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white">
-              <Plus size={16} />
-              Nouvelle opportunite
-            </Link>
           </div>
 
           <div className="mt-8 grid gap-4 md:grid-cols-3">
@@ -91,29 +110,34 @@ export default async function OpportunitiesPage() {
                   });
 
                   return (
-                    <Link
+                    <div
                       key={row.id}
-                      href={`/opportunites/${row.id}`}
-                      className="grid gap-4 p-5 transition hover:bg-slate-50 lg:grid-cols-[1.3fr_0.9fr_0.8fr_0.7fr_auto] lg:items-center"
+                      className="grid gap-4 p-5 transition hover:bg-slate-50 lg:grid-cols-[1.3fr_0.9fr_0.8fr_0.7fr_auto_auto] lg:items-center"
                     >
-                      <div>
+                      <Link href={`/opportunites/${row.id}`} className="block">
                         <p className="font-bold text-slate-950">{row.title || 'Calcul sans titre'}</p>
                         <p className="mt-1 text-sm text-slate-500">{row.client_name || 'Client non renseigne'}</p>
-                      </div>
-                      <div>
+                      </Link>
+                      <Link href={`/opportunites/${row.id}`} className="block">
                         <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Statut</p>
                         <p className="mt-1 text-sm font-semibold text-slate-700">{statusLabels[row.opportunity_status ?? 'to_price']}</p>
-                      </div>
-                      <div>
+                      </Link>
+                      <Link href={`/opportunites/${row.id}`} className="block">
                         <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Prix</p>
                         <p className="mt-1 text-sm font-semibold text-slate-950">{formatCurrency(Number(row.recommended_price ?? 0))}</p>
-                      </div>
-                      <div>
+                      </Link>
+                      <Link href={`/opportunites/${row.id}`} className="block">
                         <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Score</p>
                         <p className="mt-1 text-sm font-semibold text-slate-950">{score}/100</p>
-                      </div>
-                      <ArrowUpRight className="text-slate-400" size={18} />
-                    </Link>
+                      </Link>
+                      <Link href={`/opportunites/${row.id}`} aria-label="Ouvrir l'opportunite">
+                        <ArrowUpRight className="text-slate-400" size={18} />
+                      </Link>
+                      <form action={deleteOpportunity}>
+                        <input type="hidden" name="id" value={row.id} />
+                        <DeleteOpportunityButton />
+                      </form>
+                    </div>
                   );
                 })}
               </div>

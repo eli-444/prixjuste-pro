@@ -69,7 +69,7 @@ export default function SuccessPage() {
             <p className="text-sm font-bold uppercase tracking-[0.2em] text-slate-500">Prochaines etapes</p>
             <div className="mt-5 grid gap-3">
               <Step icon={<ShieldCheck />} title={isActivated ? 'Acces active' : 'Acces en verification'} text="Votre statut premium est rattache a votre compte." />
-              <Step icon={<LayoutDashboard />} title="Calculer un prix" text="Renseignez vos hypotheses et consultez le diagnostic complet." />
+              <Step icon={<LayoutDashboard />} title="Nouveau calcul" text="Renseignez vos hypotheses et consultez le diagnostic complet." />
               <Step icon={<FileText />} title="Exporter le rapport" text="Telechargez un PDF professionnel pour vos dossiers et propositions." />
             </div>
           </div>
