@@ -79,6 +79,10 @@ export function ToolForm({
   const result = useMemo(() => calculatePricing(input), [input]);
   const proposedAnalysis = useMemo(() => analyzeProposedPrice(input), [input]);
   const activePrice = getClientPrice(input);
+  const availableMarketUnits = useMemo(
+    () => getAvailableMarketUnits(marketRates, market),
+    [marketRates, market.professionSlug, market.region, market.city],
+  );
   const autoMarketReferencePrice = getAutoMarketReferencePrice(market.unit, input, activePrice);
   const marketReferencePrice =
     market.referenceMode === 'manual' ? Number(market.manualPrice || autoMarketReferencePrice) : autoMarketReferencePrice;
@@ -88,6 +92,17 @@ export function ToolForm({
   const effectiveRiskLevel = getRiskLevel(proposedAnalysis.marginRate);
   const effectiveDiagnosis = getDiagnosis(proposedAnalysis.marginRate);
   const effectiveJustification = getClientJustification(input, activePrice);
+
+  useEffect(() => {
+    if (!market.professionSlug || availableMarketUnits.length === 0 || availableMarketUnits.includes(market.unit)) {
+      return;
+    }
+
+    setMarket((current) => ({
+      ...current,
+      unit: availableMarketUnits[0],
+    }));
+  }, [availableMarketUnits, market.professionSlug, market.unit]);
 
   useEffect(() => {
     let isMounted = true;
@@ -453,7 +468,10 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
                 <span className="text-sm font-semibold text-slate-700">Metier</span>
                 <select
                   value={market.professionSlug}
-                  onChange={(event) => updateMarket('professionSlug', event.target.value)}
+                  onChange={(event) => {
+                    updateMarket('professionSlug', event.target.value);
+                    updateMarket('city', '');
+                  }}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
                 >
                   <option value="">Selectionner un metier</option>
@@ -490,7 +508,7 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
                 >
                   <option value="">Moyenne regionale</option>
-                  {getCitiesForRegion(marketRates, market.region).map((city) => (
+                  {getCitiesForRegion(marketRates, market.region, market.professionSlug).map((city) => (
                     <option key={city} value={city}>
                       {city}
                     </option>
@@ -502,11 +520,16 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
                 <select
                   value={market.unit}
                   onChange={(event) => updateMarket('unit', event.target.value as MarketUnit)}
+                  disabled={!market.professionSlug || availableMarketUnits.length === 0}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
                 >
-                  {Object.entries(marketUnitLabels).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {getComparisonLabel(value as MarketUnit, label)}
+                  {!market.professionSlug ? <option value={market.unit}>Selectionner un metier</option> : null}
+                  {market.professionSlug && availableMarketUnits.length === 0 ? (
+                    <option value={market.unit}>Aucune unite disponible</option>
+                  ) : null}
+                  {availableMarketUnits.map((unit) => (
+                    <option key={unit} value={unit}>
+                      {marketUnitLabels[unit]}
                     </option>
                   ))}
                 </select>
@@ -701,8 +724,8 @@ function MarketBenchmarkCard({
   if (!rate) {
     return (
       <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
-        Aucun benchmark trouve pour cette combinaison metier / zone / unite. Le calcul reste disponible, et vous pourrez
-        enrichir la base marche dans Supabase.
+        Aucun benchmark trouve pour cette combinaison. Le calcul reste disponible, et vous pourrez enrichir la base marche
+        dans Supabase.
       </div>
     );
   }
@@ -759,22 +782,6 @@ function getAutoMarketReferencePrice(unit: MarketUnit, input: PricingInput, acti
   return activePrice;
 }
 
-function getComparisonLabel(unit: MarketUnit, label: string) {
-  if (unit === 'hour') {
-    return `${label} - compare votre taux horaire`;
-  }
-
-  if (unit === 'day') {
-    return `${label} - compare votre prix jour`;
-  }
-
-  if (unit === 'sqm') {
-    return `${label} - compare un prix au m2`;
-  }
-
-  return `${label} - compare le prix final`;
-}
-
 function getAutoSourceLabel(unit: MarketUnit) {
   if (unit === 'hour') {
     return 'Utiliser le tarif horaire facture';
@@ -792,7 +799,24 @@ function BenchmarkMetric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function getCitiesForRegion(rates: MarketRate[], region: string) {
+function getAvailableMarketUnits(rates: MarketRate[], benchmark: MarketBenchmarkInput) {
+  const orderedUnits = Object.keys(marketUnitLabels) as MarketUnit[];
+
+  if (!benchmark.professionSlug) {
+    return [];
+  }
+
+  return orderedUnits.filter((unit) =>
+    Boolean(
+      findMarketRate(rates, {
+        ...benchmark,
+        unit,
+      }),
+    ),
+  );
+}
+
+function getCitiesForRegion(rates: MarketRate[], region: string, professionSlug: string) {
   if (!region) {
     return [];
   }
@@ -801,7 +825,12 @@ function getCitiesForRegion(rates: MarketRate[], region: string) {
   return Array.from(
     new Set(
       rates
-        .filter((rate) => normalize(rate.region ?? '') === normalizedRegion && rate.city)
+        .filter(
+          (rate) =>
+            normalize(rate.region ?? '') === normalizedRegion &&
+            (!professionSlug || rate.profession_slug === professionSlug) &&
+            rate.city,
+        )
         .map((rate) => rate.city as string),
     ),
   ).sort((a, b) => a.localeCompare(b, 'fr'));
