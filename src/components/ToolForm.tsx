@@ -40,7 +40,6 @@ const defaultInput: PricingInput = {
   transactionFeesPercent: 2,
   desiredMarginPercent: 35,
   taxPercent: 20,
-  competitorPrice: 0,
   proposedPrice: 0,
 };
 
@@ -69,7 +68,6 @@ export function ToolForm({
     transactionFeesPercent: String(normalizedInitialInput.transactionFeesPercent),
     desiredMarginPercent: String(normalizedInitialInput.desiredMarginPercent),
     taxPercent: String(normalizedInitialInput.taxPercent),
-    competitorPrice: String(normalizedInitialInput.competitorPrice),
     proposedPrice: String(normalizedInitialInput.proposedPrice || ''),
   });
   const [meta, setMeta] = useState<OpportunityMeta>(initialMeta);
@@ -425,15 +423,9 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
                 <NumberField label="Temps prevu (heures)" value={fields.workHours} onChange={(value) => updateNumber('workHours', value)} />
               </>
             )}
-            <NumberField label="Prix concurrent optionnel (EUR)" value={fields.competitorPrice} onChange={(value) => updateNumber('competitorPrice', value)} />
             <div className="rounded-xl border border-slate-200 bg-white p-4 md:col-span-2">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Prix calcule</p>
               <p className="mt-2 text-2xl font-bold text-slate-950">{formatCurrency(activePrice)}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                {input.billingMode === 'hourly'
-                  ? 'Ce montant vient directement du tarif horaire facture multiplie par le temps prevu.'
-                  : 'Ce montant vient du devis forfaitaire saisi. Le temps sert a mesurer votre rentabilite horaire.'}
-              </p>
             </div>
             <details className="rounded-xl border border-slate-200 bg-white p-4 md:col-span-2">
               <summary className="cursor-pointer text-sm font-bold text-slate-950">Option : objectif de marge pour simulation</summary>
@@ -540,7 +532,6 @@ ${result.checklist.map((item) => `- ${item}`).join('\n')}`;
                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                   <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Prix utilise</p>
                   <p className="mt-1 font-bold text-slate-950">{formatCurrency(marketReferencePrice)}</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">{getAutoExplanation(market.unit)}</p>
                 </div>
               )}
             </div>
@@ -721,7 +712,6 @@ function MarketBenchmarkCard({
       <div className="mb-4 flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.18em] text-slate-500">Comparatif marche</p>
-          <p className="mt-1 text-sm text-slate-600">Fourchette indicative issue de la base Tarifly.</p>
         </div>
       </div>
       <div className="grid gap-3 text-sm md:grid-cols-4">
@@ -791,14 +781,6 @@ function getAutoSourceLabel(unit: MarketUnit) {
   }
 
   return 'Utiliser le prix client calcule';
-}
-
-function getAutoExplanation(unit: MarketUnit) {
-  if (unit === 'hour') {
-    return 'Ce prix vient du tarif horaire facture au client.';
-  }
-
-  return 'Ce prix vient de votre mode de facturation client.';
 }
 
 function BenchmarkMetric({ label, value }: { label: string; value: string }) {

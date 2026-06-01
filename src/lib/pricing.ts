@@ -8,7 +8,6 @@ export type PricingInput = {
   transactionFeesPercent: number;
   desiredMarginPercent: number;
   taxPercent: number;
-  competitorPrice: number;
   proposedPrice: number;
 };
 
@@ -20,7 +19,6 @@ export type PricingResult = {
   priceIncludingTax: number;
   netProfit: number;
   marginRate: number;
-  competitorGap: number | null;
   diagnosis: string;
   riskLevel: 'Faible' | 'Moyen' | 'Élevé';
   clientJustification: string;
@@ -67,11 +65,6 @@ export function calculatePricing(input: PricingInput): PricingResult {
   const priceIncludingTax = priceExcludingTax + taxAmount;
   const netProfit = priceExcludingTax - baseCost - transactionFees;
   const marginRate = priceExcludingTax > 0 ? (netProfit / priceExcludingTax) * 100 : 0;
-  const competitorGap =
-    input.competitorPrice > 0
-      ? ((priceIncludingTax - input.competitorPrice) / input.competitorPrice) * 100
-      : null;
-
   let riskLevel: PricingResult['riskLevel'] = 'Faible';
   let diagnosis =
     'Votre prix couvre les principaux postes de coût et conserve une marge exploitable. Vous disposez d’une base solide pour présenter votre proposition.';
@@ -96,7 +89,6 @@ export function calculatePricing(input: PricingInput): PricingResult {
     priceIncludingTax: roundedPrice,
     netProfit,
     marginRate,
-    competitorGap,
     diagnosis,
     riskLevel,
     clientJustification: `Prix recommandé : ${roundedPrice.toFixed(
