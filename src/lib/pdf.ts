@@ -345,8 +345,9 @@ function drawQuoteParty(
     ctx.fillText(line, x + 28, y + 104 + index * 28);
   });
 
+  const detailsY = y + 104 + Math.max(1, addressLines.slice(0, 3).length) * 28 + 14;
   details.filter(Boolean).forEach((detail, index) => {
-    ctx.fillText(detail as string, x + 28, y + 176 + index * 26);
+    ctx.fillText(detail as string, x + 28, detailsY + index * 26);
   });
 }
 
