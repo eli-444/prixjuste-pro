@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Download, FileSpreadsheet, FileText, Lock, Save, X } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText, Info, Lock, Save, X } from 'lucide-react';
 import { analyzeProposedPrice, calculatePricing, getClientPrice, type PricingInput } from '@/lib/pricing';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import { createQuotePdf, createTariflyPdf } from '@/lib/pdf';
@@ -590,10 +590,10 @@ export function ToolForm({
             tone="dark"
           >
             <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <TextField label="Nom de l'opportunite" value={meta.title} onChange={(value) => updateMeta('title', value)} placeholder="Site vitrine - client X" />
-              <TextField label="Client / prospect" value={meta.clientName} onChange={(value) => updateMeta('clientName', value)} placeholder="Nom du client" />
+              <TextField label="Nom de l'opportunite" value={meta.title} onChange={(value) => updateMeta('title', value)} placeholder="Site vitrine - client X" help="Nom interne du calcul ou du dossier commercial que vous voulez retrouver plus tard." />
+              <TextField label="Client / prospect" value={meta.clientName} onChange={(value) => updateMeta('clientName', value)} placeholder="Nom du client" help="Nom de l'entreprise ou de la personne a qui vous allez proposer le prix." />
               <label className="space-y-2">
-                <span className="text-sm font-semibold text-slate-700">Statut commercial</span>
+                <LabelWithInfo label="Statut commercial" help="Position du dossier dans votre suivi : a chiffrer, proposition envoyee, negociation, gagne ou perdu." />
                 <select
                   value={meta.status}
                   onChange={(event) => updateMeta('status', event.target.value as OpportunityStatus)}
@@ -606,10 +606,10 @@ export function ToolForm({
                   ))}
                 </select>
               </label>
-              <NumberField label="Budget annonce par le client (EUR)" value={meta.clientBudget ? String(meta.clientBudget) : ''} onChange={(value) => updateMeta('clientBudget', value === '' ? 0 : Number(value))} />
-              <NumberField label="Probabilite de signature (%)" value={String(meta.probability)} onChange={(value) => updateMeta('probability', value === '' ? 0 : Number(value))} />
+              <NumberField label="Budget annonce par le client (EUR)" value={meta.clientBudget ? String(meta.clientBudget) : ''} onChange={(value) => updateMeta('clientBudget', value === '' ? 0 : Number(value))} help="Montant que le client pense pouvoir investir. Sert a situer votre prix face a son budget." />
+              <NumberField label="Probabilite de signature (%)" value={String(meta.probability)} onChange={(value) => updateMeta('probability', value === '' ? 0 : Number(value))} help="Estimation commerciale de vos chances de gagner le dossier. Sert au tableau des opportunites." />
               <label className="space-y-2">
-                <span className="text-sm font-semibold text-slate-700">Deadline</span>
+                <LabelWithInfo label="Deadline" help="Date limite de reponse ou date a laquelle vous devez relancer le client." />
                 <input
                   type="date"
                   value={meta.deadline}
@@ -618,7 +618,7 @@ export function ToolForm({
                 />
               </label>
               <div className="md:col-span-2">
-                <TextField label="Prochaine action" value={meta.nextAction} onChange={(value) => updateMeta('nextAction', value)} placeholder="Relancer mardi, envoyer une proposition..." />
+                <TextField label="Prochaine action" value={meta.nextAction} onChange={(value) => updateMeta('nextAction', value)} placeholder="Relancer mardi, envoyer une proposition..." help="Prochaine tache a effectuer pour faire avancer l'opportunite." />
               </div>
               <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 md:col-span-2">
                 <input
@@ -643,7 +643,7 @@ export function ToolForm({
           >
           <div className="mt-5 grid gap-5 md:grid-cols-2">
             <label className="space-y-2 md:col-span-2">
-              <span className="text-sm font-semibold text-slate-700">Type d'activite</span>
+              <LabelWithInfo label="Type d'activite" help="Indique si vous vendez surtout du service, un produit, ou un mix des deux. Cela aide a structurer le calcul." />
               <select
                 value={input.activityType}
                 onChange={(event) =>
@@ -660,10 +660,10 @@ export function ToolForm({
               </select>
             </label>
 
-            <NumberField label="Cout matiere / achat (EUR)" value={fields.productCost} onChange={(value) => updateNumber('productCost', value)} />
-            <NumberField label="Frais fixes a integrer (EUR)" value={fields.fixedFees} onChange={(value) => updateNumber('fixedFees', value)} />
-            <NumberField label="Frais paiement / plateforme (%)" value={fields.transactionFeesPercent} onChange={(value) => updateNumber('transactionFeesPercent', value)} />
-            <NumberField label="TVA / taxe (%)" value={fields.taxPercent} onChange={(value) => updateNumber('taxPercent', value)} />
+            <NumberField label="Cout matiere / achat (EUR)" value={fields.productCost} onChange={(value) => updateNumber('productCost', value)} help="Achats, sous-traitance, matiere, licences ou fournitures necessaires pour realiser la mission." />
+            <NumberField label="Frais fixes a integrer (EUR)" value={fields.fixedFees} onChange={(value) => updateNumber('fixedFees', value)} help="Frais a absorber dans ce prix : deplacement, preparation, administratif, outil, emballage ou frais annexes." />
+            <NumberField label="Frais paiement / plateforme (%)" value={fields.transactionFeesPercent} onChange={(value) => updateNumber('transactionFeesPercent', value)} help="Commission Stripe, plateforme, marketplace ou frais de transaction appliques au montant facture." />
+            <NumberField label="TVA / taxe (%)" value={fields.taxPercent} onChange={(value) => updateNumber('taxPercent', value)} help="Taux de TVA ou taxe appliquee au prix client. Mettez 0 si vous n'etes pas concerne." />
           </div>
           </FormSection>
 
@@ -674,7 +674,7 @@ export function ToolForm({
           >
           <div className="mt-5 grid gap-5 md:grid-cols-2">
             <label className="space-y-2 md:col-span-2">
-              <span className="text-sm font-semibold text-slate-700">Mode de facturation</span>
+              <LabelWithInfo label="Mode de facturation" help="Choisissez si le prix client est calcule avec un tarif horaire ou avec un montant forfaitaire." />
               <select
                 value={input.billingMode}
                 onChange={(event) =>
@@ -691,13 +691,13 @@ export function ToolForm({
             </label>
             {input.billingMode === 'hourly' ? (
               <>
-                <NumberField label="Tarif horaire facture au client (EUR)" value={fields.hourlyRate} onChange={(value) => updateNumber('hourlyRate', value)} />
-                <NumberField label="Temps prevu (heures)" value={fields.workHours} onChange={(value) => updateNumber('workHours', value)} />
+                <NumberField label="Tarif horaire facture au client (EUR)" value={fields.hourlyRate} onChange={(value) => updateNumber('hourlyRate', value)} help="Prix que vous facturez au client pour une heure de travail." />
+                <NumberField label="Temps prevu (heures)" value={fields.workHours} onChange={(value) => updateNumber('workHours', value)} help="Nombre d'heures estime pour produire la mission." />
               </>
             ) : (
               <>
-                <NumberField label="Montant global du devis (EUR TTC)" value={fields.proposedPrice} onChange={(value) => updateNumber('proposedPrice', value)} />
-                <NumberField label="Temps prevu (heures)" value={fields.workHours} onChange={(value) => updateNumber('workHours', value)} />
+                <NumberField label="Montant global du devis (EUR TTC)" value={fields.proposedPrice} onChange={(value) => updateNumber('proposedPrice', value)} help="Prix total que vous souhaitez annoncer au client pour la mission." />
+                <NumberField label="Temps prevu (heures)" value={fields.workHours} onChange={(value) => updateNumber('workHours', value)} help="Temps estime pour mesurer la rentabilite horaire du forfait." />
               </>
             )}
             <div className="rounded-xl border border-slate-200 bg-white p-4 md:col-span-2">
@@ -707,7 +707,7 @@ export function ToolForm({
             <details className="rounded-xl border border-slate-200 bg-white p-4 md:col-span-2">
               <summary className="cursor-pointer text-sm font-bold text-slate-950">Option : objectif de marge pour simulation</summary>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <NumberField label="Marge cible (%)" value={fields.desiredMarginPercent} onChange={(value) => updateNumber('desiredMarginPercent', value)} />
+                <NumberField label="Marge cible (%)" value={fields.desiredMarginPercent} onChange={(value) => updateNumber('desiredMarginPercent', value)} help="Objectif de marge utilise uniquement pour simuler un prix recommande." />
                 <div className="rounded-xl bg-slate-50 px-4 py-3">
                   <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Simulation</p>
                   <p className="mt-1 font-bold text-slate-950">{formatCurrency(result.priceIncludingTax)}</p>
@@ -726,7 +726,7 @@ export function ToolForm({
           >
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <label className="space-y-2">
-                <span className="text-sm font-semibold text-slate-700">Metier</span>
+                <LabelWithInfo label="Metier" help="Metier utilise pour retrouver les prix de marche dans Supabase. La valeur technique envoyee est le slug." />
                 <select
                   value={market.professionSlug}
                   onChange={(event) => {
@@ -744,7 +744,7 @@ export function ToolForm({
                 </select>
               </label>
               <label className="space-y-2">
-                <span className="text-sm font-semibold text-slate-700">Region</span>
+                <LabelWithInfo label="Region" help="Zone geographique utilisee pour charger les villes et les prix de marche disponibles." />
                 <select
                   value={market.region}
                   onChange={(event) => {
@@ -762,7 +762,7 @@ export function ToolForm({
                 </select>
               </label>
               <label className="space-y-2">
-                <span className="text-sm font-semibold text-slate-700">Ville optionnelle</span>
+                <LabelWithInfo label="Ville optionnelle" help="Choisissez une ville precise si elle existe, ou gardez Moyenne regionale pour utiliser une moyenne des villes disponibles." />
                 <select
                   value={market.city}
                   onChange={(event) => updateMarket('city', event.target.value)}
@@ -777,7 +777,7 @@ export function ToolForm({
                 </select>
               </label>
               <label className="space-y-2">
-                <span className="text-sm font-semibold text-slate-700">Prix compare</span>
+                <LabelWithInfo label="Prix compare" help="Unite de comparaison disponible pour ce metier et cette region : heure, prestation, jour, projet ou m2." />
                 <select
                   value={market.unit}
                   onChange={(event) => updateMarket('unit', event.target.value as MarketUnit)}
@@ -796,7 +796,7 @@ export function ToolForm({
                 </select>
               </label>
               <label className="space-y-2">
-                <span className="text-sm font-semibold text-slate-700">Source du prix</span>
+                <LabelWithInfo label="Source du prix" help="Utilisez automatiquement le prix calcule par Tarifly ou saisissez un autre prix a comparer au marche." />
                 <select
                   value={market.referenceMode}
                   onChange={(event) => updateMarket('referenceMode', event.target.value as MarketBenchmarkInput['referenceMode'])}
@@ -811,6 +811,7 @@ export function ToolForm({
                   label={`Prix ${marketUnitLabels[market.unit].toLowerCase()} a comparer (EUR)`}
                   value={market.manualPrice}
                   onChange={(value) => updateMarket('manualPrice', value)}
+                  help="Prix manuel utilise pour le benchmark si vous ne voulez pas utiliser le prix calcule automatiquement."
                 />
               ) : (
                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
@@ -968,25 +969,25 @@ function QuoteModal({
         <div className="mt-6 grid gap-6 md:grid-cols-2">
           <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <h3 className="font-bold text-slate-950">Votre entreprise</h3>
-            <TextField label="Nom entreprise" value={form.companyName} onChange={(value) => onChange('companyName', value)} />
-            <TextAreaField label="Adresse entreprise" value={form.companyAddress} onChange={(value) => onChange('companyAddress', value)} />
-            <TextField label="Email" value={form.companyEmail} onChange={(value) => onChange('companyEmail', value)} />
-            <TextField label="Telephone" value={form.companyPhone} onChange={(value) => onChange('companyPhone', value)} />
+            <TextField label="Nom entreprise" value={form.companyName} onChange={(value) => onChange('companyName', value)} help="Nom qui apparaitra comme emetteur du devis." />
+            <TextAreaField label="Adresse entreprise" value={form.companyAddress} onChange={(value) => onChange('companyAddress', value)} help="Adresse postale affichee dans le bloc emetteur du devis." />
+            <TextField label="Email" value={form.companyEmail} onChange={(value) => onChange('companyEmail', value)} help="Email de contact affiche sur le devis." />
+            <TextField label="Telephone" value={form.companyPhone} onChange={(value) => onChange('companyPhone', value)} help="Telephone de contact affiche sur le devis." />
           </div>
 
           <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <h3 className="font-bold text-slate-950">Client</h3>
-            <TextField label="Nom client" value={form.clientName} onChange={(value) => onChange('clientName', value)} />
-            <TextAreaField label="Adresse client" value={form.clientAddress} onChange={(value) => onChange('clientAddress', value)} />
-            <TextField label="Email client" value={form.clientEmail} onChange={(value) => onChange('clientEmail', value)} />
+            <TextField label="Nom client" value={form.clientName} onChange={(value) => onChange('clientName', value)} help="Nom de la personne ou de l'entreprise destinataire du devis." />
+            <TextAreaField label="Adresse client" value={form.clientAddress} onChange={(value) => onChange('clientAddress', value)} help="Adresse du client affichee sur le devis." />
+            <TextField label="Email client" value={form.clientEmail} onChange={(value) => onChange('clientEmail', value)} help="Email du client affiche sur le devis si vous souhaitez l'inclure." />
           </div>
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-3">
-          <TextField label="Numero du devis" value={form.quoteNumber} onChange={(value) => onChange('quoteNumber', value)} />
-          <TextField label="Validite (jours)" value={form.validityDays} onChange={(value) => onChange('validityDays', value)} />
+          <TextField label="Numero du devis" value={form.quoteNumber} onChange={(value) => onChange('quoteNumber', value)} help="Reference unique du devis pour votre suivi commercial et administratif." />
+          <TextField label="Validite (jours)" value={form.validityDays} onChange={(value) => onChange('validityDays', value)} help="Duree pendant laquelle le prix propose reste valable." />
           <div className="md:col-span-3">
-            <TextAreaField label="Intitule de la prestation" value={form.description} onChange={(value) => onChange('description', value)} />
+            <TextAreaField label="Intitule de la prestation" value={form.description} onChange={(value) => onChange('description', value)} help="Description courte de ce qui sera vendu au client dans le devis." />
           </div>
         </div>
 
@@ -1324,15 +1325,17 @@ function TextField({
   value,
   onChange,
   placeholder,
+  help,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  help?: string;
 }) {
   return (
     <label className="space-y-2">
-      <span className="text-sm font-semibold text-slate-700">{label}</span>
+      <LabelWithInfo label={label} help={help} />
       <input
         type="text"
         value={value}
@@ -1348,14 +1351,16 @@ function TextAreaField({
   label,
   value,
   onChange,
+  help,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  help?: string;
 }) {
   return (
     <label className="space-y-2">
-      <span className="text-sm font-semibold text-slate-700">{label}</span>
+      <LabelWithInfo label={label} help={help} />
       <textarea
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -1370,14 +1375,16 @@ function NumberField({
   label,
   value,
   onChange,
+  help,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  help?: string;
 }) {
   return (
     <label className="space-y-2">
-      <span className="text-sm font-semibold text-slate-700">{label}</span>
+      <LabelWithInfo label={label} help={help} />
       <input
         type="number"
         min="0"
@@ -1386,6 +1393,22 @@ function NumberField({
         className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
       />
     </label>
+  );
+}
+
+function LabelWithInfo({ label, help }: { label: string; help?: string }) {
+  return (
+    <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+      {label}
+      {help ? (
+        <span className="group relative inline-flex">
+          <Info size={14} className="cursor-help text-slate-400" aria-label={help} />
+          <span className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 hidden w-64 -translate-x-1/2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium leading-5 text-slate-600 shadow-soft group-hover:block">
+            {help}
+          </span>
+        </span>
+      ) : null}
+    </span>
   );
 }
 
