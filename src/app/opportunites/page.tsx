@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { ArrowUpRight, KanbanSquare } from 'lucide-react';
+import { ArrowUpRight, KanbanSquare, Search } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { DeleteOpportunityButton } from '@/components/DeleteOpportunityButton';
@@ -24,7 +24,21 @@ type CalculationRow = {
   created_at: string;
 };
 
-export default async function OpportunitiesPage() {
+type OpportunitySearchParams = {
+  q?: string;
+  status?: string;
+  sort?: string;
+};
+
+export default async function OpportunitiesPage({
+  searchParams,
+}: {
+  searchParams?: Promise<OpportunitySearchParams>;
+}) {
+  const params = (await searchParams) ?? {};
+  const query = String(params.q ?? '').trim().toLowerCase();
+  const statusFilter = String(params.status ?? 'all');
+  const sort = String(params.sort ?? 'recent');
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
@@ -41,10 +55,22 @@ export default async function OpportunitiesPage() {
     .order('created_at', { ascending: false });
 
   const rows = (calculations ?? []) as CalculationRow[];
+  const filteredRows = sortOpportunityRows(
+    rows.filter((row) => {
+      const matchesStatus = statusFilter === 'all' || row.opportunity_status === statusFilter;
+      const searchable = [row.title, row.client_name, row.next_action].filter(Boolean).join(' ').toLowerCase();
+      const matchesQuery = !query || searchable.includes(query);
+      return matchesStatus && matchesQuery;
+    }),
+    sort,
+  );
   const openRows = rows.filter((row) => !['won', 'lost'].includes(row.opportunity_status ?? ''));
   const potentialRevenue = openRows.reduce((total, row) => total + Number(row.recommended_price ?? 0), 0);
   const averageMargin =
     rows.length > 0 ? rows.reduce((total, row) => total + Number(row.result?.marginRate ?? 0), 0) / rows.length : 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const followUpsDue = openRows.filter((row) => row.deadline && new Date(row.deadline).getTime() <= today.getTime()).length;
 
   async function deleteOpportunity(formData: FormData) {
     'use server';
@@ -82,26 +108,59 @@ export default async function OpportunitiesPage() {
             </div>
           </div>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <div className="mt-8 grid gap-4 md:grid-cols-4">
             <DashboardMetric label="Opportunites ouvertes" value={`${openRows.length}`} />
             <DashboardMetric label="Chiffre potentiel" value={formatCurrency(potentialRevenue)} />
             <DashboardMetric label="Marge moyenne" value={formatPercent(averageMargin)} />
+            <DashboardMetric label="Relances a traiter" value={`${followUpsDue}`} />
           </div>
 
           <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-soft">
-            <div className="flex items-center gap-3 border-b border-slate-200 p-5">
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-50 text-brand-600">
-                <KanbanSquare size={18} />
-              </span>
-              <div>
-                <h2 className="font-bold text-slate-950">Tableau commercial</h2>
-                <p className="text-sm text-slate-500">Prix recommande, marge, statut et prochaine action.</p>
+            <div className="border-b border-slate-200 p-5">
+              <div className="flex items-center gap-3">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-50 text-brand-600">
+                  <KanbanSquare size={18} />
+                </span>
+                <div>
+                  <h2 className="font-bold text-slate-950">Tableau commercial</h2>
+                  <p className="text-sm text-slate-500">Prix recommande, marge, statut et prochaine action.</p>
+                </div>
               </div>
+
+              <form className="mt-5 grid gap-3 lg:grid-cols-[1fr_190px_190px_auto]">
+                <label className="relative">
+                  <span className="sr-only">Rechercher</span>
+                  <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
+                  <input
+                    name="q"
+                    defaultValue={params.q ?? ''}
+                    placeholder="Rechercher un client, un dossier, une action..."
+                    className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm"
+                  />
+                </label>
+                <select name="status" defaultValue={statusFilter} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                  <option value="all">Tous les statuts</option>
+                  {Object.entries(statusLabels).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+                <select name="sort" defaultValue={sort} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                  <option value="recent">Plus recents</option>
+                  <option value="price">Prix le plus haut</option>
+                  <option value="probability">Probabilite</option>
+                  <option value="deadline">Deadline</option>
+                </select>
+                <button type="submit" className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
+                  Filtrer
+                </button>
+              </form>
             </div>
 
-            {rows.length > 0 ? (
+            {filteredRows.length > 0 ? (
               <div className="divide-y divide-slate-200">
-                {rows.map((row) => {
+                {filteredRows.map((row) => {
                   const score = getOpportunityScore({
                     marginRate: row.result?.marginRate ?? 0,
                     probability: row.probability ?? 0,
@@ -143,8 +202,8 @@ export default async function OpportunitiesPage() {
               </div>
             ) : (
               <div className="p-8 text-center">
-                <p className="font-semibold text-slate-950">Aucune opportunite pour le moment.</p>
-                <p className="mt-2 text-sm text-slate-600">Creez un premier calcul pour alimenter votre pipeline.</p>
+                <p className="font-semibold text-slate-950">Aucune opportunite trouvee.</p>
+                <p className="mt-2 text-sm text-slate-600">Ajustez les filtres ou sauvegardez un nouveau calcul.</p>
               </div>
             )}
           </div>
@@ -153,6 +212,26 @@ export default async function OpportunitiesPage() {
       <Footer />
     </>
   );
+}
+
+function sortOpportunityRows(rows: CalculationRow[], sort: string) {
+  return [...rows].sort((a, b) => {
+    if (sort === 'price') {
+      return Number(b.recommended_price ?? 0) - Number(a.recommended_price ?? 0);
+    }
+
+    if (sort === 'probability') {
+      return Number(b.probability ?? 0) - Number(a.probability ?? 0);
+    }
+
+    if (sort === 'deadline') {
+      const aDeadline = a.deadline ? new Date(a.deadline).getTime() : Number.MAX_SAFE_INTEGER;
+      const bDeadline = b.deadline ? new Date(b.deadline).getTime() : Number.MAX_SAFE_INTEGER;
+      return aDeadline - bDeadline;
+    }
+
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
 }
 
 function DashboardMetric({ label, value }: { label: string; value: string }) {

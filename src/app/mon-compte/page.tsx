@@ -5,8 +5,10 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { SignOutButton } from '@/components/SignOutButton';
 import { BillingPortalButton } from '@/components/BillingPortalButton';
+import { PreferencesForm } from '@/components/PreferencesForm';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getSupabaseConfig } from '@/lib/supabase/env';
+import type { Profession } from '@/lib/market';
 
 export default async function AccountPage() {
   const { isConfigured } = getSupabaseConfig();
@@ -37,8 +39,21 @@ export default async function AccountPage() {
     redirect('/connexion?redirect=/mon-compte');
   }
 
-  const [{ data: profile }, { data: entitlement }, { count: calculationCount }, { data: purchases }] = await Promise.all([
-    supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle(),
+  const [
+    { data: profile },
+    { data: entitlement },
+    { count: calculationCount },
+    { data: purchases },
+    { data: professions },
+    { count: quoteCount },
+    { data: recentQuotes },
+  ] =
+    await Promise.all([
+    supabase
+      .from('profiles')
+      .select('full_name, activity_type, profession_slug, city, region, default_tax_percent, default_hourly_rate, company_name, company_address, company_email, company_phone')
+      .eq('id', user.id)
+      .maybeSingle(),
     supabase
       .from('premium_entitlements')
       .select('status, source, valid_until, updated_at')
@@ -49,6 +64,14 @@ export default async function AccountPage() {
     supabase
       .from('purchases')
       .select('id, amount_total, currency, status, created_at, stripe_session_id')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(5),
+    supabase.from('professions').select('slug, label, activity_type').eq('active', true).order('label', { ascending: true }),
+    supabase.from('quotes').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+    supabase
+      .from('quotes')
+      .select('id, public_token, quote_number, status, total_including_tax, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(5),
@@ -108,7 +131,7 @@ export default async function AccountPage() {
                 <div className="mt-8 grid gap-4 sm:grid-cols-3">
                   <SummaryItem icon={<Calculator />} label="Calculs sauvegardes" value={`${calculationCount ?? 0}`} />
                   <SummaryItem icon={<CreditCard />} label="Abonnement" value={isPremium ? 'Actif' : 'Aucun'} />
-                  <SummaryItem icon={<FileText />} label="Documents" value={purchases?.length ? `${purchases.length}` : '0'} />
+                  <SummaryItem icon={<FileText />} label="Devis generes" value={`${quoteCount ?? 0}`} />
                 </div>
               </section>
 
@@ -141,6 +164,60 @@ export default async function AccountPage() {
               </aside>
             </div>
           </div>
+
+          <PreferencesForm
+            userId={user.id}
+            professions={(professions ?? []) as Profession[]}
+            initialValues={{
+              fullName: profile?.full_name ?? '',
+              activityType: profile?.activity_type ?? 'service',
+              professionSlug: profile?.profession_slug ?? '',
+              region: profile?.region ?? '',
+              city: profile?.city ?? '',
+              defaultTaxPercent: String(profile?.default_tax_percent ?? 20),
+              defaultHourlyRate: String(profile?.default_hourly_rate ?? 0),
+              companyName: profile?.company_name ?? '',
+              companyAddress: profile?.company_address ?? '',
+              companyEmail: profile?.company_email ?? user.email ?? '',
+              companyPhone: profile?.company_phone ?? '',
+            }}
+          />
+
+          <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-soft md:p-8">
+            <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight text-slate-950">Devis sauvegardes</h2>
+                <p className="mt-2 text-sm text-slate-500">Les derniers devis generes depuis l'outil.</p>
+              </div>
+              <Link href="/outil" className="text-sm font-semibold text-brand-600 transition hover:text-brand-700">
+                Nouveau devis
+              </Link>
+            </div>
+
+            <div className="mt-6 overflow-hidden rounded-xl border border-slate-200">
+              {recentQuotes && recentQuotes.length > 0 ? (
+                <div className="divide-y divide-slate-200">
+                  {recentQuotes.map((quote) => (
+                    <div key={quote.id} className="grid gap-3 p-4 text-sm md:grid-cols-[1fr_auto_auto] md:items-center">
+                      <div>
+                        <p className="font-semibold text-slate-950">Devis {quote.quote_number}</p>
+                        <p className="mt-1 text-slate-500">{formatDate(quote.created_at)}</p>
+                        <Link href={`/devis/${quote.public_token}`} target="_blank" className="mt-2 inline-flex text-xs font-bold uppercase tracking-[0.14em] text-brand-600">
+                          Lien client
+                        </Link>
+                      </div>
+                      <p className="font-semibold text-slate-950">{formatEuro(Number(quote.total_including_tax ?? 0))}</p>
+                      <PaymentStatus status={quote.status ?? 'generated'} />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-6 text-sm leading-6 text-slate-600">
+                  Aucun devis n'a encore ete genere depuis l'outil.
+                </div>
+              )}
+            </div>
+          </section>
 
           <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-soft md:p-8">
             <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
@@ -176,6 +253,13 @@ export default async function AccountPage() {
       <Footer />
     </>
   );
+}
+
+function formatEuro(amount: number) {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(amount);
 }
 
 function StatusBadge({ active }: { active: boolean }) {

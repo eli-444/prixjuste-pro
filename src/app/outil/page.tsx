@@ -18,22 +18,47 @@ export default async function ToolPage({
   let initialMarket: MarketBenchmarkInput | undefined;
   let professions: Profession[] = [];
   const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
 
   if (supabase) {
-    const { data: professionRows } = await supabase
-      .from('professions')
-      .select('slug, label, activity_type')
-      .eq('active', true)
-      .order('label', { ascending: true });
+    const [{ data: professionRows }, { data: profile }] = await Promise.all([
+      supabase.from('professions').select('slug, label, activity_type').eq('active', true).order('label', { ascending: true }),
+      user
+        ? supabase
+            .from('profiles')
+            .select('activity_type, profession_slug, city, region, default_tax_percent, default_hourly_rate')
+            .eq('id', user.id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
 
     professions = (professionRows ?? []) as Profession[];
+
+    if (profile && !calculationId) {
+      initialInput = {
+        activityType: profile.activity_type ?? 'service',
+        billingMode: 'hourly',
+        productCost: 0,
+        workHours: 1,
+        hourlyRate: Number(profile.default_hourly_rate ?? 0),
+        fixedFees: 0,
+        transactionFeesPercent: 0,
+        desiredMarginPercent: 30,
+        taxPercent: Number(profile.default_tax_percent ?? 20),
+        proposedPrice: 0,
+      };
+      initialMarket = {
+        ...defaultMarketBenchmark,
+        professionSlug: profile.profession_slug ?? '',
+        region: profile.region ?? '',
+        city: profile.city ?? '',
+      };
+    }
   }
 
   if (calculationId) {
-    const {
-      data: { user },
-    } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
-
     if (supabase && user) {
       const { data: calculation } = await supabase
         .from('pricing_calculations')
@@ -74,6 +99,7 @@ export default async function ToolPage({
       <main className="bg-slate-100">
         <div className="mx-auto max-w-6xl px-4 py-12 md:py-16">
           <ToolForm
+            currentCalculationId={calculationId}
             initialInput={initialInput}
             initialMeta={initialMeta}
             initialMarket={initialMarket}

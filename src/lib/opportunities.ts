@@ -50,3 +50,35 @@ export function getOpportunityScore({
 
   return Math.round(Math.min(100, marginScore + probabilityScore + budgetScore));
 }
+
+export function getQuoteHealthScore({
+  marginRate,
+  marketGapToMedian,
+  clientBudget,
+  recommendedPrice,
+}: {
+  marginRate: number;
+  marketGapToMedian?: number | null;
+  clientBudget?: number | null;
+  recommendedPrice: number;
+}) {
+  const marginScore = Math.min(45, Math.max(0, marginRate) * 1.2);
+  const gap = typeof marketGapToMedian === 'number' ? Math.abs(marketGapToMedian) : 0;
+  const marketScore = Math.max(0, 35 - Math.min(35, gap * 0.7));
+  const budgetScore =
+    clientBudget && clientBudget > 0 ? Math.max(0, Math.min(20, (clientBudget / Math.max(recommendedPrice, 1)) * 20)) : 10;
+
+  return Math.round(Math.min(100, marginScore + marketScore + budgetScore));
+}
+
+export function getQuoteHealthLabel(score: number) {
+  if (score >= 75) {
+    return 'Devis solide';
+  }
+
+  if (score >= 55) {
+    return 'Devis a surveiller';
+  }
+
+  return 'Devis risque';
+}

@@ -6,7 +6,13 @@ import { Footer } from '@/components/Footer';
 import { SavedCalculationActions } from '@/components/SavedCalculationActions';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { formatCurrency, formatPercent } from '@/lib/utils';
-import { getOpportunityScore, statusLabels, type OpportunityStatus } from '@/lib/opportunities';
+import {
+  getOpportunityScore,
+  getQuoteHealthLabel,
+  getQuoteHealthScore,
+  statusLabels,
+  type OpportunityStatus,
+} from '@/lib/opportunities';
 import { compareToMarket, marketUnitLabels, type MarketRate, type MarketUnit } from '@/lib/market';
 import type { PricingInput, PricingResult } from '@/lib/pricing';
 
@@ -29,6 +35,24 @@ type CalculationDetail = {
   activity_type: PricingInput['activityType'];
   input: PricingInput;
   result: PricingResult;
+  recommended_price: number | null;
+  created_at: string;
+};
+
+type QuoteRow = {
+  id: string;
+  public_token: string;
+  quote_number: string;
+  status: string;
+  deposit_status: string;
+  total_including_tax: number | null;
+  created_at: string;
+};
+
+type ClientHistoryRow = {
+  id: string;
+  title: string | null;
+  opportunity_status: OpportunityStatus | null;
   recommended_price: number | null;
   created_at: string;
 };
@@ -68,6 +92,30 @@ export default async function OpportunityDetailPage({
     clientBudget: calculation.client_budget ?? 0,
     recommendedPrice: Number(calculation.recommended_price ?? 0),
   });
+  const quoteHealthScore = getQuoteHealthScore({
+    marginRate: calculation.result.marginRate,
+    marketGapToMedian: marketComparison?.gapToMedian ?? null,
+    clientBudget: calculation.client_budget,
+    recommendedPrice: Number(calculation.recommended_price ?? 0),
+  });
+  const [{ data: quotes }, { data: clientHistory }] = await Promise.all([
+    supabase
+      .from('quotes')
+      .select('id, public_token, quote_number, status, deposit_status, total_including_tax, created_at')
+      .eq('calculation_id', calculation.id)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false }),
+    calculation.client_name
+      ? supabase
+          .from('pricing_calculations')
+          .select('id, title, opportunity_status, recommended_price, created_at')
+          .eq('user_id', user.id)
+          .eq('client_name', calculation.client_name)
+          .neq('id', calculation.id)
+          .order('created_at', { ascending: false })
+          .limit(5)
+      : Promise.resolve({ data: [] }),
+  ]);
 
   return (
     <>
@@ -91,10 +139,12 @@ export default async function OpportunityDetailPage({
                 <Metric label="Prix recommande" value={formatCurrency(Number(calculation.recommended_price ?? 0))} />
                 <Metric label="Marge reelle" value={formatPercent(calculation.result.marginRate)} />
                 <Metric label="Score opportunite" value={`${score}/100`} />
+                <Metric label="Score devis" value={`${quoteHealthScore}/100`} />
               </div>
 
               <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-5">
                 <h2 className="text-xl font-bold tracking-tight text-slate-950">Diagnostic</h2>
+                <p className="mt-3 font-bold text-brand-600">{getQuoteHealthLabel(quoteHealthScore)}</p>
                 <p className="mt-3 leading-7 text-slate-600">{calculation.result.diagnosis}</p>
                 <h3 className="mt-6 font-bold text-slate-950">Justification client</h3>
                 <p className="mt-2 leading-7 text-slate-600">{calculation.result.clientJustification}</p>
@@ -106,6 +156,38 @@ export default async function OpportunityDetailPage({
             </article>
 
             <aside className="space-y-6">
+              <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
+                <h2 className="font-bold text-slate-950">Devis rattaches</h2>
+                {quotes && quotes.length > 0 ? (
+                  <div className="mt-5 space-y-3">
+                    {(quotes as QuoteRow[]).map((quote) => (
+                      <div key={quote.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-bold text-slate-950">Devis {quote.quote_number}</p>
+                            <p className="mt-1 text-slate-500">{formatDate(quote.created_at)}</p>
+                          </div>
+                          <p className="font-semibold text-slate-950">{formatCurrency(Number(quote.total_including_tax ?? 0))}</p>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em]">
+                          <span className="rounded-full bg-white px-3 py-1 text-slate-600">{quote.status}</span>
+                          <span className="rounded-full bg-white px-3 py-1 text-slate-600">Acompte {quote.deposit_status}</span>
+                        </div>
+                        <Link
+                          href={`/devis/${quote.public_token}`}
+                          target="_blank"
+                          className="mt-3 inline-flex text-sm font-semibold text-brand-600 hover:text-brand-700"
+                        >
+                          Ouvrir le lien client
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm leading-6 text-slate-600">Aucun devis client n'est encore rattache a cette opportunite.</p>
+                )}
+              </section>
+
               <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
                 <div className="flex items-center gap-3">
                   <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-50 text-brand-600">
@@ -120,6 +202,25 @@ export default async function OpportunityDetailPage({
                   <InfoRow label="Prochaine action" value={calculation.next_action || 'Non renseignee'} />
                   <InfoRow label="Deadline" value={calculation.deadline ? formatDate(calculation.deadline) : 'Non renseignee'} />
                 </div>
+              </section>
+
+              <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
+                <h2 className="font-bold text-slate-950">Historique client</h2>
+                {clientHistory && clientHistory.length > 0 ? (
+                  <div className="mt-5 space-y-3 text-sm">
+                    {(clientHistory as ClientHistoryRow[]).map((item) => (
+                      <Link key={item.id} href={`/opportunites/${item.id}`} className="block rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:bg-white">
+                        <p className="font-bold text-slate-950">{item.title || 'Calcul sans titre'}</p>
+                        <div className="mt-2 flex items-center justify-between gap-3 text-slate-500">
+                          <span>{statusLabels[item.opportunity_status ?? 'to_price']}</span>
+                          <span className="font-semibold text-slate-950">{formatCurrency(Number(item.recommended_price ?? 0))}</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm leading-6 text-slate-600">Aucun autre dossier pour ce client.</p>
+                )}
               </section>
 
               <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">

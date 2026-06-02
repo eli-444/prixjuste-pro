@@ -11,9 +11,23 @@ create table if not exists public.profiles (
   profession_slug text,
   city text,
   region text,
+  default_tax_percent numeric(5, 2) not null default 20,
+  default_hourly_rate numeric(12, 2) not null default 0,
+  company_name text,
+  company_address text,
+  company_email text,
+  company_phone text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.profiles
+add column if not exists default_tax_percent numeric(5, 2) not null default 20,
+add column if not exists default_hourly_rate numeric(12, 2) not null default 0,
+add column if not exists company_name text,
+add column if not exists company_address text,
+add column if not exists company_email text,
+add column if not exists company_phone text;
 
 create table if not exists public.professions (
   slug text primary key,
@@ -56,6 +70,7 @@ create table if not exists public.pricing_calculations (
     check (opportunity_status in ('new', 'to_price', 'proposal_sent', 'negotiation', 'won', 'lost')),
   probability integer not null default 50 check (probability >= 0 and probability <= 100),
   deadline date,
+  follow_up_at timestamptz,
   client_budget numeric(12, 2),
   next_action text,
   quote_validated boolean not null default false,
@@ -71,6 +86,100 @@ create table if not exists public.pricing_calculations (
   result jsonb not null,
   recommended_price numeric(12, 2),
   created_at timestamptz not null default now()
+);
+
+create table if not exists public.service_templates (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text not null,
+  description text,
+  activity_type text not null default 'service' check (activity_type in ('service', 'product', 'mixed')),
+  billing_mode text not null default 'hourly' check (billing_mode in ('hourly', 'fixed')),
+  product_cost numeric(12, 2) not null default 0,
+  work_hours numeric(12, 2) not null default 0,
+  hourly_rate numeric(12, 2) not null default 0,
+  fixed_fees numeric(12, 2) not null default 0,
+  transaction_fees_percent numeric(5, 2) not null default 0,
+  desired_margin_percent numeric(5, 2) not null default 0,
+  tax_percent numeric(5, 2) not null default 20,
+  proposed_price numeric(12, 2) not null default 0,
+  market_profession_slug text references public.professions(slug) on delete set null,
+  market_region text,
+  market_city text,
+  market_unit text check (market_unit in ('hour', 'day', 'sqm', 'project', 'service')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.quotes (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  calculation_id uuid references public.pricing_calculations(id) on delete set null,
+  public_token uuid not null default gen_random_uuid(),
+  quote_number text not null,
+  status text not null default 'draft' check (status in ('draft', 'generated', 'sent', 'accepted', 'refused', 'expired')),
+  company_snapshot jsonb not null default '{}'::jsonb,
+  client_snapshot jsonb not null default '{}'::jsonb,
+  items jsonb not null default '[]'::jsonb,
+  subtotal_excluding_tax numeric(12, 2) not null default 0,
+  tax_percent numeric(5, 2) not null default 20,
+  tax_amount numeric(12, 2) not null default 0,
+  total_including_tax numeric(12, 2) not null default 0,
+  validity_days integer not null default 30,
+  deposit_percent numeric(5, 2) not null default 30,
+  deposit_amount numeric(12, 2) not null default 0,
+  deposit_status text not null default 'not_requested'
+    check (deposit_status in ('not_requested', 'pending', 'paid', 'failed')),
+  stripe_deposit_session_id text unique,
+  accepted_at timestamptz,
+  client_acceptance jsonb not null default '{}'::jsonb,
+  generated_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (public_token),
+  unique (user_id, quote_number)
+);
+
+alter table public.pricing_calculations
+add column if not exists follow_up_at timestamptz;
+
+alter table public.quotes
+add column if not exists public_token uuid not null default gen_random_uuid(),
+add column if not exists deposit_percent numeric(5, 2) not null default 30,
+add column if not exists deposit_amount numeric(12, 2) not null default 0,
+add column if not exists deposit_status text not null default 'not_requested',
+add column if not exists stripe_deposit_session_id text unique,
+add column if not exists accepted_at timestamptz,
+add column if not exists client_acceptance jsonb not null default '{}'::jsonb;
+
+create unique index if not exists quotes_public_token_idx
+on public.quotes (public_token);
+
+alter table public.quotes
+drop constraint if exists quotes_status_check;
+
+alter table public.quotes
+add constraint quotes_status_check
+check (status in ('draft', 'generated', 'sent', 'accepted', 'refused', 'expired'));
+
+alter table public.quotes
+drop constraint if exists quotes_deposit_status_check;
+
+alter table public.quotes
+add constraint quotes_deposit_status_check
+check (deposit_status in ('not_requested', 'pending', 'paid', 'failed'));
+
+create table if not exists public.quote_payments (
+  id uuid primary key default gen_random_uuid(),
+  quote_id uuid not null references public.quotes(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  stripe_session_id text not null unique,
+  amount_total numeric(12, 2) not null default 0,
+  currency text not null default 'eur',
+  status text not null default 'pending' check (status in ('pending', 'paid', 'failed')),
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 create table if not exists public.market_observations (
@@ -167,6 +276,21 @@ create trigger set_market_observations_updated_at
 before update on public.market_observations
 for each row execute function public.set_updated_at();
 
+drop trigger if exists set_service_templates_updated_at on public.service_templates;
+create trigger set_service_templates_updated_at
+before update on public.service_templates
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_quotes_updated_at on public.quotes;
+create trigger set_quotes_updated_at
+before update on public.quotes
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_quote_payments_updated_at on public.quote_payments;
+create trigger set_quote_payments_updated_at
+before update on public.quote_payments
+for each row execute function public.set_updated_at();
+
 drop trigger if exists set_stripe_customers_updated_at on public.stripe_customers;
 create trigger set_stripe_customers_updated_at
 before update on public.stripe_customers
@@ -210,6 +334,9 @@ alter table public.market_rates enable row level security;
 alter table public.market_observations enable row level security;
 alter table public.market_rate_stats enable row level security;
 alter table public.pricing_calculations enable row level security;
+alter table public.service_templates enable row level security;
+alter table public.quotes enable row level security;
+alter table public.quote_payments enable row level security;
 alter table public.stripe_customers enable row level security;
 alter table public.purchases enable row level security;
 alter table public.premium_entitlements enable row level security;
@@ -260,6 +387,53 @@ create policy "pricing_delete_own"
 on public.pricing_calculations for delete
 using (auth.uid() = user_id);
 
+drop policy if exists "service_templates_select_own" on public.service_templates;
+create policy "service_templates_select_own"
+on public.service_templates for select
+using (auth.uid() = user_id);
+
+drop policy if exists "service_templates_insert_own" on public.service_templates;
+create policy "service_templates_insert_own"
+on public.service_templates for insert
+with check (auth.uid() = user_id);
+
+drop policy if exists "service_templates_update_own" on public.service_templates;
+create policy "service_templates_update_own"
+on public.service_templates for update
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+drop policy if exists "service_templates_delete_own" on public.service_templates;
+create policy "service_templates_delete_own"
+on public.service_templates for delete
+using (auth.uid() = user_id);
+
+drop policy if exists "quotes_select_own" on public.quotes;
+create policy "quotes_select_own"
+on public.quotes for select
+using (auth.uid() = user_id);
+
+drop policy if exists "quotes_insert_own" on public.quotes;
+create policy "quotes_insert_own"
+on public.quotes for insert
+with check (auth.uid() = user_id);
+
+drop policy if exists "quotes_update_own" on public.quotes;
+create policy "quotes_update_own"
+on public.quotes for update
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+drop policy if exists "quotes_delete_own" on public.quotes;
+create policy "quotes_delete_own"
+on public.quotes for delete
+using (auth.uid() = user_id);
+
+drop policy if exists "quote_payments_select_own" on public.quote_payments;
+create policy "quote_payments_select_own"
+on public.quote_payments for select
+using (auth.uid() = user_id);
+
 drop policy if exists "stripe_customers_select_own" on public.stripe_customers;
 create policy "stripe_customers_select_own"
 on public.stripe_customers for select
@@ -280,6 +454,15 @@ on public.pricing_calculations (user_id, created_at desc);
 
 create index if not exists pricing_calculations_user_status_idx
 on public.pricing_calculations (user_id, opportunity_status, created_at desc);
+
+create index if not exists service_templates_user_created_idx
+on public.service_templates (user_id, created_at desc);
+
+create index if not exists quotes_user_created_idx
+on public.quotes (user_id, created_at desc);
+
+create index if not exists quote_payments_quote_created_idx
+on public.quote_payments (quote_id, created_at desc);
 
 create index if not exists professions_activity_idx
 on public.professions (activity_type, active, label);

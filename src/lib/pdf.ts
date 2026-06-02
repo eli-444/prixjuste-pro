@@ -19,13 +19,13 @@ export type TariflyQuoteData = {
     address: string;
     email?: string;
   };
-  line: {
+  items: Array<{
     description: string;
     quantity: string;
     unit: string;
     unitPriceExcludingTax: string;
     totalExcludingTax: string;
-  };
+  }>;
   totals: {
     subtotalExcludingTax: string;
     taxRate: string;
@@ -123,25 +123,32 @@ export async function createQuotePdf(data: TariflyQuoteData) {
   ctx.textAlign = 'left';
   y += 88;
 
-  roundedRect(ctx, margin, y, pageWidth - margin * 2, 150, 16);
-  ctx.fillStyle = '#ffffff';
-  ctx.fill();
-  ctx.strokeStyle = '#e2e8f0';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-  ctx.fillStyle = '#0f172a';
-  ctx.font = '600 22px Arial';
-  wrapText(ctx, data.line.description, 560, 22).slice(0, 3).forEach((line, index) => {
-    ctx.fillText(line, margin + 28, y + 34 + index * 32);
+  data.items.slice(0, 8).forEach((item, index) => {
+    const descriptionLines = wrapText(ctx, item.description, 560, 22).slice(0, 3);
+    const rowHeight = Math.max(92, 34 + descriptionLines.length * 32 + 24);
+
+    roundedRect(ctx, margin, y, pageWidth - margin * 2, rowHeight, index === data.items.length - 1 ? 16 : 10);
+    ctx.fillStyle = index % 2 === 0 ? '#ffffff' : '#f8fafc';
+    ctx.fill();
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '600 22px Arial';
+    descriptionLines.forEach((line, lineIndex) => {
+      ctx.fillText(line, margin + 28, y + 24 + lineIndex * 32);
+    });
+    ctx.font = '500 21px Arial';
+    ctx.fillText(item.quantity, 720, y + 28);
+    ctx.fillText(item.unit, 810, y + 28);
+    ctx.fillText(item.unitPriceExcludingTax, 930, y + 28);
+    ctx.textAlign = 'right';
+    ctx.fillText(item.totalExcludingTax, pageWidth - margin - 28, y + 28);
+    ctx.textAlign = 'left';
+    y += rowHeight + 10;
   });
-  ctx.font = '500 21px Arial';
-  ctx.fillText(data.line.quantity, 720, y + 40);
-  ctx.fillText(data.line.unit, 810, y + 40);
-  ctx.fillText(data.line.unitPriceExcludingTax, 930, y + 40);
-  ctx.textAlign = 'right';
-  ctx.fillText(data.line.totalExcludingTax, pageWidth - margin - 28, y + 40);
-  ctx.textAlign = 'left';
-  y += 210;
+
+  y += 36;
 
   const totalsX = 720;
   drawQuoteTotal(ctx, 'Total HT', data.totals.subtotalExcludingTax, totalsX, y);

@@ -27,8 +27,52 @@ export async function POST(request: Request) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
-    const userId = session.client_reference_id ?? session.metadata?.user_id;
+    const product = session.metadata?.product;
     const supabase = createSupabaseAdminClient();
+
+    if (product === 'quote_deposit') {
+      const quoteId = session.metadata?.quote_id;
+      const userId = session.metadata?.user_id;
+
+      if (quoteId && userId && supabase) {
+        const amountTotal = typeof session.amount_total === 'number' ? session.amount_total / 100 : 0;
+        const { error: paymentError } = await supabase.from('quote_payments').upsert(
+          {
+            quote_id: quoteId,
+            user_id: userId,
+            stripe_session_id: session.id,
+            amount_total: amountTotal,
+            currency: session.currency ?? 'eur',
+            status: session.payment_status === 'paid' ? 'paid' : 'pending',
+            metadata: session.metadata ?? {},
+          },
+          { onConflict: 'stripe_session_id' },
+        );
+
+        if (paymentError) {
+          console.error('Stripe webhook quote payment upsert failed', paymentError);
+          return NextResponse.json({ error: paymentError.message }, { status: 500 });
+        }
+
+        const { error: quoteError } = await supabase
+          .from('quotes')
+          .update({
+            deposit_status: session.payment_status === 'paid' ? 'paid' : 'pending',
+            stripe_deposit_session_id: session.id,
+          })
+          .eq('id', quoteId)
+          .eq('user_id', userId);
+
+        if (quoteError) {
+          console.error('Stripe webhook quote update failed', quoteError);
+          return NextResponse.json({ error: quoteError.message }, { status: 500 });
+        }
+      }
+
+      return NextResponse.json({ received: true });
+    }
+
+    const userId = session.client_reference_id ?? session.metadata?.user_id;
 
     if (userId && supabase) {
       const { data: purchase, error: purchaseError } = await supabase

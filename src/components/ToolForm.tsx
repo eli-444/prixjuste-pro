@@ -9,6 +9,8 @@ import { createBrowserSupabaseClient } from '@/lib/supabase/browser';
 import { getSupabaseConfig } from '@/lib/supabase/env';
 import {
   defaultOpportunityMeta,
+  getQuoteHealthLabel,
+  getQuoteHealthScore,
   statusLabels,
   type OpportunityMeta,
   type OpportunityStatus,
@@ -44,6 +46,35 @@ type QuoteForm = {
   validityDays: string;
 };
 
+type QuoteItemForm = {
+  id: string;
+  description: string;
+  quantity: string;
+  unit: string;
+  unitPriceIncludingTax: string;
+  taxPercent: string;
+};
+
+type ServiceTemplate = {
+  id: string;
+  name: string;
+  description: string | null;
+  activity_type: PricingInput['activityType'];
+  billing_mode: PricingInput['billingMode'];
+  product_cost: number;
+  work_hours: number;
+  hourly_rate: number;
+  fixed_fees: number;
+  transaction_fees_percent: number;
+  desired_margin_percent: number;
+  tax_percent: number;
+  proposed_price: number;
+  market_profession_slug: string | null;
+  market_region: string | null;
+  market_city: string | null;
+  market_unit: MarketUnit | null;
+};
+
 const defaultInput: PricingInput = {
   activityType: 'service',
   billingMode: 'hourly',
@@ -57,7 +88,26 @@ const defaultInput: PricingInput = {
   proposedPrice: 0,
 };
 
+const starterTemplates: Array<{ name: string; description: string; input: PricingInput }> = [
+  {
+    name: 'Intervention horaire',
+    description: 'Mission courte facturee au temps passe.',
+    input: { ...defaultInput, billingMode: 'hourly', productCost: 0, workHours: 2, hourlyRate: 60, fixedFees: 20, taxPercent: 20 },
+  },
+  {
+    name: 'Journee conseil',
+    description: 'Prestation de service vendue a la journee.',
+    input: { ...defaultInput, billingMode: 'hourly', productCost: 0, workHours: 7, hourlyRate: 75, fixedFees: 40, taxPercent: 20 },
+  },
+  {
+    name: 'Forfait projet',
+    description: 'Mission globale avec prix client fixe.',
+    input: { ...defaultInput, billingMode: 'fixed', productCost: 150, workHours: 12, hourlyRate: 0, fixedFees: 80, proposedPrice: 1200, taxPercent: 20 },
+  },
+];
+
 export function ToolForm({
+  currentCalculationId,
   initialInput = defaultInput,
   initialMeta = defaultOpportunityMeta,
   initialMarket = defaultMarketBenchmark,
@@ -65,6 +115,7 @@ export function ToolForm({
   marketRates = [],
   marketRateStats = [],
 }: {
+  currentCalculationId?: string;
   initialInput?: PricingInput;
   initialMeta?: OpportunityMeta;
   initialMarket?: MarketBenchmarkInput;
@@ -93,8 +144,15 @@ export function ToolForm({
   const [marketRateRows, setMarketRateRows] = useState<MarketRate[]>(marketRates);
   const [marketRateStatRows, setMarketRateStatRows] = useState<MarketRateStat[]>(marketRateStats);
   const [marketDataStatus, setMarketDataStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [serviceTemplates, setServiceTemplates] = useState<ServiceTemplate[]>([]);
+  const [templateName, setTemplateName] = useState('');
+  const [templateStatus, setTemplateStatus] = useState('');
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
   const [quoteError, setQuoteError] = useState('');
+  const [quoteShareUrl, setQuoteShareUrl] = useState('');
+  const [quoteItems, setQuoteItems] = useState<QuoteItemForm[]>(() => [
+    createDefaultQuoteItem(normalizedInitialInput, initialMeta.title || 'Prestation'),
+  ]);
   const [quoteForm, setQuoteForm] = useState<QuoteForm>(() => ({
     companyName: '',
     companyAddress: '',
@@ -120,6 +178,12 @@ export function ToolForm({
   const matchingMarketRate = useMemo(() => findMarketRate(marketRateRows, market), [marketRateRows, market]);
   const matchingMarketStat = useMemo(() => findMarketRateStat(marketRateStatRows, market), [marketRateStatRows, market]);
   const marketComparison = compareToMarket(marketReferencePrice, matchingMarketRate);
+  const quoteHealthScore = getQuoteHealthScore({
+    marginRate: proposedAnalysis.marginRate,
+    marketGapToMedian: marketComparison?.gapToMedian ?? null,
+    clientBudget: meta.clientBudget,
+    recommendedPrice: activePrice,
+  });
   const effectiveRiskLevel = getRiskLevel(proposedAnalysis.marginRate);
   const effectiveDiagnosis = getDiagnosis(proposedAnalysis.marginRate);
   const effectiveJustification = getClientJustification(input, activePrice);
@@ -298,6 +362,22 @@ export function ToolForm({
 
         setUserId(user.id);
 
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('company_name, company_address, company_email, company_phone')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (profile) {
+          setQuoteForm((current) => ({
+            ...current,
+            companyName: current.companyName || profile.company_name || '',
+            companyAddress: current.companyAddress || profile.company_address || '',
+            companyEmail: current.companyEmail || profile.company_email || '',
+            companyPhone: current.companyPhone || profile.company_phone || '',
+          }));
+        }
+
         const { data: entitlement } = await supabase
           .from('premium_entitlements')
           .select('id')
@@ -327,6 +407,45 @@ export function ToolForm({
     };
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadServiceTemplates() {
+      if (!userId || !getSupabaseConfig().isConfigured) {
+        return;
+      }
+
+      try {
+        const supabase = createBrowserSupabaseClient();
+        const { data, error } = await supabase
+          .from('service_templates')
+          .select(
+            'id, name, description, activity_type, billing_mode, product_cost, work_hours, hourly_rate, fixed_fees, transaction_fees_percent, desired_margin_percent, tax_percent, proposed_price, market_profession_slug, market_region, market_city, market_unit',
+          )
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          throw error;
+        }
+
+        if (isMounted) {
+          setServiceTemplates((data ?? []) as ServiceTemplate[]);
+        }
+      } catch {
+        if (isMounted) {
+          setServiceTemplates([]);
+        }
+      }
+    }
+
+    loadServiceTemplates();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userId]);
+
   function updateNumber(name: keyof PricingInput, value: string) {
     if (name === 'activityType' || name === 'billingMode') {
       return;
@@ -355,6 +474,114 @@ export function ToolForm({
       ...current,
       [name]: value,
     }));
+  }
+
+  function syncInputFields(nextInput: PricingInput) {
+    setFields({
+      productCost: String(nextInput.productCost || ''),
+      workHours: String(nextInput.workHours || ''),
+      hourlyRate: String(nextInput.hourlyRate || ''),
+      fixedFees: String(nextInput.fixedFees || ''),
+      transactionFeesPercent: String(nextInput.transactionFeesPercent || ''),
+      desiredMarginPercent: String(nextInput.desiredMarginPercent || ''),
+      taxPercent: String(nextInput.taxPercent || ''),
+      proposedPrice: String(nextInput.proposedPrice || ''),
+    });
+  }
+
+  function applyTemplate(templateId: string) {
+    const template = serviceTemplates.find((item) => item.id === templateId);
+    if (!template) {
+      return;
+    }
+
+    const nextInput: PricingInput = {
+      activityType: template.activity_type,
+      billingMode: template.billing_mode,
+      productCost: Number(template.product_cost || 0),
+      workHours: Number(template.work_hours || 0),
+      hourlyRate: Number(template.hourly_rate || 0),
+      fixedFees: Number(template.fixed_fees || 0),
+      transactionFeesPercent: Number(template.transaction_fees_percent || 0),
+      desiredMarginPercent: Number(template.desired_margin_percent || 0),
+      taxPercent: Number(template.tax_percent || 0),
+      proposedPrice: Number(template.proposed_price || 0),
+    };
+
+    setInput(nextInput);
+    syncInputFields(nextInput);
+    setMarket((current) => ({
+      ...current,
+      professionSlug: template.market_profession_slug ?? current.professionSlug,
+      region: template.market_region ?? current.region,
+      city: template.market_city ?? '',
+      unit: template.market_unit ?? current.unit,
+    }));
+    setTemplateStatus(`Modele "${template.name}" applique.`);
+  }
+
+  function applyStarterTemplate(template: (typeof starterTemplates)[number]) {
+    setInput(template.input);
+    syncInputFields(template.input);
+    setMeta((current) => ({
+      ...current,
+      title: current.title || template.name,
+    }));
+    setTemplateStatus(`Preset "${template.name}" applique.`);
+  }
+
+  async function saveCurrentTemplate() {
+    const name = templateName.trim() || meta.title.trim();
+    setTemplateStatus('');
+
+    if (!name) {
+      setTemplateStatus('Donnez un nom au modele avant de l enregistrer.');
+      return;
+    }
+
+    if (!userId) {
+      window.location.href = '/connexion?redirect=/outil';
+      return;
+    }
+
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const { data, error } = await supabase
+        .from('service_templates')
+        .insert({
+          user_id: userId,
+          name,
+          description: meta.title || null,
+          activity_type: input.activityType,
+          billing_mode: input.billingMode,
+          product_cost: input.productCost,
+          work_hours: input.workHours,
+          hourly_rate: input.hourlyRate,
+          fixed_fees: input.fixedFees,
+          transaction_fees_percent: input.transactionFeesPercent,
+          desired_margin_percent: input.desiredMarginPercent,
+          tax_percent: input.taxPercent,
+          proposed_price: input.proposedPrice,
+          market_profession_slug: market.professionSlug || null,
+          market_region: market.region || null,
+          market_city: market.city || null,
+          market_unit: market.unit,
+        })
+        .select(
+          'id, name, description, activity_type, billing_mode, product_cost, work_hours, hourly_rate, fixed_fees, transaction_fees_percent, desired_margin_percent, tax_percent, proposed_price, market_profession_slug, market_region, market_city, market_unit',
+        )
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      setServiceTemplates((current) => [data as ServiceTemplate, ...current]);
+      setTemplateName('');
+      setTemplateStatus('Modele enregistre.');
+    } catch (error) {
+      setTemplateStatus(error instanceof Error ? error.message : 'Impossible d enregistrer le modele.');
+    }
   }
 
   async function saveCalculation() {
@@ -506,6 +733,9 @@ export function ToolForm({
       clientName: current.clientName || meta.clientName,
       description: current.description || meta.title || 'Prestation',
     }));
+    setQuoteItems((current) =>
+      current.length > 0 ? current : [createDefaultQuoteItem(input, meta.title || quoteForm.description || 'Prestation')],
+    );
     setQuoteModalOpen(true);
   }
 
@@ -516,12 +746,33 @@ export function ToolForm({
     }));
   }
 
+  function updateQuoteItem(id: string, name: keyof Omit<QuoteItemForm, 'id'>, value: string) {
+    setQuoteItems((current) => current.map((item) => (item.id === id ? { ...item, [name]: value } : item)));
+  }
+
+  function addQuoteItem() {
+    setQuoteItems((current) => [...current, createBlankQuoteItem(input.taxPercent)]);
+  }
+
+  function removeQuoteItem(id: string) {
+    setQuoteItems((current) => (current.length <= 1 ? current : current.filter((item) => item.id !== id)));
+  }
+
   async function generateQuotePdf() {
     const requiredFields: Array<keyof QuoteForm> = ['companyName', 'companyAddress', 'quoteNumber', 'clientName', 'clientAddress'];
     const missingField = requiredFields.find((field) => !quoteForm[field].trim());
 
     if (missingField) {
       setQuoteError('Merci de remplir les informations entreprise, client et numero de devis.');
+      return;
+    }
+
+    const computedItems = quoteItems
+      .map((item) => computeQuoteItem(item))
+      .filter((item) => item.description && item.quantity > 0 && item.unitPriceIncludingTax >= 0);
+
+    if (computedItems.length === 0) {
+      setQuoteError('Ajoutez au moins une ligne de devis exploitable.');
       return;
     }
 
@@ -535,14 +786,9 @@ export function ToolForm({
       }),
     );
 
-    const taxRate = Math.max(0, input.taxPercent) / 100;
-    const quantity = input.billingMode === 'hourly' ? Math.max(0, input.workHours) : 1;
-    const unitPriceExcludingTax =
-      input.billingMode === 'hourly'
-        ? taxRate >= 1
-          ? input.hourlyRate
-          : input.hourlyRate / (1 + taxRate)
-        : proposedAnalysis.priceExcludingTax;
+    const subtotalExcludingTax = computedItems.reduce((total, item) => total + item.totalExcludingTax, 0);
+    const taxAmount = computedItems.reduce((total, item) => total + item.taxAmount, 0);
+    const totalIncludingTax = computedItems.reduce((total, item) => total + item.totalIncludingTax, 0);
 
     const blob = await createQuotePdf({
       quoteNumber: quoteForm.quoteNumber,
@@ -558,21 +804,69 @@ export function ToolForm({
         address: quoteForm.clientAddress,
         email: quoteForm.clientEmail,
       },
-      line: {
-        description: quoteForm.description || meta.title || 'Prestation',
-        quantity: input.billingMode === 'hourly' ? `${quantity}` : '1',
-        unit: input.billingMode === 'hourly' ? 'heure' : 'forfait',
-        unitPriceExcludingTax: formatCurrency(unitPriceExcludingTax),
-        totalExcludingTax: formatCurrency(proposedAnalysis.priceExcludingTax),
-      },
+      items: computedItems.map((item) => ({
+        description: item.description,
+        quantity: formatQuoteQuantity(item.quantity),
+        unit: item.unit,
+        unitPriceExcludingTax: formatCurrency(item.unitPriceExcludingTax),
+        totalExcludingTax: formatCurrency(item.totalExcludingTax),
+      })),
       totals: {
-        subtotalExcludingTax: formatCurrency(proposedAnalysis.priceExcludingTax),
-        taxRate: formatPercent(input.taxPercent),
-        taxAmount: formatCurrency(proposedAnalysis.taxAmount),
-        totalIncludingTax: formatCurrency(activePrice),
+        subtotalExcludingTax: formatCurrency(subtotalExcludingTax),
+        taxRate: getQuoteTaxLabel(computedItems),
+        taxAmount: formatCurrency(taxAmount),
+        totalIncludingTax: formatCurrency(totalIncludingTax),
       },
       validityDays: quoteForm.validityDays || '30',
     });
+
+    if (userId && getSupabaseConfig().isConfigured) {
+      try {
+        const supabase = createBrowserSupabaseClient();
+        const depositPercent = 30;
+        const { data: savedQuote, error } = await supabase
+          .from('quotes')
+          .insert({
+          user_id: userId,
+          calculation_id: currentCalculationId || null,
+          quote_number: quoteForm.quoteNumber,
+          status: 'generated',
+          company_snapshot: {
+            name: quoteForm.companyName,
+            address: quoteForm.companyAddress,
+            email: quoteForm.companyEmail,
+            phone: quoteForm.companyPhone,
+          },
+          client_snapshot: {
+            name: quoteForm.clientName,
+            address: quoteForm.clientAddress,
+            email: quoteForm.clientEmail,
+          },
+          items: computedItems,
+          subtotal_excluding_tax: subtotalExcludingTax,
+          tax_percent: input.taxPercent,
+          tax_amount: taxAmount,
+          total_including_tax: totalIncludingTax,
+          deposit_percent: depositPercent,
+          deposit_amount: Math.round(((totalIncludingTax * depositPercent) / 100) * 100) / 100,
+          validity_days: Number(quoteForm.validityDays || 30),
+        })
+        .select('public_token')
+        .single();
+
+        if (error) {
+          throw error;
+        }
+
+        if (savedQuote?.public_token) {
+          setQuoteShareUrl(`${window.location.origin}/devis/${savedQuote.public_token}`);
+        }
+
+        setSaveStatus('Devis genere et sauvegarde dans votre compte.');
+      } catch {
+        setSaveStatus('PDF genere, mais sauvegarde du devis impossible pour le moment.');
+      }
+    }
 
     downloadBlob(blob, `devis-${sanitizeFilename(quoteForm.quoteNumber)}.pdf`);
     setQuoteModalOpen(false);
@@ -639,6 +933,62 @@ export function ToolForm({
 
           <FormSection
             number="02"
+            title="Modeles"
+            description="Reutilisez une prestation frequente ou enregistrez les reglages actuels."
+          >
+            <div className="mt-5 grid gap-4 md:grid-cols-[1fr_auto]">
+              <label className="space-y-2">
+                <LabelWithInfo label="Modele existant" help="Applique les couts, la facturation et le benchmark sauvegardes dans un modele." />
+                <select
+                  value=""
+                  onChange={(event) => applyTemplate(event.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                >
+                  <option value="">Selectionner un modele</option>
+                  {serviceTemplates.map((template) => (
+                    <option key={template.id} value={template.id}>
+                      {template.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="space-y-2">
+                <LabelWithInfo label="Nom du nouveau modele" help="Nom court pour retrouver cette prestation plus tard." />
+                <div className="flex gap-2">
+                  <input
+                    value={templateName}
+                    onChange={(event) => setTemplateName(event.target.value)}
+                    placeholder="Ex : Site vitrine"
+                    className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={saveCurrentTemplate}
+                    className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                  >
+                    Enregistrer
+                  </button>
+                </div>
+              </label>
+            </div>
+            <div className="mt-5 grid gap-3 md:grid-cols-3">
+              {starterTemplates.map((template) => (
+                <button
+                  key={template.name}
+                  type="button"
+                  onClick={() => applyStarterTemplate(template)}
+                  className="rounded-xl border border-slate-200 bg-white p-4 text-left transition hover:bg-slate-50"
+                >
+                  <span className="block font-bold text-slate-950">{template.name}</span>
+                  <span className="mt-1 block text-sm leading-6 text-slate-500">{template.description}</span>
+                </button>
+              ))}
+            </div>
+            {templateStatus ? <p className="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">{templateStatus}</p> : null}
+          </FormSection>
+
+          <FormSection
+            number="03"
             title="Couts"
           >
           <div className="mt-5 grid gap-5 md:grid-cols-2">
@@ -668,7 +1018,7 @@ export function ToolForm({
           </FormSection>
 
           <FormSection
-            number="03"
+            number="04"
             title="Facturation client"
             tone="muted"
           >
@@ -721,7 +1071,7 @@ export function ToolForm({
           </FormSection>
 
           <FormSection
-            number="04"
+            number="05"
             title="Comparaison marche"
           >
             <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -861,6 +1211,7 @@ export function ToolForm({
 
         <div className="mt-6 grid gap-3 text-sm">
           <Metric label="Couts renseignes" value={formatCurrency(result.baseCost)} />
+          <Metric label="Score devis" value={isPremium ? `${quoteHealthScore}/100` : 'Premium'} locked={!isPremium} />
           <Metric label="Profit net estime" value={isPremium ? formatCurrency(proposedAnalysis.netProfit) : 'Premium'} locked={!isPremium} />
           <Metric label="Marge reelle" value={isPremium ? formatPercent(proposedAnalysis.marginRate) : 'Premium'} locked={!isPremium} />
           <Metric label="Rentabilite horaire" value={isPremium ? formatCurrency(proposedAnalysis.hourlyReality) : 'Premium'} locked={!isPremium} />
@@ -870,6 +1221,7 @@ export function ToolForm({
         {isPremium ? (
           <div className="mt-6 rounded-2xl bg-white/10 p-4">
             <p className="font-semibold">Diagnostic</p>
+            <p className="mt-2 text-sm font-semibold text-brand-100">{getQuoteHealthLabel(quoteHealthScore)}</p>
             <p className="mt-2 text-sm leading-6 text-slate-200">{effectiveDiagnosis}</p>
             <p className="mt-4 font-semibold">Justification client</p>
             <p className="mt-2 text-sm leading-6 text-slate-200">{effectiveJustification}</p>
@@ -918,13 +1270,25 @@ export function ToolForm({
         </div>
 
         {saveStatus ? <p className="mt-4 rounded-2xl bg-white/10 px-4 py-3 text-sm text-slate-200">{saveStatus}</p> : null}
+        {quoteShareUrl ? (
+          <div className="mt-4 rounded-2xl border border-white/15 bg-white/10 p-4">
+            <p className="text-sm font-semibold text-white">Lien client</p>
+            <a href={quoteShareUrl} target="_blank" rel="noreferrer" className="mt-2 block break-all text-sm text-brand-100 underline">
+              {quoteShareUrl}
+            </a>
+          </div>
+        ) : null}
       </aside>
     </section>
     {quoteModalOpen ? (
       <QuoteModal
         form={quoteForm}
+        items={quoteItems}
         error={quoteError}
         onChange={updateQuoteField}
+        onItemChange={updateQuoteItem}
+        onAddItem={addQuoteItem}
+        onRemoveItem={removeQuoteItem}
         onClose={() => setQuoteModalOpen(false)}
         onGenerate={generateQuotePdf}
       />
@@ -935,14 +1299,22 @@ export function ToolForm({
 
 function QuoteModal({
   form,
+  items,
   error,
   onChange,
+  onItemChange,
+  onAddItem,
+  onRemoveItem,
   onClose,
   onGenerate,
 }: {
   form: QuoteForm;
+  items: QuoteItemForm[];
   error: string;
   onChange: (name: keyof QuoteForm, value: string) => void;
+  onItemChange: (id: string, name: keyof Omit<QuoteItemForm, 'id'>, value: string) => void;
+  onAddItem: () => void;
+  onRemoveItem: (id: string) => void;
   onClose: () => void;
   onGenerate: () => void;
 }) {
@@ -991,6 +1363,60 @@ function QuoteModal({
           </div>
         </div>
 
+        <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="font-bold text-slate-950">Lignes du devis</h3>
+              <p className="mt-1 text-sm text-slate-500">Ajoutez les prestations visibles par le client, sans les donnees internes de rentabilite.</p>
+            </div>
+            <button
+              type="button"
+              onClick={onAddItem}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+            >
+              Ajouter une ligne
+            </button>
+          </div>
+
+          <div className="mt-4 space-y-4">
+            {items.map((item, index) => (
+              <div key={item.id} className="rounded-xl border border-slate-200 bg-white p-4">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <p className="text-sm font-bold text-slate-950">Ligne {index + 1}</p>
+                  <button
+                    type="button"
+                    onClick={() => onRemoveItem(item.id)}
+                    disabled={items.length <= 1}
+                    className="text-sm font-semibold text-rose-600 transition hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300"
+                  >
+                    Supprimer
+                  </button>
+                </div>
+                <div className="grid gap-4 md:grid-cols-6">
+                  <div className="md:col-span-6">
+                    <TextAreaField
+                      label="Description"
+                      value={item.description}
+                      onChange={(value) => onItemChange(item.id, 'description', value)}
+                      help="Libelle client de la prestation ou du lot facture."
+                    />
+                  </div>
+                  <TextField label="Quantite" value={item.quantity} onChange={(value) => onItemChange(item.id, 'quantity', value)} help="Nombre d'heures, de jours, d'unites ou de lots." />
+                  <TextField label="Unite" value={item.unit} onChange={(value) => onItemChange(item.id, 'unit', value)} help="Exemples : heure, jour, forfait, m2, lot." />
+                  <div className="md:col-span-2">
+                    <TextField label="Prix unitaire TTC" value={item.unitPriceIncludingTax} onChange={(value) => onItemChange(item.id, 'unitPriceIncludingTax', value)} help="Prix unitaire annonce au client, taxe comprise." />
+                  </div>
+                  <TextField label="TVA (%)" value={item.taxPercent} onChange={(value) => onItemChange(item.id, 'taxPercent', value)} help="Taux applique a cette ligne." />
+                  <div className="rounded-xl bg-slate-50 px-4 py-3">
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Total TTC</p>
+                    <p className="mt-1 font-bold text-slate-950">{formatCurrency(computeQuoteItem(item).totalIncludingTax)}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {error ? <p className="mt-5 rounded-xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{error}</p> : null}
 
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
@@ -1012,6 +1438,71 @@ function QuoteModal({
       </div>
     </div>
   );
+}
+
+function createDefaultQuoteItem(input: PricingInput, description: string): QuoteItemForm {
+  return {
+    id: createQuoteItemId(),
+    description,
+    quantity: input.billingMode === 'hourly' ? String(input.workHours || 1) : '1',
+    unit: input.billingMode === 'hourly' ? 'heure' : 'forfait',
+    unitPriceIncludingTax: input.billingMode === 'hourly' ? String(input.hourlyRate || 0) : String(getClientPrice(input) || 0),
+    taxPercent: String(input.taxPercent || 0),
+  };
+}
+
+function createBlankQuoteItem(taxPercent: number): QuoteItemForm {
+  return {
+    id: createQuoteItemId(),
+    description: '',
+    quantity: '1',
+    unit: 'forfait',
+    unitPriceIncludingTax: '',
+    taxPercent: String(taxPercent || 0),
+  };
+}
+
+function createQuoteItemId() {
+  return `item-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function computeQuoteItem(item: QuoteItemForm) {
+  const quantity = parseFrenchNumber(item.quantity);
+  const unitPriceIncludingTax = parseFrenchNumber(item.unitPriceIncludingTax);
+  const taxPercent = parseFrenchNumber(item.taxPercent);
+  const taxRate = Math.max(0, taxPercent) / 100;
+  const unitPriceExcludingTax = taxRate >= 1 ? unitPriceIncludingTax : unitPriceIncludingTax / (1 + taxRate);
+  const totalExcludingTax = unitPriceExcludingTax * quantity;
+  const totalIncludingTax = unitPriceIncludingTax * quantity;
+
+  return {
+    description: item.description.trim(),
+    quantity,
+    unit: item.unit.trim() || 'unite',
+    unitPriceIncludingTax,
+    unitPriceExcludingTax,
+    taxPercent,
+    taxAmount: totalIncludingTax - totalExcludingTax,
+    totalExcludingTax,
+    totalIncludingTax,
+  };
+}
+
+function parseFrenchNumber(value: string) {
+  const normalized = value.replace(',', '.').trim();
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function formatQuoteQuantity(value: number) {
+  return new Intl.NumberFormat('fr-FR', {
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function getQuoteTaxLabel(items: ReturnType<typeof computeQuoteItem>[]) {
+  const uniqueRates = Array.from(new Set(items.map((item) => item.taxPercent)));
+  return uniqueRates.length === 1 ? formatPercent(uniqueRates[0]) : 'Multiple';
 }
 
 function FormSection({
