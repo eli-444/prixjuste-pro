@@ -1222,10 +1222,10 @@ function MarketBenchmarkCard({
       {comparison ? (
         <div
           className={`mt-4 rounded-xl border p-4 ${
-            comparison.level === 'above'
-              ? 'border-amber-200 bg-amber-50 text-amber-950'
-              : comparison.level === 'below'
-                ? 'border-rose-200 bg-rose-50 text-rose-950'
+            comparison.level === 'critical'
+              ? 'border-rose-200 bg-rose-50 text-rose-950'
+              : comparison.level === 'warning'
+                ? 'border-amber-200 bg-amber-50 text-amber-950'
                 : 'border-emerald-200 bg-emerald-50 text-emerald-950'
           }`}
         >
