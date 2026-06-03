@@ -16,6 +16,7 @@ type QuoteItem = {
 
 type QuoteParty = {
   name?: string;
+  siret?: string;
   address?: string;
   email?: string;
   phone?: string;
@@ -183,6 +184,7 @@ function PartyBlock({ title, party }: { title: string; party: QuoteParty }) {
     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
       <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">{title}</p>
       <p className="mt-3 text-xl font-bold text-slate-950">{party.name || 'Non renseigne'}</p>
+      {party.siret ? <p className="mt-2 text-sm font-semibold text-slate-700">SIRET {party.siret}</p> : null}
       {party.address ? <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">{party.address}</p> : null}
       {party.email ? <p className="mt-3 text-sm font-semibold text-slate-700">{party.email}</p> : null}
       {party.phone ? <p className="mt-1 text-sm text-slate-600">{party.phone}</p> : null}

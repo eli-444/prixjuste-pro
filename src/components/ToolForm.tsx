@@ -33,6 +33,7 @@ import { CheckoutButton } from './CheckoutButton';
 const PREMIUM_KEY = 'tarifly_premium';
 
 type QuoteForm = {
+  accountType: 'personal' | 'business';
   companyName: string;
   companySiret: string;
   companyAddress: string;
@@ -155,6 +156,7 @@ export function ToolForm({
     createDefaultQuoteItem(normalizedInitialInput, initialMeta.title || 'Prestation'),
   ]);
   const [quoteForm, setQuoteForm] = useState<QuoteForm>(() => ({
+    accountType: 'personal',
     companyName: '',
     companySiret: '',
     companyAddress: '',
@@ -351,18 +353,25 @@ export function ToolForm({
 
         const { data: profile } = await supabase
           .from('profiles')
-          .select('company_name, siret, company_address, company_email, company_phone')
+          .select('account_type, first_name, last_name, full_name, email, company_name, siret, company_address, company_email, company_phone')
           .eq('id', user.id)
           .maybeSingle();
 
         if (profile) {
+          const accountType = profile.account_type === 'business' ? 'business' : 'personal';
+          const nameParts = (profile.full_name ?? '').split(' ').filter(Boolean);
+          const personalName =
+            `${profile.first_name ?? nameParts[0] ?? ''} ${profile.last_name ?? nameParts.slice(1).join(' ') ?? ''}`.trim() ||
+            user.email ||
+            '';
           setQuoteForm((current) => ({
             ...current,
-            companyName: profile.company_name || '',
-            companySiret: profile.siret || '',
-            companyAddress: profile.company_address || '',
-            companyEmail: profile.company_email || '',
-            companyPhone: profile.company_phone || '',
+            accountType,
+            companyName: accountType === 'business' ? profile.company_name || '' : personalName,
+            companySiret: accountType === 'business' ? profile.siret || '' : '',
+            companyAddress: accountType === 'business' ? profile.company_address || '' : '',
+            companyEmail: profile.company_email || profile.email || user.email || '',
+            companyPhone: accountType === 'business' ? profile.company_phone || '' : '',
           }));
         }
 
@@ -773,7 +782,10 @@ export function ToolForm({
   }
 
   async function generateQuotePdf() {
-    const requiredFields: Array<keyof QuoteForm> = ['companyName', 'companyAddress', 'quoteNumber', 'clientName', 'clientAddress'];
+    const requiredFields: Array<keyof QuoteForm> =
+      quoteForm.accountType === 'business'
+        ? ['companyName', 'companyAddress', 'quoteNumber', 'clientName', 'clientAddress']
+        : ['companyName', 'quoteNumber', 'clientName', 'clientAddress'];
     const missingField = requiredFields.find((field) => !quoteForm[field].trim());
 
     if (missingField) {
@@ -803,7 +815,7 @@ export function ToolForm({
       quoteDate: new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' }).format(new Date()),
       company: {
         name: quoteForm.companyName,
-        siret: quoteForm.companySiret,
+        siret: quoteForm.accountType === 'business' ? quoteForm.companySiret : '',
         address: quoteForm.companyAddress,
         email: quoteForm.companyEmail,
         phone: quoteForm.companyPhone,
@@ -841,8 +853,9 @@ export function ToolForm({
           quote_number: quoteForm.quoteNumber,
           status: 'generated',
           company_snapshot: {
+            account_type: quoteForm.accountType,
             name: quoteForm.companyName,
-            siret: quoteForm.companySiret,
+            siret: quoteForm.accountType === 'business' ? quoteForm.companySiret : '',
             address: quoteForm.companyAddress,
             email: quoteForm.companyEmail,
             phone: quoteForm.companyPhone,
@@ -1302,17 +1315,17 @@ function QuoteModal({
         <div className="mt-6 grid gap-6 md:grid-cols-2">
           <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="flex items-start justify-between gap-4">
-              <h3 className="font-bold text-slate-950">Emetteur</h3>
+              <h3 className="font-bold text-slate-950">{form.accountType === 'business' ? 'Emetteur' : 'Titulaire'}</h3>
               <a href="/dashboard/mon-compte" className="text-sm font-bold text-brand-600 hover:text-aqua-600">
                 Modifier
               </a>
             </div>
             <div className="space-y-2 text-sm leading-6 text-slate-700">
-              <p className="font-bold text-slate-950">{form.companyName || 'Entreprise non renseignee'}</p>
-              {form.companySiret ? <p>SIRET {form.companySiret}</p> : null}
-              <p className="whitespace-pre-line">{form.companyAddress || 'Adresse non renseignee'}</p>
+              <p className="font-bold text-slate-950">{form.companyName || 'Nom non renseigne'}</p>
+              {form.accountType === 'business' && form.companySiret ? <p>SIRET {form.companySiret}</p> : null}
+              {form.accountType === 'business' ? <p className="whitespace-pre-line">{form.companyAddress || 'Adresse non renseignee'}</p> : null}
               {form.companyEmail ? <p>{form.companyEmail}</p> : null}
-              {form.companyPhone ? <p>{form.companyPhone}</p> : null}
+              {form.accountType === 'business' && form.companyPhone ? <p>{form.companyPhone}</p> : null}
             </div>
           </div>
 

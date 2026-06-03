@@ -15,9 +15,13 @@ export default async function DashboardAccountPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, company_name, siret, company_address, company_email, default_tax_percent, default_hourly_rate')
+    .select('account_type, first_name, last_name, full_name, company_name, siret, company_address, company_email, default_tax_percent, default_hourly_rate')
     .eq('id', user.id)
     .maybeSingle();
+  const accountType = profile?.account_type === 'business' ? 'business' : 'personal';
+  const nameParts = (profile?.full_name ?? '').split(' ').filter(Boolean);
+  const firstName = profile?.first_name ?? nameParts[0] ?? '';
+  const lastName = profile?.last_name ?? nameParts.slice(1).join(' ') ?? '';
 
   return (
     <div className="h-full overflow-hidden p-4 md:p-5">
@@ -27,7 +31,10 @@ export default async function DashboardAccountPage() {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,560px)_320px]">
         <CompanyAccountForm
           userId={user.id}
+          accountType={accountType}
           initialValues={{
+            firstName,
+            lastName,
             companyName: profile?.company_name ?? '',
             siret: profile?.siret ?? '',
             companyAddress: profile?.company_address ?? '',
@@ -35,7 +42,14 @@ export default async function DashboardAccountPage() {
         />
 
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <InfoRow label="Nom" value={profile?.full_name || user.email || 'Non renseigne'} />
+          <InfoRow label="Type de compte" value={accountType === 'business' ? 'Entreprise' : 'Personnel'} />
+          <InfoRow label="Titulaire" value={`${firstName} ${lastName}`.trim() || user.email || 'Non renseigne'} />
+          {accountType === 'business' ? (
+            <>
+              <InfoRow label="Entreprise" value={profile?.company_name || 'Non renseigne'} />
+              <InfoRow label="SIRET" value={profile?.siret || 'Non renseigne'} />
+            </>
+          ) : null}
           <InfoRow label="Email" value={profile?.company_email || user.email || 'Non renseigne'} />
           <InfoRow label="TVA par defaut" value={`${profile?.default_tax_percent ?? 20} %`} />
           <InfoRow label="Taux horaire" value={formatEuro(Number(profile?.default_hourly_rate ?? 0))} />

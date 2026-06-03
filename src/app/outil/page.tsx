@@ -1,6 +1,7 @@
 import { Footer } from '@/components/Footer';
 import { Header } from '@/components/Header';
 import { ToolForm } from '@/components/ToolForm';
+import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { defaultOpportunityMeta, type OpportunityMeta } from '@/lib/opportunities';
 import { defaultMarketBenchmark, type MarketBenchmarkInput, type Profession } from '@/lib/market';
@@ -21,6 +22,10 @@ export default async function ToolPage({
   const {
     data: { user },
   } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
+
+  if (!user) {
+    redirect('/connexion?redirect=/outil');
+  }
 
   if (supabase) {
     const [{ data: professionRows }, { data: profile }] = await Promise.all([

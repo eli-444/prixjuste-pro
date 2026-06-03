@@ -37,7 +37,11 @@ export default async function DashboardPage() {
     { data: recentQuotes },
     { data: recentCalculations },
   ] = await Promise.all([
-    supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle(),
+    supabase
+      .from('profiles')
+      .select('account_type, first_name, last_name, full_name, company_name, siret, company_address')
+      .eq('id', user.id)
+      .maybeSingle(),
     supabase
       .from('premium_entitlements')
       .select('status, source, valid_until, updated_at')
@@ -66,7 +70,13 @@ export default async function DashboardPage() {
       .limit(4),
   ]);
 
-  const displayName = profile?.full_name || user.user_metadata?.full_name || user.email;
+  const accountType = profile?.account_type === 'business' ? 'business' : 'personal';
+  const nameParts = (profile?.full_name ?? '').split(' ').filter(Boolean);
+  const holderName =
+    `${profile?.first_name ?? nameParts[0] ?? ''} ${profile?.last_name ?? nameParts.slice(1).join(' ') ?? ''}`.trim() ||
+    user.user_metadata?.full_name ||
+    user.email;
+  const displayName = accountType === 'business' ? profile?.company_name || holderName : holderName;
   const isPremium = Boolean(entitlement);
   const totalQuoteValue = (recentQuotes ?? []).reduce((total, quote) => total + Number(quote.total_including_tax ?? 0), 0);
 
@@ -141,6 +151,24 @@ export default async function DashboardPage() {
       </div>
 
       <aside className="min-h-0 space-y-4">
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h2 className="font-bold">Compte</h2>
+          <div className="mt-3 divide-y divide-slate-100">
+            <InfoRow label="Type" value={accountType === 'business' ? 'Entreprise' : 'Personnel'} />
+            {accountType === 'business' ? (
+              <>
+                <InfoRow label="Entreprise" value={profile?.company_name || 'Non renseigne'} />
+                <InfoRow label="SIRET" value={profile?.siret || 'Non renseigne'} />
+              </>
+            ) : (
+              <InfoRow label="Titulaire" value={holderName || 'Non renseigne'} />
+            )}
+          </div>
+          <Link href="/dashboard/mon-compte" className="mt-4 inline-flex w-full justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
+            Modifier le compte
+          </Link>
+        </section>
+
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="font-bold">Facturation</h2>
           <div className="mt-3 divide-y divide-slate-100">
