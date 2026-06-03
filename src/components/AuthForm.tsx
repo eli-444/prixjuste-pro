@@ -8,7 +8,7 @@ import { getSupabaseConfig } from '@/lib/supabase/env';
 
 type AuthMode = 'login' | 'signup';
 
-export function AuthForm({ redirectTo = '/mon-compte' }: { redirectTo?: string }) {
+export function AuthForm({ redirectTo = '/dashboard' }: { redirectTo?: string }) {
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

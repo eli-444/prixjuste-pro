@@ -38,5 +38,5 @@ async function LoginFormFromParams({
   searchParams: Promise<{ redirect?: string }>;
 }) {
   const params = await searchParams;
-  return <AuthForm redirectTo={params.redirect ?? '/mon-compte'} />;
+  return <AuthForm redirectTo={params.redirect ?? '/dashboard'} />;
 }

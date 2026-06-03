@@ -14,7 +14,7 @@ export function Footer() {
           <Link href="/outil" className="hover:text-slate-950">
             Calculateur
           </Link>
-          <Link href="/mon-compte" className="hover:text-slate-950">
+          <Link href="/dashboard" className="hover:text-slate-950">
             Mon compte
           </Link>
           <Link href="/mentions-legales" className="hover:text-slate-950">

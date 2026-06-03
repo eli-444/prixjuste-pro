@@ -38,7 +38,7 @@ export async function Header() {
           <Link href="/opportunites" className="transition hover:text-brand-600">
             Opportunites
           </Link>
-          <Link href={user ? '/mon-compte' : '/connexion'} className="transition hover:text-brand-600">
+          <Link href={user ? '/dashboard' : '/connexion'} className="transition hover:text-brand-600">
             {user ? 'Mon compte' : 'Connexion'}
           </Link>
           <Link href="/outil" className="rounded-full bg-[linear-gradient(135deg,#061747_0%,#0878f2_55%,#11cfc2_100%)] px-4 py-2 text-white shadow-glow transition hover:brightness-110">

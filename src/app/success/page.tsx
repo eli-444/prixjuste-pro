@@ -59,7 +59,7 @@ export default function SuccessPage() {
                 Ouvrir le calculateur
                 <ArrowRight size={16} />
               </Link>
-              <Link href="/mon-compte" className="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-6 py-4 text-sm font-semibold text-slate-950">
+              <Link href="/dashboard" className="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-6 py-4 text-sm font-semibold text-slate-950">
                 Voir mon compte
               </Link>
             </div>
