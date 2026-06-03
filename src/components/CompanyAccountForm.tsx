@@ -99,13 +99,13 @@ export function CompanyAccountForm({
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-5 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-600">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-3 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-600">
         {isBusiness ? 'Compte entreprise' : 'Compte personnel'}
       </div>
 
-      <div className="grid gap-4">
-        <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           <TextField label="Prenom" value={values.firstName} onChange={(value) => updateField('firstName', value)} />
           <TextField label="Nom" value={values.lastName} onChange={(value) => updateField('lastName', value)} />
         </div>
@@ -114,27 +114,27 @@ export function CompanyAccountForm({
           <>
             <TextField label="Nom de l'entreprise" value={values.companyName} onChange={(value) => updateField('companyName', value)} />
             <TextField label="Numero de SIRET" value={values.siret} onChange={(value) => updateField('siret', value)} inputMode="numeric" />
-            <label className="space-y-2">
+            <label className="space-y-1.5">
               <span className="text-sm font-bold text-slate-950">Adresse de l'entreprise</span>
               <textarea
                 value={values.companyAddress}
                 onChange={(event) => updateField('companyAddress', event.target.value)}
-                rows={4}
-                className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+                rows={2}
+                className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
               />
             </label>
           </>
         ) : null}
       </div>
 
-      {status ? <p className="mt-4 rounded-xl bg-aqua-50 px-4 py-3 text-sm font-semibold text-aqua-600">{status}</p> : null}
-      {error ? <p className="mt-4 rounded-xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{error}</p> : null}
+      {status ? <p className="mt-3 rounded-xl bg-aqua-50 px-3 py-2 text-sm font-semibold text-aqua-600">{status}</p> : null}
+      {error ? <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">{error}</p> : null}
 
       <button
         type="button"
         onClick={save}
         disabled={isSaving}
-        className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-brand-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-brand-900 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
       >
         <Save size={16} />
         {isSaving ? 'Enregistrement...' : 'Enregistrer'}
@@ -155,13 +155,13 @@ function TextField({
   inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
 }) {
   return (
-    <label className="space-y-2">
+    <label className="space-y-1.5">
       <span className="text-sm font-bold text-slate-950">{label}</span>
       <input
         value={value}
         inputMode={inputMode}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
       />
     </label>
   );

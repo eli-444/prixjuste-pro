@@ -32,6 +32,7 @@ export function EditableOpportunityQuote({ initialOpen, quote }: EditableOpportu
   const [quoteNumber, setQuoteNumber] = useState(`DV-${quote.id.slice(0, 8).toUpperCase()}`);
   const [quoteDate, setQuoteDate] = useState(toDateInputValue(quote.createdAt));
   const [validUntil, setValidUntil] = useState(toDateInputValue(addDays(quote.createdAt, 30)));
+  const [shareCapital, setShareCapital] = useState('');
   const [paymentTerms, setPaymentTerms] = useState('30% a la validation du devis.\nSolde a la livraison ou a la fin de mission.');
   const [notes, setNotes] = useState(
     "Les prix sont etablis sur les informations communiquees a la date du devis.\nToute demande supplementaire pourra faire l'objet d'un devis complementaire.",
@@ -148,7 +149,7 @@ export function EditableOpportunityQuote({ initialOpen, quote }: EditableOpportu
           </section>
 
           <footer className="mt-20 text-center text-[10px] leading-5 text-slate-500">
-            <p>{issuerName} - au capital de ... euros</p>
+            <p>{issuerName}{shareCapital ? ` - au capital de ${shareCapital} euros` : ''}</p>
             <p>N° Siret : {getSiret(quote.issuerLines) || '...'}</p>
           </footer>
         </article>
@@ -160,12 +161,14 @@ export function EditableOpportunityQuote({ initialOpen, quote }: EditableOpportu
           logoUrl={logoUrl}
           quoteDate={quoteDate}
           validUntil={validUntil}
+          shareCapital={shareCapital}
           paymentTerms={paymentTerms}
           notes={notes}
           onQuoteNumberChange={setQuoteNumber}
           onLogoUrlChange={setLogoUrl}
           onQuoteDateChange={setQuoteDate}
           onValidUntilChange={setValidUntil}
+          onShareCapitalChange={setShareCapital}
           onPaymentTermsChange={setPaymentTerms}
           onNotesChange={setNotes}
           onClose={() => setIsModalOpen(false)}
@@ -180,12 +183,14 @@ function QuoteSettingsModal({
   logoUrl,
   quoteDate,
   validUntil,
+  shareCapital,
   paymentTerms,
   notes,
   onQuoteNumberChange,
   onLogoUrlChange,
   onQuoteDateChange,
   onValidUntilChange,
+  onShareCapitalChange,
   onPaymentTermsChange,
   onNotesChange,
   onClose,
@@ -194,12 +199,14 @@ function QuoteSettingsModal({
   logoUrl: string;
   quoteDate: string;
   validUntil: string;
+  shareCapital: string;
   paymentTerms: string;
   notes: string;
   onQuoteNumberChange: (value: string) => void;
   onLogoUrlChange: (value: string) => void;
   onQuoteDateChange: (value: string) => void;
   onValidUntilChange: (value: string) => void;
+  onShareCapitalChange: (value: string) => void;
   onPaymentTermsChange: (value: string) => void;
   onNotesChange: (value: string) => void;
   onClose: () => void;
@@ -250,7 +257,7 @@ function QuoteSettingsModal({
           <TextField label="Numero du devis" value={quoteNumber} onChange={onQuoteNumberChange} />
           <TextField label="Date du devis" type="date" value={quoteDate} onChange={onQuoteDateChange} />
           <TextField label="Date limite" type="date" value={validUntil} onChange={onValidUntilChange} />
-          <div />
+          <TextField label="Capital social (EUR)" value={shareCapital} onChange={onShareCapitalChange} />
           <TextArea label="Conditions de paiement" value={paymentTerms} onChange={onPaymentTermsChange} />
           <TextArea label="Conditions et notes" value={notes} onChange={onNotesChange} />
         </div>

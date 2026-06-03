@@ -122,7 +122,7 @@ export default async function OpportunityDetailPage({
       <Header />
       <main className="bg-slate-100 px-4 py-12 md:py-16">
         <section className="mx-auto max-w-6xl">
-          <Link href="/opportunites" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-950">
+          <Link href="/dashboard/opportunites" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-950">
             <ArrowLeft size={16} />
             Retour aux opportunites
           </Link>

@@ -24,11 +24,11 @@ export default async function DashboardAccountPage() {
   const lastName = profile?.last_name ?? nameParts.slice(1).join(' ') ?? '';
 
   return (
-    <div className="h-full overflow-hidden p-4 md:p-5">
-      <header className="mb-4">
+    <div className="h-full overflow-auto p-3 md:p-4">
+      <header className="mb-3">
         <h1 className="text-2xl font-bold tracking-tight">Mon compte</h1>
       </header>
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,560px)_320px]">
+      <div className="grid max-w-5xl gap-3 lg:grid-cols-[minmax(0,500px)_300px]">
         <CompanyAccountForm
           userId={user.id}
           accountType={accountType}
@@ -41,7 +41,7 @@ export default async function DashboardAccountPage() {
           }}
         />
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <InfoRow label="Type de compte" value={accountType === 'business' ? 'Entreprise' : 'Personnel'} />
           <InfoRow label="Titulaire" value={`${firstName} ${lastName}`.trim() || user.email || 'Non renseigne'} />
           {accountType === 'business' ? (
@@ -53,7 +53,7 @@ export default async function DashboardAccountPage() {
           <InfoRow label="Email" value={profile?.company_email || user.email || 'Non renseigne'} />
           <InfoRow label="TVA par defaut" value={`${profile?.default_tax_percent ?? 20} %`} />
           <InfoRow label="Taux horaire" value={formatEuro(Number(profile?.default_hourly_rate ?? 0))} />
-          <div className="mt-5">
+          <div className="mt-4">
             <SignOutButton />
           </div>
         </section>
@@ -64,7 +64,7 @@ export default async function DashboardAccountPage() {
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-slate-100 py-3 first:pt-0 last:border-b-0">
+    <div className="flex items-center justify-between gap-4 border-b border-slate-100 py-2.5 first:pt-0 last:border-b-0">
       <span className="text-sm text-slate-500">{label}</span>
       <span className="text-right text-sm font-bold text-slate-950">{value}</span>
     </div>

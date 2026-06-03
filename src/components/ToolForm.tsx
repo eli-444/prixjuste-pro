@@ -1156,6 +1156,16 @@ export function ToolForm({
                   Impossible de charger les donnees marche pour cette selection.
                 </p>
               ) : null}
+              {market.professionSlug && market.region && marketDataStatus === 'ready' ? (
+                <div className="md:col-span-2">
+                  <MarketBenchmarkCard
+                    rate={matchingMarketRate}
+                    stat={matchingMarketStat}
+                    comparison={marketComparison}
+                    referencePrice={marketReferencePrice}
+                  />
+                </div>
+              ) : null}
             </div>
           </FormSection>
 

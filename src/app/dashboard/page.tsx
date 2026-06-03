@@ -89,9 +89,6 @@ export default async function DashboardPage() {
             <p className="mt-1 truncate text-sm text-slate-500">{displayName}</p>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/outil" className="rounded-xl bg-[linear-gradient(135deg,#061747_0%,#0878f2_55%,#11cfc2_100%)] px-4 py-2 text-sm font-bold text-white shadow-glow">
-              Nouveau calcul
-            </Link>
             <SignOutButton className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" />
           </div>
         </header>
