@@ -30,7 +30,7 @@ export function PricingCard() {
           </li>
         ))}
       </ul>
-      <CheckoutButton className="mt-8 w-full rounded-2xl bg-slate-950 px-5 py-4 text-sm font-semibold text-white transition hover:bg-slate-800">
+      <CheckoutButton className="w-full rounded-2xl bg-slate-950 px-5 py-4 text-sm font-semibold text-white transition hover:bg-slate-800">
         Demarrer l'abonnement premium
       </CheckoutButton>
       <p className="mt-3 text-center text-xs leading-5 text-slate-500">

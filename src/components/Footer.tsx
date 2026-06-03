@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CookiePreferencesButton } from './CookiePreferencesButton';
 
 export function Footer() {
   return (
@@ -23,6 +24,10 @@ export function Footer() {
           <Link href="/conditions" className="hover:text-slate-950">
             Conditions
           </Link>
+          <Link href="/confidentialite" className="hover:text-slate-950">
+            Confidentialite & cookies
+          </Link>
+          <CookiePreferencesButton />
         </div>
         <p className="md:text-right">© {new Date().getFullYear()} Tarifly. Tous droits reserves.</p>
       </div>

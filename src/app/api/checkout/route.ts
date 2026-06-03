@@ -5,6 +5,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 export async function POST(request: Request) {
   const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID;
   const appUrl = new URL(request.url).origin;
+  const body = (await request.json().catch(() => ({}))) as { legalAccepted?: boolean };
   const stripe = createStripeClient();
   const supabase = await createServerSupabaseClient();
   const {
@@ -20,6 +21,10 @@ export async function POST(request: Request) {
 
   if (!user) {
     return NextResponse.json({ error: 'Connectez-vous avant de debloquer le premium.' }, { status: 401 });
+  }
+
+  if (!body.legalAccepted) {
+    return NextResponse.json({ error: 'Les conditions doivent etre acceptees avant le paiement.' }, { status: 400 });
   }
 
   try {
@@ -42,6 +47,8 @@ export async function POST(request: Request) {
       metadata: {
         user_id: user.id,
         product: 'tarifly_premium',
+        legal_accepted: 'true',
+        legal_accepted_at: new Date().toISOString(),
       },
       subscription_data:
         mode === 'subscription'
@@ -49,6 +56,8 @@ export async function POST(request: Request) {
               metadata: {
                 user_id: user.id,
                 product: 'tarifly_premium',
+                legal_accepted: 'true',
+                legal_accepted_at: new Date().toISOString(),
               },
             }
           : undefined,
