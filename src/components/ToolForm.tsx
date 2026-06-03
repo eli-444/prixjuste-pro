@@ -98,7 +98,7 @@ const starterTemplates: Array<{ name: string; description: string; input: Pricin
   {
     name: 'Journee conseil',
     description: 'Prestation de service vendue a la journee.',
-    input: { ...defaultInput, billingMode: 'hourly', productCost: 0, workHours: 7, hourlyRate: 75, fixedFees: 40, taxPercent: 20 },
+    input: { ...defaultInput, billingMode: 'daily', productCost: 0, workHours: 1, hourlyRate: 450, fixedFees: 40, taxPercent: 20 },
   },
   {
     name: 'Forfait projet',
@@ -193,10 +193,6 @@ export function ToolForm({
   const effectiveJustification = getClientJustification(input, activePrice);
   const selectedProfession = professions.find((profession) => profession.slug === market.professionSlug);
   const hasFullAccess = isPremium || hasFreeFullUse;
-  const accessLabel = isPremium ? 'Premium actif' : hasFreeFullUse ? 'Premier calcul complet offert' : 'Premium requis';
-  const lockedAccessMessage = userId
-    ? 'Votre premier calcul complet a deja ete utilise. Le premium debloque la marge, le risque, le diagnostic, les exports et les devis avances sans limite.'
-    : 'Connectez-vous pour profiter de votre premier calcul complet offert. Ensuite, les calculs complets demandent Tarifly Premium.';
 
   useEffect(() => {
     if (!market.professionSlug || availableMarketUnits.length === 0 || availableMarketUnits.includes(market.unit)) {
@@ -594,6 +590,37 @@ export function ToolForm({
     }
   }
 
+  function buildCalculationPayload() {
+    return {
+      user_id: userId,
+      title: meta.title || 'Calcul sans titre',
+      client_name: meta.clientName || null,
+      opportunity_status: meta.status,
+      probability: meta.probability,
+      deadline: meta.deadline || null,
+      client_budget: meta.clientBudget || null,
+      next_action: meta.nextAction || null,
+      quote_validated: meta.quoteValidated,
+      quote_validated_at: meta.quoteValidated ? new Date().toISOString() : null,
+      market_profession_slug: market.professionSlug || null,
+      market_region: market.region || null,
+      market_city: market.city || null,
+      market_unit: market.unit,
+      market_reference_price: marketReferencePrice || null,
+      market_snapshot: matchingMarketRate ?? null,
+      activity_type: input.activityType,
+      input,
+      result: {
+        ...result,
+        proposedAnalysis,
+        effectiveRiskLevel,
+        effectiveDiagnosis,
+        effectiveJustification,
+      },
+      recommended_price: activePrice,
+    };
+  }
+
   async function saveCalculation() {
     setSaveStatus('');
 
@@ -609,42 +636,29 @@ export function ToolForm({
 
     try {
       const supabase = createBrowserSupabaseClient();
-      const { error } = await supabase.from('pricing_calculations').insert({
-        user_id: userId,
-        title: meta.title || 'Calcul sans titre',
-        client_name: meta.clientName || null,
-        opportunity_status: meta.status,
-        probability: meta.probability,
-        deadline: meta.deadline || null,
-        client_budget: meta.clientBudget || null,
-        next_action: meta.nextAction || null,
-        quote_validated: meta.quoteValidated,
-        quote_validated_at: meta.quoteValidated ? new Date().toISOString() : null,
-        market_profession_slug: market.professionSlug || null,
-        market_region: market.region || null,
-        market_city: market.city || null,
-        market_unit: market.unit,
-        market_reference_price: marketReferencePrice || null,
-        market_snapshot: matchingMarketRate ?? null,
-        activity_type: input.activityType,
-        input,
-        result: {
-          ...result,
-          proposedAnalysis,
-          effectiveRiskLevel,
-          effectiveDiagnosis,
-          effectiveJustification,
-        },
-        recommended_price: activePrice,
-      });
+      const query = currentCalculationId
+        ? supabase
+            .from('pricing_calculations')
+            .update(buildCalculationPayload())
+            .eq('id', currentCalculationId)
+            .eq('user_id', userId)
+            .select('id')
+            .single()
+        : supabase.from('pricing_calculations').insert(buildCalculationPayload()).select('id').single();
+
+      const { data, error } = await query;
 
       if (error) {
         throw error;
       }
 
-      setSaveStatus('Calcul sauvegarde dans votre compte.');
+      setSaveStatus('Opportunite enregistree.');
       if (!isPremium) {
         setHasFreeFullUse(false);
+      }
+
+      if (data?.id) {
+        window.location.href = `/dashboard/opportunites/${data.id}/devis`;
       }
     } catch (error) {
       setSaveStatus(error instanceof Error ? error.message : 'Sauvegarde impossible pour le moment.');
@@ -672,7 +686,7 @@ export function ToolForm({
             `Statut : ${statusLabels[meta.status]}`,
             `Budget client : ${formatCurrency(Number(meta.clientBudget || 0))}`,
             `Probabilite : ${formatPercent(meta.probability)}`,
-            `Mode de facturation : ${input.billingMode === 'hourly' ? 'A l heure' : 'Forfait'}`,
+            `Mode de facturation : ${getBillingModeLabel(input.billingMode)}`,
             `Prix client TTC : ${formatCurrency(activePrice)}`,
           ],
         },
@@ -685,7 +699,7 @@ export function ToolForm({
             `Frais paiement / plateforme : ${formatPercent(input.transactionFeesPercent)}`,
             `TVA / taxe : ${formatPercent(input.taxPercent)}`,
             `Temps prevu : ${input.workHours} h`,
-            `Tarif horaire facture : ${formatCurrency(input.hourlyRate)}`,
+            `Tarif facture : ${formatCurrency(input.hourlyRate)}`,
           ],
         },
         {
@@ -725,9 +739,9 @@ export function ToolForm({
       ['Couts', 'Frais fixes', formatCurrency(input.fixedFees)],
       ['Couts', 'Frais paiement / plateforme', formatPercent(input.transactionFeesPercent)],
       ['Couts', 'TVA / taxe', formatPercent(input.taxPercent)],
-      ['Facturation', 'Mode', input.billingMode === 'hourly' ? 'A l heure' : 'Forfait'],
+      ['Facturation', 'Mode', getBillingModeLabel(input.billingMode)],
       ['Facturation', 'Temps prevu', `${input.workHours} h`],
-      ['Facturation', 'Tarif horaire facture', formatCurrency(input.hourlyRate)],
+      ['Facturation', 'Tarif facture', formatCurrency(input.hourlyRate)],
       ['Facturation', 'Prix client TTC', formatCurrency(activePrice)],
       ['Rentabilite', 'Prix HT estime', formatCurrency(proposedAnalysis.priceExcludingTax)],
       ['Rentabilite', 'Profit net estime', formatCurrency(proposedAnalysis.netProfit)],
@@ -897,15 +911,10 @@ export function ToolForm({
 
   return (
     <>
-    <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_390px]">
+    <section className="mx-auto max-w-4xl">
       <div id="hypotheses" className="space-y-6">
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft md:p-8">
-          <FormSection
-            number="01"
-            title="Client"
-            description="Identifiez le prospect, l'etape du pipeline et le contexte de decision."
-            tone="teal"
-          >
+          <FormSection number="01" title="Client" tone="teal">
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <TextField label="Nom de l'opportunite" value={meta.title} onChange={(value) => updateMeta('title', value)} placeholder="Site vitrine - client X" help="Nom interne du calcul ou du dossier commercial que vous voulez retrouver plus tard." />
               <TextField label="Client / prospect" value={meta.clientName} onChange={(value) => updateMeta('clientName', value)} placeholder="Nom du client" help="Nom de l'entreprise ou de la personne a qui vous allez proposer le prix." />
@@ -992,7 +1001,7 @@ export function ToolForm({
           >
           <div className="mt-5 grid gap-5 md:grid-cols-2">
             <label className="space-y-2 md:col-span-2">
-              <LabelWithInfo label="Mode de facturation" help="Choisissez si le prix client est calcule avec un tarif horaire ou avec un montant forfaitaire." />
+              <LabelWithInfo label="Mode de facturation" help="Choisissez le format commercial du devis." />
               <select
                 value={input.billingMode}
                 onChange={(event) =>
@@ -1003,8 +1012,9 @@ export function ToolForm({
                 }
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
               >
-                <option value="hourly">A l'heure : tarif horaire x temps prevu</option>
-                <option value="fixed">Au forfait : montant global du devis</option>
+                <option value="hourly">A l'heure</option>
+                <option value="fixed">Prestation Global</option>
+                <option value="daily">Journee</option>
               </select>
             </label>
             {input.billingMode === 'hourly' ? (
@@ -1012,16 +1022,17 @@ export function ToolForm({
                 <NumberField label="Tarif horaire facture au client (EUR)" value={fields.hourlyRate} onChange={(value) => updateNumber('hourlyRate', value)} help="Prix que vous facturez au client pour une heure de travail." />
                 <NumberField label="Temps prevu (heures)" value={fields.workHours} onChange={(value) => updateNumber('workHours', value)} help="Nombre d'heures estime pour produire la mission." />
               </>
+            ) : input.billingMode === 'daily' ? (
+              <>
+                <NumberField label="Tarif journee facture au client (EUR)" value={fields.hourlyRate} onChange={(value) => updateNumber('hourlyRate', value)} help="Prix facture pour une journee." />
+                <NumberField label="Nombre de journees" value={fields.workHours} onChange={(value) => updateNumber('workHours', value)} help="Nombre de journees prevues." />
+              </>
             ) : (
               <>
                 <NumberField label="Montant global du devis (EUR TTC)" value={fields.proposedPrice} onChange={(value) => updateNumber('proposedPrice', value)} help="Prix total que vous souhaitez annoncer au client pour la mission." />
                 <NumberField label="Temps prevu (heures)" value={fields.workHours} onChange={(value) => updateNumber('workHours', value)} help="Temps estime pour mesurer la rentabilite horaire du forfait." />
               </>
             )}
-            <div className="rounded-xl border border-slate-200 bg-white p-4 md:col-span-2">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Prix calcule</p>
-              <p className="mt-2 text-2xl font-bold text-slate-950">{formatCurrency(activePrice)}</p>
-            </div>
             <details className="rounded-xl border border-slate-200 bg-white p-4 md:col-span-2">
               <summary className="cursor-pointer text-sm font-bold text-slate-950">Option : objectif de marge pour simulation</summary>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -1031,9 +1042,6 @@ export function ToolForm({
                   <p className="mt-1 font-bold text-slate-950">{formatCurrency(result.priceIncludingTax)}</p>
                 </div>
               </div>
-              <p className="mt-3 text-sm leading-6 text-slate-600">
-                Cette option sert uniquement a tester un objectif. La marge reelle affichee a droite reste calculee sur votre prix client.
-              </p>
             </details>
           </div>
           </FormSection>
@@ -1151,111 +1159,18 @@ export function ToolForm({
             </div>
           </FormSection>
 
-          <div className="mt-8">
-            <MarketBenchmarkCard
-              rate={matchingMarketRate}
-              stat={matchingMarketStat}
-              comparison={marketComparison}
-              referencePrice={marketReferencePrice}
-            />
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+            <button
+              type="button"
+              onClick={saveCalculation}
+              className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-6 py-4 text-sm font-bold text-white transition hover:bg-slate-800"
+            >
+              Valider
+            </button>
           </div>
+          {saveStatus ? <p className="mt-4 rounded-2xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700">{saveStatus}</p> : null}
         </section>
       </div>
-
-      <aside id="rentabilite" className="rounded-2xl border border-slate-200 bg-slate-950 p-6 text-white shadow-soft md:p-8 lg:sticky lg:top-32 lg:self-start">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-100">Resultat</p>
-        <div className="mt-5">
-          <p className="text-sm text-slate-300">Prix client calcule</p>
-          <p className="mt-1 text-5xl font-bold tracking-tight">{formatCurrency(activePrice)}</p>
-          <p className="mt-2 text-sm text-slate-300">
-            {input.billingMode === 'hourly' ? 'Tarif horaire x temps prevu' : 'Montant forfaitaire du devis'}
-          </p>
-          <p className="mt-3 inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-brand-100">
-            {accessLabel}
-          </p>
-        </div>
-
-        {premiumStatus === 'loading' ? (
-          <div className="mt-5 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm text-slate-200">
-            Verification de votre acces premium en cours...
-          </div>
-        ) : null}
-
-        <div className="mt-6 grid gap-3 text-sm">
-          <Metric label="Couts renseignes" value={formatCurrency(result.baseCost)} />
-          <Metric label="Score devis" value={hasFullAccess ? `${quoteHealthScore}/100` : 'Premium'} locked={!hasFullAccess} />
-          <Metric label="Profit net estime" value={hasFullAccess ? formatCurrency(proposedAnalysis.netProfit) : 'Premium'} locked={!hasFullAccess} />
-          <Metric label="Marge reelle" value={hasFullAccess ? formatPercent(proposedAnalysis.marginRate) : 'Premium'} locked={!hasFullAccess} />
-          <Metric label="Rentabilite horaire" value={hasFullAccess ? formatCurrency(proposedAnalysis.hourlyReality) : 'Premium'} locked={!hasFullAccess} />
-          <Metric label="Niveau de risque" value={hasFullAccess ? effectiveRiskLevel : 'Premium'} locked={!hasFullAccess} />
-        </div>
-
-        {hasFullAccess ? (
-          <div className="mt-6 rounded-2xl bg-white/10 p-4">
-            <p className="font-semibold">Diagnostic</p>
-            <p className="mt-2 text-sm font-semibold text-brand-100">{getQuoteHealthLabel(quoteHealthScore)}</p>
-            <p className="mt-2 text-sm leading-6 text-slate-200">{effectiveDiagnosis}</p>
-            <p className="mt-4 font-semibold">Justification client</p>
-            <p className="mt-2 text-sm leading-6 text-slate-200">{effectiveJustification}</p>
-            {hasFreeFullUse ? (
-              <p className="mt-4 rounded-xl border border-brand-100/30 bg-white/10 px-4 py-3 text-sm leading-6 text-brand-50">
-                Cette analyse complete est offerte pour votre premier calcul sauvegarde. Les prochains calculs complets
-                demanderont Tarifly Premium.
-              </p>
-            ) : null}
-          </div>
-        ) : (
-          <div className="mt-6 rounded-2xl border border-white/15 bg-white/10 p-4">
-            <div className="flex items-center gap-2 font-semibold">
-              <Lock size={16} />
-              Analyse complete verrouillee
-            </div>
-            <p className="mt-2 text-sm leading-6 text-slate-200">
-              {lockedAccessMessage}
-            </p>
-            <CheckoutButton className="mt-4 w-full rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100">
-              Demarrer Premium - 9,90 EUR / mois
-            </CheckoutButton>
-          </div>
-        )}
-
-        <div id="exports" className="mt-6 grid gap-3 sm:grid-cols-2">
-          <button
-            onClick={hasFullAccess ? downloadExport : undefined}
-            disabled={!hasFullAccess}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Download size={16} />
-            Export PDF
-          </button>
-          <button
-            onClick={hasFullAccess ? downloadCsvExport : undefined}
-            disabled={!hasFullAccess}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 px-4 py-3 text-sm font-semibold transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <FileSpreadsheet size={16} />
-            Export CSV
-          </button>
-          <button onClick={saveCalculation} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 px-4 py-3 text-sm font-semibold transition hover:bg-white/10">
-            <Save size={16} />
-            Sauvegarder cette opportunite
-          </button>
-          <button type="button" onClick={openQuoteModal} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 px-4 py-3 text-sm font-semibold transition hover:bg-white/10">
-            <FileText size={16} />
-            Generer devis
-          </button>
-        </div>
-
-        {saveStatus ? <p className="mt-4 rounded-2xl bg-white/10 px-4 py-3 text-sm text-slate-200">{saveStatus}</p> : null}
-        {quoteShareUrl ? (
-          <div className="mt-4 rounded-2xl border border-white/15 bg-white/10 p-4">
-            <p className="text-sm font-semibold text-white">Lien client</p>
-            <a href={quoteShareUrl} target="_blank" rel="noreferrer" className="mt-2 block break-all text-sm text-brand-100 underline">
-              {quoteShareUrl}
-            </a>
-          </div>
-        ) : null}
-      </aside>
     </section>
     {quoteModalOpen ? (
       <QuoteModal
@@ -1426,9 +1341,9 @@ function createDefaultQuoteItem(input: PricingInput, description: string): Quote
   return {
     id: createQuoteItemId(),
     description,
-    quantity: input.billingMode === 'hourly' ? String(input.workHours || 1) : '1',
-    unit: input.billingMode === 'hourly' ? 'heure' : 'forfait',
-    unitPriceIncludingTax: input.billingMode === 'hourly' ? String(input.hourlyRate || 0) : String(getClientPrice(input) || 0),
+    quantity: input.billingMode === 'fixed' ? '1' : String(input.workHours || 1),
+    unit: input.billingMode === 'hourly' ? 'heure' : input.billingMode === 'daily' ? 'journee' : 'forfait',
+    unitPriceIncludingTax: input.billingMode === 'fixed' ? String(getClientPrice(input) || 0) : String(input.hourlyRate || 0),
     taxPercent: String(input.taxPercent || 0),
   };
 }
@@ -1520,7 +1435,6 @@ function FormSection({
     violet: 'bg-indigo-600 text-white',
     green: 'bg-emerald-600 text-white',
   };
-  const mutedText = tone === 'dark' ? 'text-slate-300' : 'text-slate-500';
   const pill = pills[tone];
 
   return (
@@ -1529,7 +1443,6 @@ function FormSection({
         <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-sm font-bold ${pill}`}>{number}</span>
         <div>
           <h2 className="text-lg font-bold tracking-tight">{title}</h2>
-          {description ? <p className={`mt-1 text-sm leading-6 ${mutedText}`}>{description}</p> : null}
         </div>
       </div>
       {children}
@@ -1566,7 +1479,17 @@ function getClientJustification(input: PricingInput, activePrice: number) {
     return `Prix client : ${formatCurrency(activePrice)}. Ce montant correspond au tarif horaire facture multiplie par le temps estime, avec les couts directs et frais renseignes controles dans la marge.`;
   }
 
+  if (input.billingMode === 'daily') {
+    return `Prix client : ${formatCurrency(activePrice)}. Ce montant correspond au tarif journee multiplie par le nombre de journees prevues.`;
+  }
+
   return `Prix client : ${formatCurrency(activePrice)}. Ce montant correspond au forfait du devis, avec une rentabilite controlee a partir des couts directs, frais fixes, frais de paiement et taxes renseignes.`;
+}
+
+function getBillingModeLabel(mode: PricingInput['billingMode']) {
+  if (mode === 'hourly') return "A l'heure";
+  if (mode === 'daily') return 'Journee';
+  return 'Prestation Global';
 }
 
 function getActivityTypeLabel(activityType: PricingInput['activityType']) {
@@ -1743,6 +1666,10 @@ function getAutoMarketReferencePrice(unit: MarketUnit, input: PricingInput, acti
     return input.hourlyRate;
   }
 
+  if (unit === 'day' && input.billingMode === 'daily') {
+    return input.hourlyRate;
+  }
+
   return activePrice;
 }
 
@@ -1751,7 +1678,7 @@ function getAutoSourceLabel(unit: MarketUnit) {
     return 'Utiliser le tarif horaire facture';
   }
 
-  return 'Utiliser le prix client calcule';
+  return 'Utiliser le prix client';
 }
 
 function BenchmarkMetric({ label, value }: { label: string; value: string }) {

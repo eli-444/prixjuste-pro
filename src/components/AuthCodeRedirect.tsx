@@ -12,7 +12,7 @@ export function AuthCodeRedirect() {
       return;
     }
 
-    window.location.replace(`/modifier-mot-de-passe?code=${encodeURIComponent(code)}`);
+    window.location.replace(`/auth/callback?code=${encodeURIComponent(code)}&next=${encodeURIComponent('/connexion')}`);
   }, []);
 
   return null;

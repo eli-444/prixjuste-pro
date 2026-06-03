@@ -72,7 +72,9 @@ export function UpdatePasswordForm() {
 
       setPassword('');
       setConfirmPassword('');
-      setMessage('Votre mot de passe a bien ete modifie. Vous pouvez vous connecter.');
+      setMessage('Votre mot de passe a bien ete modifie. Redirection vers la connexion...');
+      await supabase.auth.signOut();
+      window.location.href = '/connexion';
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Une erreur est survenue.');
     } finally {

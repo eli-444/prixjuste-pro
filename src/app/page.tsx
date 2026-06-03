@@ -15,7 +15,7 @@ export default async function HomePage({
   const params = await searchParams;
 
   if (params?.code) {
-    redirect(`/modifier-mot-de-passe?code=${encodeURIComponent(params.code)}`);
+    redirect(`/auth/callback?code=${encodeURIComponent(params.code)}&next=${encodeURIComponent('/connexion')}`);
   }
 
   return (

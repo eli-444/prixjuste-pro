@@ -94,7 +94,7 @@ create table if not exists public.service_templates (
   name text not null,
   description text,
   activity_type text not null default 'service' check (activity_type in ('service', 'product', 'mixed')),
-  billing_mode text not null default 'hourly' check (billing_mode in ('hourly', 'fixed')),
+  billing_mode text not null default 'hourly' check (billing_mode in ('hourly', 'fixed', 'daily')),
   product_cost numeric(12, 2) not null default 0,
   work_hours numeric(12, 2) not null default 0,
   hourly_rate numeric(12, 2) not null default 0,
@@ -110,6 +110,13 @@ create table if not exists public.service_templates (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.service_templates
+drop constraint if exists service_templates_billing_mode_check;
+
+alter table public.service_templates
+add constraint service_templates_billing_mode_check
+check (billing_mode in ('hourly', 'fixed', 'daily'));
 
 create table if not exists public.quotes (
   id uuid primary key default gen_random_uuid(),

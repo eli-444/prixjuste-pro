@@ -1,6 +1,6 @@
 export type PricingInput = {
   activityType: 'service' | 'product' | 'mixed';
-  billingMode: 'hourly' | 'fixed';
+  billingMode: 'hourly' | 'fixed' | 'daily';
   productCost: number;
   workHours: number;
   hourlyRate: number;
@@ -56,7 +56,7 @@ export function calculatePricing(input: PricingInput): PricingResult {
   const taxRate = Math.max(0, input.taxPercent) / 100;
 
   const baseCost = productCost + fixedFees;
-  const servicePrice = input.billingMode === 'hourly' ? clientLaborPrice : 0;
+  const servicePrice = input.billingMode === 'fixed' ? 0 : clientLaborPrice;
   const pricedCosts = desiredMargin >= 1 ? baseCost * 2 : baseCost / (1 - desiredMargin);
   const priceBeforeFees = servicePrice + pricedCosts;
   const priceExcludingTax = transactionRate >= 1 ? priceBeforeFees : priceBeforeFees / (1 - transactionRate);
