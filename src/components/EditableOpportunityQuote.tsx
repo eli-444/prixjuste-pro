@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Briefcase, CreditCard, FileText, PenLine, UserRound } from 'lucide-react';
 import { OpportunityPrintActions } from '@/components/OpportunityPrintActions';
 import type { PricingInput } from '@/lib/pricing';
 import { formatCurrency } from '@/lib/utils';
@@ -29,7 +28,7 @@ type EditableOpportunityQuoteProps = {
 
 export function EditableOpportunityQuote({ initialOpen, quote }: EditableOpportunityQuoteProps) {
   const [isModalOpen, setIsModalOpen] = useState(initialOpen);
-  const [quoteNumber, setQuoteNumber] = useState(`OP-${quote.id.slice(0, 8).toUpperCase()}`);
+  const [quoteNumber, setQuoteNumber] = useState(`DV-${quote.id.slice(0, 8).toUpperCase()}`);
   const [quoteDate, setQuoteDate] = useState(toDateInputValue(quote.createdAt));
   const [validUntil, setValidUntil] = useState(toDateInputValue(addDays(quote.createdAt, 30)));
   const [paymentTerms, setPaymentTerms] = useState('30% a la validation du devis.\nSolde a la livraison ou a la fin de mission.');
@@ -37,6 +36,8 @@ export function EditableOpportunityQuote({ initialOpen, quote }: EditableOpportu
     "Les prix sont etablis sur les informations communiquees a la date du devis.\nToute demande supplementaire pourra faire l'objet d'un devis complementaire.",
   );
   const serviceLine = useMemo(() => buildServiceLine(quote.title, quote.input, quote.finalPrice), [quote]);
+  const issuerName = quote.issuerLines[0] || 'Tarifly';
+  const issuerDetails = quote.issuerLines.slice(1);
 
   return (
     <div className="h-full overflow-auto bg-slate-200 p-4 md:p-6 print:block print:h-auto print:overflow-visible print:bg-white print:p-0">
@@ -50,7 +51,7 @@ export function EditableOpportunityQuote({ initialOpen, quote }: EditableOpportu
         }
       `}</style>
 
-      <div className="mx-auto max-w-[980px]">
+      <div className="mx-auto max-w-[794px]">
         <div className="mb-4 flex items-center justify-between gap-4 print:hidden">
           <h1 className="text-2xl font-bold tracking-tight">Devis</h1>
           <div className="flex flex-wrap gap-3">
@@ -65,95 +66,90 @@ export function EditableOpportunityQuote({ initialOpen, quote }: EditableOpportu
           </div>
         </div>
 
-        <article className="quote-sheet relative overflow-hidden rounded-[4px] border border-slate-300 bg-white p-8 shadow-xl md:p-10">
-          <div className="absolute bottom-0 left-0 h-3 w-full bg-brand-700" />
-          <div className="absolute bottom-0 right-0 h-20 w-20 border-b-[80px] border-l-[80px] border-b-brand-900 border-l-transparent" />
-
-          <header className="grid gap-8 border-b border-slate-200 pb-8 md:grid-cols-[1fr_0.9fr]">
+        <article className="quote-sheet min-h-[1123px] bg-white p-10 text-[13px] text-slate-950 shadow-xl">
+          <header className="grid grid-cols-[1fr_260px] gap-8">
             <section>
-              <div className="flex items-center gap-4">
-                <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-brand-700 text-2xl font-black text-white">
-                  T
-                </div>
-                <div>
-                  <p className="text-4xl font-black tracking-tight text-slate-950">{quote.issuerLines[0] || 'Tarifly'}</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-600">Devis commercial</p>
-                </div>
+              <div className="text-xs font-black uppercase tracking-wide text-slate-950">Logo</div>
+              <div className="mt-16 space-y-2 leading-5">
+                <p className="font-black">{issuerName}</p>
+                <InfoLines lines={issuerDetails} />
               </div>
-              <InfoLines className="mt-6" lines={quote.issuerLines.slice(1)} />
             </section>
 
-            <section className="md:text-right">
-              <h2 className="text-6xl font-black tracking-tight text-slate-950">DEVIS</h2>
-              <p className="mt-4 inline-flex rounded-full bg-brand-700 px-4 py-2 text-sm font-bold text-white">
-                {quote.statusLabel}
-              </p>
-              <div className="mt-6 grid gap-3 text-sm md:justify-end">
-                <HeaderMeta label="N devis" value={quoteNumber} />
-                <HeaderMeta label="Date" value={formatDateInput(quoteDate)} />
-                <HeaderMeta label="Valable jusqu'au" value={formatDateInput(validUntil)} accent />
-              </div>
+            <section>
+              <h2 className="text-2xl font-black text-[#63b915]">Devis N°</h2>
+              <p className="mt-2 text-sm font-semibold">Ville, le {formatDateInput(quoteDate)}</p>
+              <dl className="mt-8 grid grid-cols-[96px_1fr] gap-x-3 gap-y-2 text-sm">
+                <dt className="font-bold">N° devis</dt>
+                <dd className="text-right">{quoteNumber}</dd>
+                <dt className="font-bold">Validite</dt>
+                <dd className="text-right">{formatDateInput(validUntil)}</dd>
+              </dl>
             </section>
           </header>
 
-          <div className="mt-8 grid gap-8 md:grid-cols-2">
-            <DocumentBlock icon={<UserRound size={20} />} title="Client">
-              <p className="text-lg font-bold text-slate-950">{quote.clientName}</p>
-            </DocumentBlock>
+          <section className="ml-auto mt-12 w-[330px] border border-slate-950 p-3 leading-5">
+            <p className="font-black">{quote.clientName}</p>
+            <p>Adresse</p>
+            <p>Numero de telephone</p>
+            <p>Email</p>
+          </section>
 
-            <DocumentBlock icon={<Briefcase size={20} />} title="Projet">
-              <p className="text-lg font-bold text-slate-950">{quote.title}</p>
-              <p className="mt-1 text-sm text-slate-600">{getBillingModeLabel(quote.input.billingMode)}</p>
-            </DocumentBlock>
-          </div>
+          <section className="mt-16">
+            <table className="w-full table-fixed border-collapse text-xs">
+              <colgroup>
+                <col className="w-[38%]" />
+                <col className="w-[19%]" />
+                <col className="w-[14%]" />
+                <col className="w-[14%]" />
+                <col className="w-[15%]" />
+              </colgroup>
+              <thead>
+                <tr className="bg-[#84c916] text-white">
+                  <Th>Description</Th>
+                  <Th>Prix unitaire HT</Th>
+                  <Th>Unite</Th>
+                  <Th>Quantite</Th>
+                  <Th>Montant HT</Th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="bg-[#e7f6d5]">
+                  <Td strong>{serviceLine.title}</Td>
+                  <Td align="right">{formatCurrency(serviceLine.unitPriceExcludingTax)}</Td>
+                  <Td align="center">{serviceLine.unitLabel}</Td>
+                  <Td align="center">{serviceLine.quantity}</Td>
+                  <Td align="right">{formatCurrency(quote.subtotalExcludingTax)}</Td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
 
-          <div className="mt-8 overflow-hidden rounded-[6px] border border-slate-300">
-            <div className="grid grid-cols-[minmax(0,1fr)_90px_150px_150px] bg-brand-700 text-sm font-bold uppercase text-white">
-              <div className="px-5 py-4">Designation des prestations</div>
-              <div className="border-l border-white/30 px-4 py-4 text-center">Qte</div>
-              <div className="border-l border-white/30 px-4 py-4 text-right">Prix unitaire HT</div>
-              <div className="border-l border-white/30 px-4 py-4 text-right">Total HT</div>
-            </div>
-            <div className="grid grid-cols-[minmax(0,1fr)_90px_150px_150px] text-sm">
-              <div className="min-h-[76px] px-5 py-4">
-                <p className="font-bold text-slate-950">{serviceLine.title}</p>
-                <p className="mt-1 leading-6 text-slate-600">{serviceLine.description}</p>
-              </div>
-              <div className="flex items-center justify-center border-l border-slate-200 px-4 py-4 font-semibold">{serviceLine.quantity}</div>
-              <div className="flex items-center justify-end border-l border-slate-200 px-4 py-4 font-semibold">{formatCurrency(serviceLine.unitPriceExcludingTax)}</div>
-              <div className="flex items-center justify-end border-l border-slate-200 px-4 py-4 font-bold text-slate-950">{formatCurrency(quote.subtotalExcludingTax)}</div>
-            </div>
-          </div>
-
-          <div className="mt-8 grid gap-8 md:grid-cols-[1fr_420px]">
-            <div className="space-y-6">
-              <DocumentBlock icon={<CreditCard size={20} />} title="Conditions de paiement">
-                <BulletLines value={paymentTerms} />
-              </DocumentBlock>
-
-              <DocumentBlock icon={<FileText size={20} />} title="Conditions & notes">
-                <BulletLines value={notes} />
-              </DocumentBlock>
+          <section className="mt-10 grid grid-cols-[1fr_270px] gap-10">
+            <div className="min-h-[145px] border border-slate-950 p-4">
+              <p className="font-black">Modalites et conditions de reglement :</p>
+              <BulletLines value={paymentTerms} compact />
+              <p className="mt-6 font-black">Conditions et notes :</p>
+              <BulletLines value={notes} compact />
             </div>
 
             <div>
-              <div className="overflow-hidden rounded-[6px] border border-slate-300 text-sm">
-                <TotalRow label="Sous-total HT" value={formatCurrency(quote.subtotalExcludingTax)} />
-                <TotalRow label={`TVA (${quote.taxRate}%)`} value={formatCurrency(quote.taxAmount)} />
-                <TotalRow label="Couts directs" value={formatCurrency(quote.baseCost)} />
-                <TotalRow label="Profit estime" value={formatCurrency(quote.netProfit)} />
-                <div className="flex items-center justify-between bg-brand-700 px-5 py-4 text-xl font-black text-white">
-                  <span>Total TTC</span>
-                  <span>{formatCurrency(quote.finalPrice)}</span>
-                </div>
+              <div className="ml-auto w-full text-xs">
+                <TotalRow label="Total HT" value={formatCurrency(quote.subtotalExcludingTax)} />
+                <TotalRow label={`TVA ${quote.taxRate}%`} value={formatCurrency(quote.taxAmount)} />
+                <TotalRow label="Total TTC" value={formatCurrency(quote.finalPrice)} strong />
               </div>
 
-              <DocumentBlock className="mt-8" icon={<PenLine size={20} />} title="Signature & cachet">
-                <p className="text-sm leading-6 text-slate-700">Bon pour accord, date et signature.</p>
-                <div className="mt-4 h-24 rounded-[6px] border border-slate-300 bg-white" />
-              </DocumentBlock>
+              <p className="mt-12 text-center text-xs">Offre valable jusqu'au {formatDateInput(validUntil)}</p>
+              <p className="mt-4 text-center text-xs font-semibold">Signature / bon pour accord :</p>
+              <div className="mt-3 h-24 border border-slate-950 bg-white" />
             </div>
-          </div>
+          </section>
+
+          <footer className="mt-20 text-center text-[10px] leading-5 text-slate-500">
+            <p>{issuerName} - au capital de ... euros</p>
+            <p>N° Siret : {getSiret(quote.issuerLines) || '...'}</p>
+          </footer>
         </article>
       </div>
 
@@ -205,9 +201,7 @@ function QuoteSettingsModal({
     <div className="fixed inset-0 z-[90] grid place-items-center bg-slate-950/40 px-4 py-8 print:hidden">
       <div className="max-h-[92vh] w-full max-w-2xl overflow-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight text-slate-950">Parametres du devis</h2>
-          </div>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-950">Parametres du devis</h2>
           <button type="button" onClick={onClose} className="rounded-xl px-3 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100">
             Fermer
           </button>
@@ -262,40 +256,26 @@ function TextArea({ label, value, onChange }: { label: string; value: string; on
   );
 }
 
-function DocumentBlock({
-  icon,
-  title,
+function Th({ children }: { children: React.ReactNode }) {
+  return <th className="border border-white/70 px-2 py-2 text-center font-black">{children}</th>;
+}
+
+function Td({
   children,
-  className = '',
+  align = 'left',
+  strong,
 }: {
-  icon: React.ReactNode;
-  title: string;
   children: React.ReactNode;
-  className?: string;
+  align?: 'left' | 'center' | 'right';
+  strong?: boolean;
 }) {
-  return (
-    <section className={className}>
-      <div className="flex items-center gap-3 border-b-2 border-brand-700 pb-2 text-brand-700">
-        {icon}
-        <h3 className="text-lg font-black uppercase">{title}</h3>
-      </div>
-      <div className="pt-4">{children}</div>
-    </section>
-  );
+  const alignClass = align === 'center' ? 'text-center' : align === 'right' ? 'text-right' : 'text-left';
+  return <td className={`border border-white px-2 py-2 ${alignClass} ${strong ? 'font-bold' : ''}`}>{children}</td>;
 }
 
-function HeaderMeta({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+function InfoLines({ lines }: { lines: string[] }) {
   return (
-    <div className="grid grid-cols-[120px_1fr] gap-4 text-left">
-      <span className="font-black uppercase text-slate-950">{label}</span>
-      <span className={`text-right font-bold ${accent ? 'text-brand-700' : 'text-slate-950'}`}>{value}</span>
-    </div>
-  );
-}
-
-function InfoLines({ lines, className = '' }: { lines: string[]; className?: string }) {
-  return (
-    <div className={`space-y-2 text-sm leading-6 text-slate-700 ${className}`}>
+    <div className="space-y-1">
       {lines.map((line, index) => (
         <p key={`${line}-${index}`} className="whitespace-pre-line">
           {line}
@@ -305,11 +285,10 @@ function InfoLines({ lines, className = '' }: { lines: string[]; className?: str
   );
 }
 
-function BulletLines({ value }: { value: string }) {
+function BulletLines({ value, compact }: { value: string; compact?: boolean }) {
   const lines = value.split('\n').map((line) => line.trim()).filter(Boolean);
-
   return (
-    <ul className="list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700">
+    <ul className={`${compact ? 'mt-2' : ''} list-disc space-y-1 pl-4 text-xs leading-5`}>
       {lines.map((line, index) => (
         <li key={`${line}-${index}`}>{line}</li>
       ))}
@@ -317,11 +296,11 @@ function BulletLines({ value }: { value: string }) {
   );
 }
 
-function TotalRow({ label, value }: { label: string; value: string }) {
+function TotalRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
-      <span className="font-semibold uppercase text-slate-700">{label}</span>
-      <span className="font-bold text-slate-950">{value}</span>
+    <div className={`grid grid-cols-[1fr_120px] ${strong ? 'bg-[#e7f6d5] font-black' : 'bg-white'} border-b border-white`}>
+      <span className="px-3 py-1 text-right">{label}</span>
+      <span className="px-3 py-1 text-right">{value}</span>
     </div>
   );
 }
@@ -334,16 +313,15 @@ function buildServiceLine(title: string, input: PricingInput, finalPrice: number
 
   return {
     title,
-    description: getBillingModeLabel(input.billingMode),
     quantity: formatQuantity(quantity),
+    unitLabel: input.billingMode === 'hourly' ? 'heures' : input.billingMode === 'daily' ? 'jours' : 'forfait',
     unitPriceExcludingTax,
   };
 }
 
-function getBillingModeLabel(mode: PricingInput['billingMode']) {
-  if (mode === 'hourly') return "A l'heure";
-  if (mode === 'daily') return 'Journee';
-  return 'Prestation Global';
+function getSiret(lines: string[]) {
+  const line = lines.find((value) => value.toLowerCase().includes('siret'));
+  return line?.replace(/siret\s*:\s*/i, '') ?? '';
 }
 
 function toDateInputValue(value: string) {
@@ -357,7 +335,7 @@ function addDays(value: string, days: number) {
 }
 
 function formatDateInput(value: string) {
-  return value ? new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' }).format(new Date(`${value}T00:00:00`)) : 'Date indisponible';
+  return value ? new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(new Date(`${value}T00:00:00`)) : 'Date indisponible';
 }
 
 function formatQuantity(value: number) {
