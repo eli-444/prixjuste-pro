@@ -658,7 +658,7 @@ export function ToolForm({
       }
 
       if (data?.id) {
-        window.location.href = `/dashboard/opportunites/${data.id}/devis`;
+        window.location.href = `/dashboard/opportunites/${data.id}/devis?setup=1`;
       }
     } catch (error) {
       setSaveStatus(error instanceof Error ? error.message : 'Sauvegarde impossible pour le moment.');

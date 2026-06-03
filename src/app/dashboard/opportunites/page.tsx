@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ArrowUpRight, Printer } from 'lucide-react';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { formatCurrency } from '@/lib/utils';
 import { statusLabels, type OpportunityStatus } from '@/lib/opportunities';
@@ -39,7 +38,7 @@ export default async function DashboardOpportunitiesPage() {
         {rows.length > 0 ? (
           <div className="divide-y divide-slate-200">
             {rows.map((row) => (
-              <div key={row.id} className="grid gap-3 p-4 text-sm transition hover:bg-slate-50 md:grid-cols-[1fr_160px_140px_170px] md:items-center">
+              <div key={row.id} className="grid gap-3 p-4 text-sm transition hover:bg-slate-50 md:grid-cols-[1fr_150px_130px_340px] md:items-center">
                 <div>
                   <Link href={`/opportunites/${row.id}`} className="font-bold text-slate-950 hover:text-brand-600">
                     {row.title || 'Calcul sans titre'}
@@ -51,13 +50,15 @@ export default async function DashboardOpportunitiesPage() {
                 <div className="flex items-center gap-3 md:justify-end">
                   <Link
                     href={`/dashboard/opportunites/${row.id}/devis`}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                    className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
                   >
-                    <Printer size={15} />
-                    Imprimer le devis
+                    Acceder au devis
                   </Link>
-                  <Link href={`/opportunites/${row.id}`} aria-label="Ouvrir l'opportunite" className="text-slate-400 transition hover:text-brand-600">
-                    <ArrowUpRight size={16} />
+                  <Link
+                    href={`/opportunites/${row.id}`}
+                    className="inline-flex items-center justify-center rounded-xl bg-brand-900 px-4 py-3 text-sm font-bold text-white transition hover:bg-brand-600"
+                  >
+                    Acceder a l'opportunite
                   </Link>
                 </div>
               </div>
