@@ -31,10 +31,10 @@ import {
 import { CheckoutButton } from './CheckoutButton';
 
 const PREMIUM_KEY = 'tarifly_premium';
-const QUOTE_COMPANY_KEY = 'tarifly_quote_company';
 
 type QuoteForm = {
   companyName: string;
+  companySiret: string;
   companyAddress: string;
   companyEmail: string;
   companyPhone: string;
@@ -156,6 +156,7 @@ export function ToolForm({
   ]);
   const [quoteForm, setQuoteForm] = useState<QuoteForm>(() => ({
     companyName: '',
+    companySiret: '',
     companyAddress: '',
     companyEmail: '',
     companyPhone: '',
@@ -324,26 +325,6 @@ export function ToolForm({
   }, [market.professionSlug, market.region]);
 
   useEffect(() => {
-    const storedCompany = window.localStorage.getItem(QUOTE_COMPANY_KEY);
-    if (!storedCompany) {
-      return;
-    }
-
-    try {
-      const company = JSON.parse(storedCompany) as Partial<QuoteForm>;
-      setQuoteForm((current) => ({
-        ...current,
-        companyName: company.companyName ?? current.companyName,
-        companyAddress: company.companyAddress ?? current.companyAddress,
-        companyEmail: company.companyEmail ?? current.companyEmail,
-        companyPhone: company.companyPhone ?? current.companyPhone,
-      }));
-    } catch {
-      window.localStorage.removeItem(QUOTE_COMPANY_KEY);
-    }
-  }, []);
-
-  useEffect(() => {
     let isMounted = true;
 
     async function loadAccountState() {
@@ -370,17 +351,18 @@ export function ToolForm({
 
         const { data: profile } = await supabase
           .from('profiles')
-          .select('company_name, company_address, company_email, company_phone')
+          .select('company_name, siret, company_address, company_email, company_phone')
           .eq('id', user.id)
           .maybeSingle();
 
         if (profile) {
           setQuoteForm((current) => ({
             ...current,
-            companyName: current.companyName || profile.company_name || '',
-            companyAddress: current.companyAddress || profile.company_address || '',
-            companyEmail: current.companyEmail || profile.company_email || '',
-            companyPhone: current.companyPhone || profile.company_phone || '',
+            companyName: profile.company_name || '',
+            companySiret: profile.siret || '',
+            companyAddress: profile.company_address || '',
+            companyEmail: profile.company_email || '',
+            companyPhone: profile.company_phone || '',
           }));
         }
 
@@ -795,7 +777,11 @@ export function ToolForm({
     const missingField = requiredFields.find((field) => !quoteForm[field].trim());
 
     if (missingField) {
-      setQuoteError('Merci de remplir les informations entreprise, client et numero de devis.');
+      setQuoteError(
+        missingField === 'companyName' || missingField === 'companyAddress'
+          ? "Renseignez votre entreprise dans Mon compte avant de generer un devis."
+          : 'Merci de remplir les informations client et le numero de devis.',
+      );
       return;
     }
 
@@ -808,16 +794,6 @@ export function ToolForm({
       return;
     }
 
-    window.localStorage.setItem(
-      QUOTE_COMPANY_KEY,
-      JSON.stringify({
-        companyName: quoteForm.companyName,
-        companyAddress: quoteForm.companyAddress,
-        companyEmail: quoteForm.companyEmail,
-        companyPhone: quoteForm.companyPhone,
-      }),
-    );
-
     const subtotalExcludingTax = computedItems.reduce((total, item) => total + item.totalExcludingTax, 0);
     const taxAmount = computedItems.reduce((total, item) => total + item.taxAmount, 0);
     const totalIncludingTax = computedItems.reduce((total, item) => total + item.totalIncludingTax, 0);
@@ -827,6 +803,7 @@ export function ToolForm({
       quoteDate: new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' }).format(new Date()),
       company: {
         name: quoteForm.companyName,
+        siret: quoteForm.companySiret,
         address: quoteForm.companyAddress,
         email: quoteForm.companyEmail,
         phone: quoteForm.companyPhone,
@@ -865,6 +842,7 @@ export function ToolForm({
           status: 'generated',
           company_snapshot: {
             name: quoteForm.companyName,
+            siret: quoteForm.companySiret,
             address: quoteForm.companyAddress,
             email: quoteForm.companyEmail,
             phone: quoteForm.companyPhone,
@@ -1310,9 +1288,6 @@ function QuoteModal({
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold tracking-tight text-slate-950">Generer un devis</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Le PDF client contient uniquement les informations commerciales du devis.
-            </p>
           </div>
           <button
             type="button"
@@ -1326,11 +1301,19 @@ function QuoteModal({
 
         <div className="mt-6 grid gap-6 md:grid-cols-2">
           <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <h3 className="font-bold text-slate-950">Votre entreprise</h3>
-            <TextField label="Nom entreprise" value={form.companyName} onChange={(value) => onChange('companyName', value)} help="Nom qui apparaitra comme emetteur du devis." />
-            <TextAreaField label="Adresse entreprise" value={form.companyAddress} onChange={(value) => onChange('companyAddress', value)} help="Adresse postale affichee dans le bloc emetteur du devis." />
-            <TextField label="Email" value={form.companyEmail} onChange={(value) => onChange('companyEmail', value)} help="Email de contact affiche sur le devis." />
-            <TextField label="Telephone" value={form.companyPhone} onChange={(value) => onChange('companyPhone', value)} help="Telephone de contact affiche sur le devis." />
+            <div className="flex items-start justify-between gap-4">
+              <h3 className="font-bold text-slate-950">Emetteur</h3>
+              <a href="/dashboard/mon-compte" className="text-sm font-bold text-brand-600 hover:text-aqua-600">
+                Modifier
+              </a>
+            </div>
+            <div className="space-y-2 text-sm leading-6 text-slate-700">
+              <p className="font-bold text-slate-950">{form.companyName || 'Entreprise non renseignee'}</p>
+              {form.companySiret ? <p>SIRET {form.companySiret}</p> : null}
+              <p className="whitespace-pre-line">{form.companyAddress || 'Adresse non renseignee'}</p>
+              {form.companyEmail ? <p>{form.companyEmail}</p> : null}
+              {form.companyPhone ? <p>{form.companyPhone}</p> : null}
+            </div>
           </div>
 
           <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">

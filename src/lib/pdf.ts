@@ -10,6 +10,7 @@ export type TariflyQuoteData = {
   quoteDate: string;
   company: {
     name: string;
+    siret?: string;
     address: string;
     email?: string;
     phone?: string;
@@ -100,7 +101,7 @@ export async function createQuotePdf(data: TariflyQuoteData) {
   ctx.fillText(data.quoteDate, pageWidth - margin, 184);
   ctx.textAlign = 'left';
 
-  drawQuoteParty(ctx, 'Emetteur', data.company.name, data.company.address, [data.company.email, data.company.phone], margin, 270);
+  drawQuoteParty(ctx, 'Emetteur', data.company.name, data.company.address, [data.company.siret ? `SIRET ${data.company.siret}` : undefined, data.company.email, data.company.phone], margin, 270);
   drawQuoteParty(ctx, 'Client', data.client.name, data.client.address, [data.client.email], 672, 270);
 
   let y = 560;
