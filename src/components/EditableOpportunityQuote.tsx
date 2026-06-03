@@ -28,6 +28,7 @@ type EditableOpportunityQuoteProps = {
 
 export function EditableOpportunityQuote({ initialOpen, quote }: EditableOpportunityQuoteProps) {
   const [isModalOpen, setIsModalOpen] = useState(initialOpen);
+  const [logoUrl, setLogoUrl] = useState('');
   const [quoteNumber, setQuoteNumber] = useState(`DV-${quote.id.slice(0, 8).toUpperCase()}`);
   const [quoteDate, setQuoteDate] = useState(toDateInputValue(quote.createdAt));
   const [validUntil, setValidUntil] = useState(toDateInputValue(addDays(quote.createdAt, 30)));
@@ -69,7 +70,13 @@ export function EditableOpportunityQuote({ initialOpen, quote }: EditableOpportu
         <article className="quote-sheet min-h-[1123px] bg-white p-10 text-[13px] text-slate-950 shadow-xl">
           <header className="grid grid-cols-[1fr_260px] gap-8">
             <section>
-              <div className="text-xs font-black uppercase tracking-wide text-slate-950">Logo</div>
+              <div className="flex h-20 w-36 items-center justify-start">
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Logo du devis" className="max-h-20 max-w-36 object-contain" />
+                ) : (
+                  <div className="text-xs font-black uppercase tracking-wide text-slate-950">Logo</div>
+                )}
+              </div>
               <div className="mt-16 space-y-2 leading-5">
                 <p className="font-black">{issuerName}</p>
                 <InfoLines lines={issuerDetails} />
@@ -77,7 +84,7 @@ export function EditableOpportunityQuote({ initialOpen, quote }: EditableOpportu
             </section>
 
             <section>
-              <h2 className="text-2xl font-black text-[#63b915]">Devis N°</h2>
+              <h2 className="text-2xl font-black text-brand-600">Devis N°</h2>
               <p className="mt-2 text-sm font-semibold">Ville, le {formatDateInput(quoteDate)}</p>
               <dl className="mt-8 grid grid-cols-[96px_1fr] gap-x-3 gap-y-2 text-sm">
                 <dt className="font-bold">N° devis</dt>
@@ -105,7 +112,7 @@ export function EditableOpportunityQuote({ initialOpen, quote }: EditableOpportu
                 <col className="w-[15%]" />
               </colgroup>
               <thead>
-                <tr className="bg-[#84c916] text-white">
+                <tr className="bg-brand-600 text-white">
                   <Th>Description</Th>
                   <Th>Prix unitaire HT</Th>
                   <Th>Unite</Th>
@@ -114,7 +121,7 @@ export function EditableOpportunityQuote({ initialOpen, quote }: EditableOpportu
                 </tr>
               </thead>
               <tbody>
-                <tr className="bg-[#e7f6d5]">
+                <tr className="bg-brand-50">
                   <Td strong>{serviceLine.title}</Td>
                   <Td align="right">{formatCurrency(serviceLine.unitPriceExcludingTax)}</Td>
                   <Td align="center">{serviceLine.unitLabel}</Td>
@@ -156,11 +163,13 @@ export function EditableOpportunityQuote({ initialOpen, quote }: EditableOpportu
       {isModalOpen ? (
         <QuoteSettingsModal
           quoteNumber={quoteNumber}
+          logoUrl={logoUrl}
           quoteDate={quoteDate}
           validUntil={validUntil}
           paymentTerms={paymentTerms}
           notes={notes}
           onQuoteNumberChange={setQuoteNumber}
+          onLogoUrlChange={setLogoUrl}
           onQuoteDateChange={setQuoteDate}
           onValidUntilChange={setValidUntil}
           onPaymentTermsChange={setPaymentTerms}
@@ -174,11 +183,13 @@ export function EditableOpportunityQuote({ initialOpen, quote }: EditableOpportu
 
 function QuoteSettingsModal({
   quoteNumber,
+  logoUrl,
   quoteDate,
   validUntil,
   paymentTerms,
   notes,
   onQuoteNumberChange,
+  onLogoUrlChange,
   onQuoteDateChange,
   onValidUntilChange,
   onPaymentTermsChange,
@@ -186,17 +197,33 @@ function QuoteSettingsModal({
   onClose,
 }: {
   quoteNumber: string;
+  logoUrl: string;
   quoteDate: string;
   validUntil: string;
   paymentTerms: string;
   notes: string;
   onQuoteNumberChange: (value: string) => void;
+  onLogoUrlChange: (value: string) => void;
   onQuoteDateChange: (value: string) => void;
   onValidUntilChange: (value: string) => void;
   onPaymentTermsChange: (value: string) => void;
   onNotesChange: (value: string) => void;
   onClose: () => void;
 }) {
+  function handleLogoChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      onLogoUrlChange(typeof reader.result === 'string' ? reader.result : '');
+    };
+    reader.readAsDataURL(file);
+  }
+
   return (
     <div className="fixed inset-0 z-[90] grid place-items-center bg-slate-950/40 px-4 py-8 print:hidden">
       <div className="max-h-[92vh] w-full max-w-2xl overflow-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
@@ -208,6 +235,24 @@ function QuoteSettingsModal({
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
+          <label className="space-y-2 md:col-span-2">
+            <span className="text-sm font-bold text-slate-950">Logo du devis</span>
+            <div className="grid gap-4 rounded-xl border border-slate-200 p-4 md:grid-cols-[160px_1fr] md:items-center">
+              <div className="flex h-24 w-40 items-center justify-center rounded-lg bg-slate-50">
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Apercu du logo" className="max-h-24 max-w-40 object-contain" />
+                ) : (
+                  <span className="text-xs font-bold uppercase tracking-wide text-slate-400">Aucun logo</span>
+                )}
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleLogoChange}
+                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-brand-900 file:px-4 file:py-2 file:text-sm file:font-bold file:text-white"
+              />
+            </div>
+          </label>
           <TextField label="Numero du devis" value={quoteNumber} onChange={onQuoteNumberChange} />
           <TextField label="Date du devis" type="date" value={quoteDate} onChange={onQuoteDateChange} />
           <TextField label="Date limite" type="date" value={validUntil} onChange={onValidUntilChange} />
@@ -298,7 +343,7 @@ function BulletLines({ value, compact }: { value: string; compact?: boolean }) {
 
 function TotalRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div className={`grid grid-cols-[1fr_120px] ${strong ? 'bg-[#e7f6d5] font-black' : 'bg-white'} border-b border-white`}>
+    <div className={`grid grid-cols-[1fr_120px] ${strong ? 'bg-brand-50 font-black' : 'bg-white'} border-b border-white`}>
       <span className="px-3 py-1 text-right">{label}</span>
       <span className="px-3 py-1 text-right">{value}</span>
     </div>
