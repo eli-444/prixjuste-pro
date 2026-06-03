@@ -20,7 +20,7 @@ export default async function DashboardQuotesPage() {
     .limit(12);
 
   return (
-    <DashboardPageShell title="Devis" description="Retrouvez les derniers devis generes et leurs liens clients.">
+    <DashboardPageShell title="Devis">
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         {data && data.length > 0 ? (
           <div className="divide-y divide-slate-200">
@@ -46,12 +46,11 @@ export default async function DashboardQuotesPage() {
   );
 }
 
-function DashboardPageShell({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+function DashboardPageShell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="h-full overflow-hidden p-4 md:p-5">
       <header className="mb-4">
         <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-        <p className="mt-1 text-sm text-slate-500">{description}</p>
       </header>
       {children}
     </div>

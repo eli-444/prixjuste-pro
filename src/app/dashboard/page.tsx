@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ArrowUpRight, Calculator, CreditCard, FileText, ShieldCheck, Sparkles } from 'lucide-react';
-import { BillingPortalButton } from '@/components/BillingPortalButton';
+import { Calculator, FileText, ShieldCheck, Sparkles } from 'lucide-react';
 import { SignOutButton } from '@/components/SignOutButton';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getSupabaseConfig } from '@/lib/supabase/env';
@@ -144,20 +143,14 @@ export default async function DashboardPage() {
       <aside className="min-h-0 space-y-4">
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="font-bold">Facturation</h2>
-          <div className="mt-3 rounded-xl bg-brand-50 p-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Offre</p>
-            <p className="mt-1 font-bold text-slate-950">Tarifly Premium</p>
-            <p className="mt-1 text-sm text-slate-600">9,90 EUR TTC / mois</p>
+          <div className="mt-3 divide-y divide-slate-100">
+            <InfoRow label="Abonnement" value={isPremium ? 'Actif' : 'Inactif'} />
+            <InfoRow label="Dernier paiement" value={purchases?.[0] ? formatAmount(purchases[0].amount_total, purchases[0].currency) : 'Aucun'} />
+            <InfoRow label="Statut" value={purchases?.[0]?.status ?? 'Aucun'} />
           </div>
-          <div className="mt-3">
-            {isPremium ? (
-              <BillingPortalButton />
-            ) : (
-              <Link href="/#tarifs" className="inline-flex w-full justify-center rounded-xl bg-brand-900 px-4 py-3 text-sm font-bold text-white">
-                Voir l'offre premium
-              </Link>
-            )}
-          </div>
+          <Link href="/dashboard/facturation" className="mt-4 inline-flex w-full justify-center rounded-xl bg-brand-900 px-4 py-3 text-sm font-bold text-white">
+            Voir la facturation
+          </Link>
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -231,6 +224,15 @@ function Panel({ title, actionHref, actionLabel, children }: { title: string; ac
 
 function EmptyState({ text, compact }: { text: string; compact?: boolean }) {
   return <div className={`${compact ? 'py-2' : 'p-4'} text-sm leading-6 text-slate-500`}>{text}</div>;
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-3">
+      <span className="text-sm text-slate-500">{label}</span>
+      <span className="text-right text-sm font-bold text-slate-950">{value}</span>
+    </div>
+  );
 }
 
 function PaymentStatus({ status }: { status: string }) {

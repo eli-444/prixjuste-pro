@@ -31,7 +31,7 @@ export function MobileNav({ isPremium, isSignedIn }: { isPremium: boolean; isSig
               Opportunites
             </Link>
             <Link href={isSignedIn ? '/dashboard' : '/connexion'} className="rounded-xl px-3 py-3 hover:bg-slate-100" onClick={() => setOpen(false)}>
-              {isSignedIn ? 'Mon compte' : 'Connexion'}
+              {isSignedIn ? 'Dashboard' : 'Connexion'}
             </Link>
           </div>
           {isPremium ? (

@@ -26,7 +26,6 @@ export default async function DashboardSettingsPage() {
     <div className="h-full overflow-auto p-4 md:p-5">
       <header className="mb-4">
         <h1 className="text-2xl font-bold tracking-tight">Parametre</h1>
-        <p className="mt-1 text-sm text-slate-500">Reglez vos preferences de calcul et vos informations entreprise.</p>
       </header>
       <PreferencesForm
         userId={user.id}

@@ -34,7 +34,7 @@ export default async function DashboardOpportunitiesPage() {
   const rows = (data ?? []) as CalculationRow[];
 
   return (
-    <DashboardPageShell title="Opportunites" description="Suivez vos opportunites commerciales et rouvrez un calcul sauvegarde.">
+    <DashboardPageShell title="Opportunites">
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         {rows.length > 0 ? (
           <div className="divide-y divide-slate-200">
@@ -58,12 +58,11 @@ export default async function DashboardOpportunitiesPage() {
   );
 }
 
-function DashboardPageShell({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+function DashboardPageShell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="h-full overflow-hidden p-4 md:p-5">
       <header className="mb-4">
         <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-        <p className="mt-1 text-sm text-slate-500">{description}</p>
       </header>
       {children}
     </div>

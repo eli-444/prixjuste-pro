@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation';
-import { BillingPortalButton } from '@/components/BillingPortalButton';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export default async function DashboardBillingPage() {
@@ -13,39 +12,65 @@ export default async function DashboardBillingPage() {
   }
 
   const [{ data: entitlement }, { data: purchases }] = await Promise.all([
-    supabase.from('premium_entitlements').select('status, updated_at').eq('user_id', user.id).eq('status', 'active').maybeSingle(),
-    supabase.from('purchases').select('id, amount_total, currency, status, created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(8),
+    supabase
+      .from('premium_entitlements')
+      .select('status, updated_at')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .maybeSingle(),
+    supabase
+      .from('purchases')
+      .select('id, amount_total, currency, status, created_at, stripe_session_id')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(12),
   ]);
+
+  const latestPayment = purchases?.[0];
 
   return (
     <div className="h-full overflow-hidden p-4 md:p-5">
       <header className="mb-4">
         <h1 className="text-2xl font-bold tracking-tight">Facturation</h1>
-        <p className="mt-1 text-sm text-slate-500">Abonnement, paiements et statut de facturation.</p>
       </header>
-      <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+
+      <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="font-bold">Tarifly Premium</h2>
-          <p className="mt-2 text-sm text-slate-600">9,90 EUR TTC / mois</p>
-          <p className="mt-3 text-sm font-semibold text-slate-950">Statut : {entitlement ? 'Actif' : 'Inactif'}</p>
-          <div className="mt-4">{entitlement ? <BillingPortalButton /> : null}</div>
+          <InfoRow label="Abonnement" value={entitlement ? 'Actif' : 'Inactif'} />
+          <InfoRow label="Dernier paiement" value={latestPayment ? formatAmount(latestPayment.amount_total, latestPayment.currency) : 'Aucun'} />
+          <InfoRow label="Date" value={latestPayment ? formatDate(latestPayment.created_at) : 'Aucune'} />
+          <InfoRow label="Statut" value={latestPayment?.status ?? 'Aucun'} />
         </section>
+
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           {purchases && purchases.length > 0 ? (
             <div className="divide-y divide-slate-200">
               {purchases.map((purchase) => (
-                <div key={purchase.id} className="grid gap-3 p-4 text-sm md:grid-cols-[1fr_140px_120px] md:items-center">
-                  <p className="font-semibold text-slate-950">{formatDate(purchase.created_at)}</p>
+                <div key={purchase.id} className="grid gap-3 p-4 text-sm md:grid-cols-[1fr_140px_120px_160px] md:items-center">
+                  <div>
+                    <p className="font-semibold text-slate-950">{formatDate(purchase.created_at)}</p>
+                    <p className="mt-1 text-xs text-slate-500">Reference {purchase.stripe_session_id?.slice(-10) ?? purchase.id.slice(0, 8)}</p>
+                  </div>
                   <p className="font-bold">{formatAmount(purchase.amount_total, purchase.currency)}</p>
                   <p className="font-semibold text-slate-600">{purchase.status}</p>
+                  <p className="text-slate-500">Stripe</p>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="p-6 text-sm text-slate-500">Aucun paiement rattache a ce compte.</div>
+            <div className="p-6 text-sm text-slate-500">Aucun paiement trouvé pour ce compte.</div>
           )}
         </section>
       </div>
+    </div>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-slate-100 py-3 first:pt-0 last:border-b-0">
+      <span className="text-sm text-slate-500">{label}</span>
+      <span className="text-right text-sm font-bold text-slate-950">{value}</span>
     </div>
   );
 }
