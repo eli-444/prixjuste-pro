@@ -1,5 +1,14 @@
+import type { Metadata } from 'next';
 import { Footer } from '@/components/Footer';
 import { Header } from '@/components/Header';
+
+export const metadata: Metadata = {
+  title: 'Mentions légales',
+  description: 'Mentions légales de Tarifly, application SaaS éditée par Aurora Web & Security.',
+  alternates: {
+    canonical: '/mentions-legales',
+  },
+};
 
 type LegalSection = {
   title: string;

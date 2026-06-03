@@ -1,5 +1,14 @@
+import type { Metadata } from 'next';
 import { Footer } from '@/components/Footer';
 import { Header } from '@/components/Header';
+
+export const metadata: Metadata = {
+  title: 'Conditions Générales d’Utilisation et de Vente',
+  description: 'Conditions Générales d’Utilisation et de Vente de Tarifly, abonnement mensuel et service SaaS.',
+  alternates: {
+    canonical: '/conditions',
+  },
+};
 
 type ConditionContent =
   | { type: 'paragraph'; text: string }

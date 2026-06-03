@@ -1,5 +1,14 @@
+import type { Metadata } from 'next';
 import { Footer } from '@/components/Footer';
 import { Header } from '@/components/Header';
+
+export const metadata: Metadata = {
+  title: 'Politique de confidentialité et cookies',
+  description: 'Politique de confidentialité, données personnelles et cookies de Tarifly.',
+  alternates: {
+    canonical: '/confidentialite',
+  },
+};
 
 type PolicyContent =
   | { type: 'paragraph'; text: string }
