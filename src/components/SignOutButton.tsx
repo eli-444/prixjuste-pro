@@ -21,7 +21,7 @@ export function SignOutButton({ className }: { className?: string }) {
       }
     >
       <LogOut size={16} />
-      Se deconnecter
+      Se déconnecter
     </button>
   );
 }

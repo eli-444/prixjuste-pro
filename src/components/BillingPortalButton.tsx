@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { CreditCard } from 'lucide-react';
+import { showToast } from '@/lib/toast';
 
 export function BillingPortalButton() {
   const [loading, setLoading] = useState(false);
@@ -19,7 +20,7 @@ export function BillingPortalButton() {
 
       window.location.href = data.url;
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Une erreur est survenue.');
+      showToast(error instanceof Error ? error.message : 'Une erreur est survenue.', 'error');
       setLoading(false);
     }
   }
@@ -32,7 +33,7 @@ export function BillingPortalButton() {
       className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
     >
       <CreditCard size={16} />
-      {loading ? 'Ouverture...' : "Gerer / resilier l'abonnement"}
+      {loading ? 'Ouverture...' : "Gérer / résilier l'abonnement"}
     </button>
   );
 }

@@ -5,11 +5,11 @@ import Link from 'next/link';
 import { KeyRound } from 'lucide-react';
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser';
 import { getSupabaseConfig } from '@/lib/supabase/env';
+import { showToast } from '@/lib/toast';
 
 export function UpdatePasswordForm() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [hasSession, setHasSession] = useState<boolean | null>(null);
   const { isConfigured } = getSupabaseConfig();
@@ -29,7 +29,7 @@ export function UpdatePasswordForm() {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
 
         if (error) {
-          setMessage('Lien invalide ou expire. Demandez un nouveau lien de reinitialisation.');
+          showToast('Lien invalide ou expiré. Demandez un nouveau lien de réinitialisation.', 'error');
           setHasSession(false);
           return;
         }
@@ -48,15 +48,13 @@ export function UpdatePasswordForm() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setMessage('');
-
     if (password.length < 6) {
-      setMessage('Le mot de passe doit contenir au moins 6 caracteres.');
+      showToast('Le mot de passe doit contenir au moins 6 caractères.', 'error');
       return;
     }
 
     if (password !== confirmPassword) {
-      setMessage('Les deux mots de passe ne correspondent pas.');
+      showToast('Les deux mots de passe ne correspondent pas.', 'error');
       return;
     }
 
@@ -72,11 +70,11 @@ export function UpdatePasswordForm() {
 
       setPassword('');
       setConfirmPassword('');
-      setMessage('Votre mot de passe a bien ete modifie. Redirection vers la connexion...');
+      showToast('Votre mot de passe a bien été modifié. Redirection vers la connexion...', 'success');
       await supabase.auth.signOut();
       window.location.href = '/connexion';
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Une erreur est survenue.');
+      showToast(error instanceof Error ? error.message : 'Une erreur est survenue.', 'error');
     } finally {
       setLoading(false);
     }
@@ -85,9 +83,9 @@ export function UpdatePasswordForm() {
   if (hasSession === false) {
     return (
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft md:p-8">
-        <h2 className="text-2xl font-bold tracking-tight text-slate-950">Lien invalide ou expire</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-slate-950">Lien invalide ou expiré</h2>
         <p className="mt-4 leading-7 text-slate-600">
-          Demandez un nouveau lien de reinitialisation pour modifier votre mot de passe.
+          Demandez un nouveau lien de réinitialisation pour modifier votre mot de passe.
         </p>
         <Link
           href="/mot-de-passe-oublie"
@@ -115,7 +113,7 @@ export function UpdatePasswordForm() {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-slate-400"
-            placeholder="6 caracteres minimum"
+            placeholder="6 caractères minimum"
           />
         </label>
 
@@ -128,12 +126,10 @@ export function UpdatePasswordForm() {
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-slate-400"
-            placeholder="Repetez le mot de passe"
+            placeholder="Répétez le mot de passe"
           />
         </label>
       </div>
-
-      {message ? <p className="mt-4 rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-700">{message}</p> : null}
 
       <button
         type="submit"

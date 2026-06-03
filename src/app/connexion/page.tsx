@@ -19,7 +19,7 @@ export default function LoginPage({
               Connectez-vous pour retrouver votre espace Tarifly.
             </h1>
             <p className="mt-5 max-w-xl leading-8 text-slate-600">
-              Retrouvez vos calculs sauvegardes, votre acces premium et vos informations de compte au meme endroit.
+              Retrouvez vos calculs sauvegardés, votre accès premium et vos informations de compte au même endroit.
             </p>
           </div>
           <Suspense fallback={<div className="rounded-3xl bg-white p-8 shadow-soft">Chargement...</div>}>

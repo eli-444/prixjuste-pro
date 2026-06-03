@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { showToast } from '@/lib/toast';
 
 export function PublicQuoteActions({
   token,
@@ -14,13 +15,11 @@ export function PublicQuoteActions({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
-  const [feedback, setFeedback] = useState('');
   const [isAccepting, setIsAccepting] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
   const isAccepted = status === 'accepted';
 
   async function acceptQuote() {
-    setFeedback('');
     setIsAccepting(true);
 
     try {
@@ -35,17 +34,16 @@ export function PublicQuoteActions({
         throw new Error(payload.error || 'Acceptation impossible pour le moment.');
       }
 
-      setFeedback('Devis accepte. Merci, votre accord a bien ete enregistre.');
+      showToast('Devis accepté. Merci, votre accord a bien été enregistré.', 'success');
       window.location.reload();
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : 'Acceptation impossible pour le moment.');
+      showToast(error instanceof Error ? error.message : 'Acceptation impossible pour le moment.', 'error');
     } finally {
       setIsAccepting(false);
     }
   }
 
   async function payDeposit() {
-    setFeedback('');
     setIsPaying(true);
 
     try {
@@ -58,7 +56,7 @@ export function PublicQuoteActions({
 
       window.location.href = payload.url;
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : 'Paiement impossible pour le moment.');
+      showToast(error instanceof Error ? error.message : 'Paiement impossible pour le moment.', 'error');
       setIsPaying(false);
     }
   }
@@ -67,12 +65,12 @@ export function PublicQuoteActions({
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
       <h2 className="text-xl font-bold tracking-tight text-slate-950">Validation client</h2>
       <p className="mt-2 text-sm leading-6 text-slate-600">
-        Vous pouvez accepter ce devis en ligne. L'entreprise recevra automatiquement le statut accepte dans Tarifly.
+        Vous pouvez accepter ce devis en ligne. L'entreprise recevra automatiquement le statut accepté dans Tarifly.
       </p>
 
       {isAccepted ? (
         <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">
-          Devis deja accepte.
+          Devis déjà accepté.
         </div>
       ) : (
         <div className="mt-5 grid gap-3">
@@ -112,10 +110,8 @@ export function PublicQuoteActions({
         disabled={isPaying || depositStatus === 'paid'}
         className="mt-4 w-full rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {depositStatus === 'paid' ? 'Acompte deja paye' : isPaying ? 'Ouverture du paiement...' : "Payer l'acompte"}
+        {depositStatus === 'paid' ? 'Acompte déjà payé' : isPaying ? 'Ouverture du paiement...' : "Payer l'acompte"}
       </button>
-
-      {feedback ? <p className="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">{feedback}</p> : null}
     </section>
   );
 }

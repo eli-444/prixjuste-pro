@@ -19,17 +19,17 @@ export function Footer() {
             Mon compte
           </Link>
           <Link href="/mentions-legales" className="hover:text-slate-950">
-            Mentions legales
+            Mentions légales
           </Link>
           <Link href="/conditions" className="hover:text-slate-950">
             Conditions
           </Link>
           <Link href="/confidentialite" className="hover:text-slate-950">
-            Confidentialite & cookies
+            Confidentialité & cookies
           </Link>
           <CookiePreferencesButton />
         </div>
-        <p className="md:text-right">© {new Date().getFullYear()} Tarifly. Tous droits reserves.</p>
+        <p className="md:text-right">© {new Date().getFullYear()} Tarifly. Tous droits réservés.</p>
       </div>
     </footer>
   );

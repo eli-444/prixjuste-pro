@@ -137,8 +137,8 @@ export default async function OpportunityDetailPage({
 
               <div className="mt-8 grid gap-4 md:grid-cols-3">
                 <Metric label="Prix recommande" value={formatCurrency(Number(calculation.recommended_price ?? 0))} />
-                <Metric label="Marge reelle" value={formatPercent(calculation.result.marginRate)} />
-                <Metric label="Score opportunite" value={`${score}/100`} />
+                <Metric label="Marge réelle" value={formatPercent(calculation.result.marginRate)} />
+                <Metric label="Score opportunité" value={`${score}/100`} />
                 <Metric label="Score devis" value={`${quoteHealthScore}/100`} />
               </div>
 
@@ -184,7 +184,7 @@ export default async function OpportunityDetailPage({
                     ))}
                   </div>
                 ) : (
-                  <p className="mt-3 text-sm leading-6 text-slate-600">Aucun devis client n'est encore rattache a cette opportunite.</p>
+                  <p className="mt-3 text-sm leading-6 text-slate-600">Aucun devis client n'est encore rattaché à cette opportunité.</p>
                 )}
               </section>
 
@@ -196,11 +196,11 @@ export default async function OpportunityDetailPage({
                   <h2 className="font-bold text-slate-950">Pilotage commercial</h2>
                 </div>
                 <div className="mt-5 space-y-4 text-sm">
-                  <InfoRow label="Budget client" value={calculation.client_budget ? formatCurrency(calculation.client_budget) : 'Non renseigne'} />
+                  <InfoRow label="Budget client" value={calculation.client_budget ? formatCurrency(calculation.client_budget) : 'Non renseigné'} />
                   <InfoRow label="Probabilite" value={`${calculation.probability ?? 0} %`} />
                   <InfoRow label="Devis valide" value={calculation.quote_validated ? 'Oui' : 'Non'} />
-                  <InfoRow label="Prochaine action" value={calculation.next_action || 'Non renseignee'} />
-                  <InfoRow label="Deadline" value={calculation.deadline ? formatDate(calculation.deadline) : 'Non renseignee'} />
+                  <InfoRow label="Prochaine action" value={calculation.next_action || 'Non renseignée'} />
+                  <InfoRow label="Deadline" value={calculation.deadline ? formatDate(calculation.deadline) : 'Non renseignée'} />
                 </div>
               </section>
 

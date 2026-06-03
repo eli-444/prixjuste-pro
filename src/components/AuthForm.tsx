@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, Building2, LogIn, User, UserPlus } from 'lucide-react';
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser';
 import { getSupabaseConfig } from '@/lib/supabase/env';
+import { showToast } from '@/lib/toast';
 
 type AuthMode = 'login' | 'signup';
 type AccountType = 'personal' | 'business';
@@ -24,7 +25,6 @@ export function AuthForm({ redirectTo = '/dashboard' }: { redirectTo?: string })
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
-  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const { isConfigured } = getSupabaseConfig();
   const callbackUrl = useMemo(() => {
@@ -40,7 +40,6 @@ export function AuthForm({ redirectTo = '/dashboard' }: { redirectTo?: string })
 
   function switchMode(nextMode: AuthMode) {
     setMode(nextMode);
-    setMessage('');
     if (nextMode === 'signup') {
       setSignupStep('type');
     }
@@ -50,7 +49,7 @@ export function AuthForm({ redirectTo = '/dashboard' }: { redirectTo?: string })
     const normalizedSiret = siret.replace(/\D/g, '');
 
     if (!firstName.trim() || !lastName.trim()) {
-      return 'Renseignez votre prenom et votre nom.';
+      return 'Renseignez votre prénom et votre nom.';
     }
 
     if (!emailPattern.test(email.trim())) {
@@ -58,7 +57,7 @@ export function AuthForm({ redirectTo = '/dashboard' }: { redirectTo?: string })
     }
 
     if (password.length < 6) {
-      return 'Le mot de passe doit contenir au moins 6 caracteres.';
+      return 'Le mot de passe doit contenir au moins 6 caractères.';
     }
 
     if (password !== passwordConfirm) {
@@ -80,10 +79,8 @@ export function AuthForm({ redirectTo = '/dashboard' }: { redirectTo?: string })
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setMessage('');
-
     if (!isConfigured) {
-      setMessage("L'espace compte est momentanement indisponible. Merci de reessayer plus tard.");
+      showToast("L'espace compte est momentanément indisponible. Merci de réessayer plus tard.", 'error');
       return;
     }
 
@@ -102,7 +99,7 @@ export function AuthForm({ redirectTo = '/dashboard' }: { redirectTo?: string })
         const validationError = validateSignup();
 
         if (validationError) {
-          setMessage(validationError);
+          showToast(validationError, 'error');
           return;
         }
 
@@ -129,7 +126,7 @@ export function AuthForm({ redirectTo = '/dashboard' }: { redirectTo?: string })
           throw error;
         }
 
-        setMessage('Votre compte a ete cree. Veuillez confirmer votre adresse email depuis le lien recu dans votre boite mail.');
+        showToast('Votre compte a été créé. Confirmez votre adresse email depuis le lien reçu dans votre boîte mail.', 'success');
         return;
       }
 
@@ -141,7 +138,7 @@ export function AuthForm({ redirectTo = '/dashboard' }: { redirectTo?: string })
 
       window.location.href = redirectTo;
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Une erreur est survenue.');
+      showToast(error instanceof Error ? error.message : 'Une erreur est survenue.', 'error');
     } finally {
       setLoading(false);
     }
@@ -184,7 +181,7 @@ export function AuthForm({ redirectTo = '/dashboard' }: { redirectTo?: string })
           <AccountTypeButton
             active={accountType === 'personal'}
             icon={<User size={18} />}
-            title="Compte a usage personnel"
+            title="Compte à usage personnel"
             onClick={() => setAccountType('personal')}
           />
           <AccountTypeButton
@@ -199,7 +196,7 @@ export function AuthForm({ redirectTo = '/dashboard' }: { redirectTo?: string })
           {mode === 'signup' && accountType === 'business' ? (
             <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <TextField label="Nom de l'entreprise" value={companyName} onChange={setCompanyName} />
-              <TextField label="Numero de SIRET" value={siret} onChange={setSiret} inputMode="numeric" />
+              <TextField label="Numéro de SIRET" value={siret} onChange={setSiret} inputMode="numeric" />
               <label className="block space-y-2">
                 <span className="text-sm font-semibold text-slate-700">Adresse de l'entreprise</span>
                 <textarea
@@ -214,7 +211,7 @@ export function AuthForm({ redirectTo = '/dashboard' }: { redirectTo?: string })
 
           {mode === 'signup' ? (
             <div className="grid gap-4 sm:grid-cols-2">
-              <TextField label="Prenom" value={firstName} onChange={setFirstName} />
+              <TextField label="Prénom" value={firstName} onChange={setFirstName} />
               <TextField label="Nom" value={lastName} onChange={setLastName} />
             </div>
           ) : null}
@@ -227,12 +224,10 @@ export function AuthForm({ redirectTo = '/dashboard' }: { redirectTo?: string })
         </div>
       )}
 
-      {message ? <p className="mt-4 rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-700">{message}</p> : null}
-
       {mode === 'login' ? (
         <div className="mt-4 text-right">
           <Link href="/mot-de-passe-oublie" className="text-sm font-semibold text-brand-600 hover:text-brand-700">
-            Mot de passe oublie ?
+            Mot de passe oublié ?
           </Link>
         </div>
       ) : null}
@@ -243,7 +238,6 @@ export function AuthForm({ redirectTo = '/dashboard' }: { redirectTo?: string })
             type="button"
             onClick={() => {
               setSignupStep('type');
-              setMessage('');
             }}
             className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-5 py-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
@@ -325,5 +319,5 @@ function getSubmitLabel(mode: AuthMode, signupStep: SignupStep) {
     return 'Se connecter';
   }
 
-  return signupStep === 'type' ? 'Continuer' : 'Creer mon compte';
+  return signupStep === 'type' ? 'Continuer' : 'Créer mon compte';
 }

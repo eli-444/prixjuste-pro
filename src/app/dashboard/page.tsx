@@ -141,7 +141,7 @@ export default async function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <EmptyState text="Aucun devis genere." />
+              <EmptyState text="Aucun devis généré." />
             )}
           </Panel>
         </div>
@@ -154,11 +154,11 @@ export default async function DashboardPage() {
             <InfoRow label="Type" value={accountType === 'business' ? 'Entreprise' : 'Personnel'} />
             {accountType === 'business' ? (
               <>
-                <InfoRow label="Entreprise" value={profile?.company_name || 'Non renseigne'} />
-                <InfoRow label="SIRET" value={profile?.siret || 'Non renseigne'} />
+                <InfoRow label="Entreprise" value={profile?.company_name || 'Non renseigné'} />
+                <InfoRow label="SIRET" value={profile?.siret || 'Non renseigné'} />
               </>
             ) : (
-              <InfoRow label="Titulaire" value={holderName || 'Non renseigne'} />
+              <InfoRow label="Titulaire" value={holderName || 'Non renseigné'} />
             )}
           </div>
           <Link href="/dashboard/mon-compte" className="mt-4 inline-flex w-full justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50">

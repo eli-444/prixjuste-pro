@@ -30,7 +30,7 @@ export async function POST(
   }
 
   if (quote.deposit_status === 'paid') {
-    return NextResponse.json({ error: 'Acompte deja paye.' }, { status: 400 });
+    return NextResponse.json({ error: 'Acompte déjà payé.' }, { status: 400 });
   }
 
   const client = (quote.client_snapshot ?? {}) as { email?: string; name?: string };

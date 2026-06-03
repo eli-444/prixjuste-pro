@@ -203,7 +203,7 @@ function aggregateMarketRates(rates: MarketRate[]) {
     price_median: average(rates.map((rate) => rate.price_median)),
     price_high: average(rates.map((rate) => rate.price_high)),
     confidence_score: Math.round(average(rates.map((rate) => rate.confidence_score))),
-    source_label: 'Moyenne regionale',
+    source_label: 'Moyenne régionale',
   };
 }
 

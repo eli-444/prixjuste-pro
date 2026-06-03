@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Save } from 'lucide-react';
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser';
+import { showToast } from '@/lib/toast';
 
 type AccountType = 'personal' | 'business';
 
@@ -24,20 +25,16 @@ export function CompanyAccountForm({
   initialValues: AccountValues;
 }) {
   const [values, setValues] = useState(initialValues);
-  const [status, setStatus] = useState('');
-  const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const isBusiness = accountType === 'business';
 
   function updateField(name: keyof AccountValues, value: string) {
     setValues((current) => ({ ...current, [name]: value }));
-    setStatus('');
-    setError('');
   }
 
   function validate() {
     if (!values.firstName.trim() || !values.lastName.trim()) {
-      return 'Renseignez votre prenom et votre nom.';
+      return 'Renseignez votre prénom et votre nom.';
     }
 
     if (isBusiness) {
@@ -57,14 +54,12 @@ export function CompanyAccountForm({
 
   async function save() {
     setIsSaving(true);
-    setStatus('');
-    setError('');
 
     try {
       const validationError = validate();
 
       if (validationError) {
-        setError(validationError);
+        showToast(validationError, 'error');
         return;
       }
 
@@ -90,9 +85,9 @@ export function CompanyAccountForm({
       }
 
       setValues((current) => ({ ...current, siret: isBusiness ? normalizedSiret : '' }));
-      setStatus('Informations enregistrees.');
+      showToast('Informations enregistrées.', 'success');
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Enregistrement impossible.');
+      showToast(saveError instanceof Error ? saveError.message : 'Enregistrement impossible.', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -106,14 +101,14 @@ export function CompanyAccountForm({
 
       <div className="grid gap-3">
         <div className="grid gap-3 sm:grid-cols-2">
-          <TextField label="Prenom" value={values.firstName} onChange={(value) => updateField('firstName', value)} />
+          <TextField label="Prénom" value={values.firstName} onChange={(value) => updateField('firstName', value)} />
           <TextField label="Nom" value={values.lastName} onChange={(value) => updateField('lastName', value)} />
         </div>
 
         {isBusiness ? (
           <>
             <TextField label="Nom de l'entreprise" value={values.companyName} onChange={(value) => updateField('companyName', value)} />
-            <TextField label="Numero de SIRET" value={values.siret} onChange={(value) => updateField('siret', value)} inputMode="numeric" />
+            <TextField label="Numéro de SIRET" value={values.siret} onChange={(value) => updateField('siret', value)} inputMode="numeric" />
             <label className="space-y-1.5">
               <span className="text-sm font-bold text-slate-950">Adresse de l'entreprise</span>
               <textarea
@@ -126,9 +121,6 @@ export function CompanyAccountForm({
           </>
         ) : null}
       </div>
-
-      {status ? <p className="mt-3 rounded-xl bg-aqua-50 px-3 py-2 text-sm font-semibold text-aqua-600">{status}</p> : null}
-      {error ? <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">{error}</p> : null}
 
       <button
         type="button"

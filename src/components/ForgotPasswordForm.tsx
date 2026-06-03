@@ -4,10 +4,10 @@ import { useMemo, useState } from 'react';
 import { MailCheck } from 'lucide-react';
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser';
 import { getSupabaseConfig } from '@/lib/supabase/env';
+import { showToast } from '@/lib/toast';
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const { isConfigured } = getSupabaseConfig();
 
@@ -22,10 +22,8 @@ export function ForgotPasswordForm() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setMessage('');
-
     if (!isConfigured) {
-      setMessage("L'espace compte est momentanement indisponible. Merci de reessayer plus tard.");
+      showToast("L'espace compte est momentanément indisponible. Merci de réessayer plus tard.", 'error');
       return;
     }
 
@@ -41,9 +39,9 @@ export function ForgotPasswordForm() {
         throw error;
       }
 
-      setMessage('Si un compte existe avec cet email, un lien de reinitialisation vient d etre envoye.');
+      showToast("Si un compte existe avec cet email, un lien de réinitialisation vient d'être envoyé.", 'success');
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Une erreur est survenue.');
+      showToast(error instanceof Error ? error.message : 'Une erreur est survenue.', 'error');
     } finally {
       setLoading(false);
     }
@@ -66,8 +64,6 @@ export function ForgotPasswordForm() {
           placeholder="vous@exemple.fr"
         />
       </label>
-
-      {message ? <p className="mt-4 rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-700">{message}</p> : null}
 
       <button
         type="submit"

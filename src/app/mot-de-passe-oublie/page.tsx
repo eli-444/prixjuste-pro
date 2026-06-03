@@ -15,10 +15,10 @@ export default function ForgotPasswordPage() {
               Recevez un lien pour reprendre la main sur votre compte.
             </h1>
             <p className="mt-5 max-w-xl leading-8 text-slate-600">
-              Entrez l'email utilise lors de votre inscription. Le lien ouvrira une page securisee pour choisir un nouveau mot de passe.
+              Entrez l'email utilisé lors de votre inscription. Le lien ouvrira une page sécurisée pour choisir un nouveau mot de passe.
             </p>
             <Link href="/connexion" className="mt-6 inline-flex text-sm font-semibold text-brand-600 hover:text-brand-700">
-              Retour a la connexion
+              Retour à la connexion
             </Link>
           </div>
           <ForgotPasswordForm />

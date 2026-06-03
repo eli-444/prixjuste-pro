@@ -93,7 +93,7 @@ export function EditableOpportunityQuote({ initialOpen, quote }: EditableOpportu
           <section className="ml-auto mt-12 w-[330px] border border-slate-950 p-3 leading-5">
             <p className="font-black">{quote.clientName}</p>
             <p>Adresse</p>
-            <p>Numero de telephone</p>
+            <p>Numéro de téléphone</p>
             <p>Email</p>
           </section>
 
@@ -254,7 +254,7 @@ function QuoteSettingsModal({
               />
             </div>
           </label>
-          <TextField label="Numero du devis" value={quoteNumber} onChange={onQuoteNumberChange} />
+          <TextField label="Numéro du devis" value={quoteNumber} onChange={onQuoteNumberChange} />
           <TextField label="Date du devis" type="date" value={quoteDate} onChange={onQuoteDateChange} />
           <TextField label="Date limite" type="date" value={validUntil} onChange={onValidUntilChange} />
           <TextField label="Capital social (EUR)" value={shareCapital} onChange={onShareCapitalChange} />

@@ -12,13 +12,13 @@ export function PricingCard() {
         <span className="pb-2 text-sm font-medium text-slate-500">TTC / mois</span>
       </div>
       <p className="mt-3 text-slate-600">
-        Debloquez l'analyse complete de rentabilite, le niveau de risque et une justification commerciale prete a
-        utiliser. Sans engagement, resiliable depuis votre compte.
+        Débloquez l'analyse complète de rentabilité, le niveau de risque et une justification commerciale prête à
+        utiliser. Sans engagement, résiliable depuis votre compte.
       </p>
       <ul className="mt-6 space-y-3 text-sm text-slate-700">
         {[
           'Prix recommande pour votre prestation',
-          'Analyse de marge et de rentabilite',
+          'Analyse de marge et de rentabilité',
           'Lecture du risque commercial',
           'Justification client prete a reprendre',
           'Export PDF professionnel',
@@ -31,10 +31,10 @@ export function PricingCard() {
         ))}
       </ul>
       <CheckoutButton className="w-full rounded-2xl bg-slate-950 px-5 py-4 text-sm font-semibold text-white transition hover:bg-slate-800">
-        Demarrer l'abonnement premium
+        Démarrer l'abonnement premium
       </CheckoutButton>
       <p className="mt-3 text-center text-xs leading-5 text-slate-500">
-        Prelevement mensuel. Vous pouvez resilier a tout moment depuis votre espace compte.
+        Prélèvement mensuel. Vous pouvez résilier à tout moment depuis votre espace compte.
       </p>
     </div>
   );

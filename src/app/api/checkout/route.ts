@@ -74,7 +74,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Checkout creation failed', error);
     return NextResponse.json(
-      { error: 'Impossible de preparer le paiement pour le moment.' },
+      { error: 'Impossible de préparer le paiement pour le moment.' },
       { status: 500 },
     );
   }

@@ -1,120 +1,76 @@
 import { redirect } from 'next/navigation';
-import { EditableOpportunityQuote } from '@/components/EditableOpportunityQuote';
+import { CompanyAccountForm } from '@/components/CompanyAccountForm';
+import { SignOutButton } from '@/components/SignOutButton';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { analyzeProposedPrice, getClientPrice, type PricingInput } from '@/lib/pricing';
-import { statusLabels, type OpportunityStatus } from '@/lib/opportunities';
 
-type CalculationRow = {
-  id: string;
-  title: string | null;
-  client_name: string | null;
-  opportunity_status: OpportunityStatus | null;
-  input: PricingInput;
-  result: {
-    baseCost?: number;
-    priceExcludingTax?: number;
-    taxAmount?: number;
-    netProfit?: number;
-  } | null;
-  recommended_price: number | null;
-  created_at: string;
-};
-
-type ProfileRow = {
-  account_type: string | null;
-  first_name: string | null;
-  last_name: string | null;
-  full_name: string | null;
-  email: string | null;
-  company_name: string | null;
-  siret: string | null;
-  company_address: string | null;
-  company_email: string | null;
-  company_phone?: string | null;
-};
-
-export default async function OpportunityPrintableQuotePage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams?: Promise<{ setup?: string }>;
-}) {
-  const { id } = await params;
-  const query = await searchParams;
+export default async function DashboardAccountPage() {
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
   } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
 
   if (!user || !supabase) {
-    redirect(`/connexion?redirect=/dashboard/opportunites/${id}/devis`);
+    redirect('/connexion?redirect=/dashboard/mon-compte');
   }
 
-  const [{ data: calculation }, { data: profile }] = await Promise.all([
-    supabase
-      .from('pricing_calculations')
-      .select('id, title, client_name, opportunity_status, input, result, recommended_price, created_at')
-      .eq('id', id)
-      .eq('user_id', user.id)
-      .maybeSingle(),
-    supabase
-      .from('profiles')
-      .select('account_type, first_name, last_name, full_name, email, company_name, siret, company_address, company_email, company_phone')
-      .eq('id', user.id)
-      .maybeSingle(),
-  ]);
-
-  if (!calculation) {
-    redirect('/dashboard/opportunites');
-  }
-
-  const row = calculation as CalculationRow;
-  const account = (profile ?? {}) as ProfileRow;
-  const input = row.input;
-  const analysis = analyzeProposedPrice(input);
-  const finalPrice = Number(row.recommended_price ?? getClientPrice(input));
-  const result = row.result ?? {};
-  const accountType = account.account_type === 'business' ? 'business' : 'personal';
-  const holderName = getHolderName(account, user.email);
-  const issuerLines = (
-    accountType === 'business'
-      ? [
-          account.company_name,
-          account.company_address,
-          account.company_email || account.email || user.email,
-          account.company_phone,
-          account.siret ? `SIRET : ${account.siret}` : null,
-          holderName ? `Titulaire : ${holderName}` : null,
-        ]
-      : [holderName, account.email || user.email]
-  ).filter((line): line is string => Boolean(line));
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('account_type, first_name, last_name, full_name, company_name, siret, company_address, company_email, default_tax_percent, default_hourly_rate')
+    .eq('id', user.id)
+    .maybeSingle();
+  const accountType = profile?.account_type === 'business' ? 'business' : 'personal';
+  const nameParts = (profile?.full_name ?? '').split(' ').filter(Boolean);
+  const firstName = profile?.first_name ?? nameParts[0] ?? '';
+  const lastName = profile?.last_name ?? nameParts.slice(1).join(' ') ?? '';
 
   return (
-    <EditableOpportunityQuote
-      initialOpen={query?.setup === '1'}
-      quote={{
-        id: row.id,
-        title: row.title || 'Prestation',
-        clientName: row.client_name || 'Client non renseigne',
-        statusLabel: statusLabels[row.opportunity_status ?? 'to_price'],
-        input,
-        finalPrice,
-        subtotalExcludingTax: Number(result.priceExcludingTax ?? analysis.priceExcludingTax),
-        taxAmount: Number(result.taxAmount ?? analysis.taxAmount),
-        taxRate: Math.max(0, input.taxPercent || 0),
-        baseCost: Number(result.baseCost ?? input.productCost + input.fixedFees),
-        netProfit: Number(result.netProfit ?? analysis.netProfit),
-        issuerLines,
-        holderName,
-        accountType,
-        createdAt: row.created_at,
-      }}
-    />
+    <div className="h-full overflow-auto p-3 md:p-4">
+      <header className="mb-3">
+        <h1 className="text-2xl font-bold tracking-tight">Mon compte</h1>
+      </header>
+      <div className="grid max-w-5xl gap-3 lg:grid-cols-[minmax(0,500px)_300px]">
+        <CompanyAccountForm
+          userId={user.id}
+          accountType={accountType}
+          initialValues={{
+            firstName,
+            lastName,
+            companyName: profile?.company_name ?? '',
+            siret: profile?.siret ?? '',
+            companyAddress: profile?.company_address ?? '',
+          }}
+        />
+
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <InfoRow label="Type de compte" value={accountType === 'business' ? 'Entreprise' : 'Personnel'} />
+          <InfoRow label="Titulaire" value={`${firstName} ${lastName}`.trim() || user.email || 'Non renseigné'} />
+          {accountType === 'business' ? (
+            <>
+              <InfoRow label="Entreprise" value={profile?.company_name || 'Non renseigné'} />
+              <InfoRow label="SIRET" value={profile?.siret || 'Non renseigné'} />
+            </>
+          ) : null}
+          <InfoRow label="Email" value={profile?.company_email || user.email || 'Non renseigné'} />
+          <InfoRow label="TVA par defaut" value={`${profile?.default_tax_percent ?? 20} %`} />
+          <InfoRow label="Taux horaire" value={formatEuro(Number(profile?.default_hourly_rate ?? 0))} />
+          <div className="mt-4">
+            <SignOutButton />
+          </div>
+        </section>
+      </div>
+    </div>
   );
 }
 
-function getHolderName(profile: ProfileRow, fallback?: string | null) {
-  const nameParts = (profile.full_name ?? '').split(' ').filter(Boolean);
-  return `${profile.first_name ?? nameParts[0] ?? ''} ${profile.last_name ?? nameParts.slice(1).join(' ') ?? ''}`.trim() || fallback || '';
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-slate-100 py-2.5 first:pt-0 last:border-b-0">
+      <span className="text-sm text-slate-500">{label}</span>
+      <span className="text-right text-sm font-bold text-slate-950">{value}</span>
+    </div>
+  );
+}
+
+function formatEuro(amount: number) {
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
 }

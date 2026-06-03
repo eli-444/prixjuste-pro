@@ -43,14 +43,14 @@ export default async function DashboardAccountPage() {
 
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <InfoRow label="Type de compte" value={accountType === 'business' ? 'Entreprise' : 'Personnel'} />
-          <InfoRow label="Titulaire" value={`${firstName} ${lastName}`.trim() || user.email || 'Non renseigne'} />
+          <InfoRow label="Titulaire" value={`${firstName} ${lastName}`.trim() || user.email || 'Non renseigné'} />
           {accountType === 'business' ? (
             <>
-              <InfoRow label="Entreprise" value={profile?.company_name || 'Non renseigne'} />
-              <InfoRow label="SIRET" value={profile?.siret || 'Non renseigne'} />
+              <InfoRow label="Entreprise" value={profile?.company_name || 'Non renseigné'} />
+              <InfoRow label="SIRET" value={profile?.siret || 'Non renseigné'} />
             </>
           ) : null}
-          <InfoRow label="Email" value={profile?.company_email || user.email || 'Non renseigne'} />
+          <InfoRow label="Email" value={profile?.company_email || user.email || 'Non renseigné'} />
           <InfoRow label="TVA par defaut" value={`${profile?.default_tax_percent ?? 20} %`} />
           <InfoRow label="Taux horaire" value={formatEuro(Number(profile?.default_hourly_rate ?? 0))} />
           <div className="mt-4">

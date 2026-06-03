@@ -12,10 +12,10 @@ export default function VerifiedAccountPage() {
           <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-brand-50 text-brand-600">
             <CheckCircle2 size={28} />
           </div>
-          <p className="mt-6 text-sm font-bold uppercase tracking-[0.2em] text-brand-600">Compte verifie</p>
-          <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-950">Votre compte a bien ete verifie.</h1>
+          <p className="mt-6 text-sm font-bold uppercase tracking-[0.2em] text-brand-600">Compte vérifié</p>
+          <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-950">Votre compte a bien été vérifié.</h1>
           <p className="mx-auto mt-5 max-w-xl leading-8 text-slate-600">
-            Vous pouvez maintenant vous connecter et acceder a votre espace Tarifly.
+            Vous pouvez maintenant vous connecter et accéder à votre espace Tarifly.
           </p>
           <Link
             href="/connexion"

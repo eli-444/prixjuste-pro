@@ -103,7 +103,7 @@ export default async function OpportunitiesPage({
               <p className="text-sm font-bold uppercase tracking-[0.2em] text-brand-600">Pipeline</p>
               <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-950">Opportunites</h1>
               <p className="mt-3 max-w-2xl text-slate-600">
-                Suivez vos prospects, appels d'offres et calculs sauvegardes avec une lecture orientee rentabilite.
+                Suivez vos prospects, appels d'offres et calculs sauvegardes avec une lecture orientée rentabilité.
               </p>
             </div>
           </div>
@@ -189,7 +189,7 @@ export default async function OpportunitiesPage({
                         <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Score</p>
                         <p className="mt-1 text-sm font-semibold text-slate-950">{score}/100</p>
                       </Link>
-                      <Link href={`/opportunites/${row.id}`} aria-label="Ouvrir l'opportunite">
+                      <Link href={`/opportunites/${row.id}`} aria-label="Ouvrir l'opportunité">
                         <ArrowUpRight className="text-slate-400" size={18} />
                       </Link>
                       <form action={deleteOpportunity}>
@@ -202,7 +202,7 @@ export default async function OpportunitiesPage({
               </div>
             ) : (
               <div className="p-8 text-center">
-                <p className="font-semibold text-slate-950">Aucune opportunite trouvee.</p>
+                <p className="font-semibold text-slate-950">Aucune opportunité trouvée.</p>
                 <p className="mt-2 text-sm text-slate-600">Ajustez les filtres ou sauvegardez un nouveau calcul.</p>
               </div>
             )}

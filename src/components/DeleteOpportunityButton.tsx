@@ -12,7 +12,7 @@ export function DeleteOpportunityButton() {
         type="button"
         onClick={() => setOpen(true)}
         className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 text-slate-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
-        aria-label="Supprimer l'opportunite"
+        aria-label="Supprimer l'opportunité"
         title="Supprimer"
       >
         <Trash2 size={16} />
@@ -23,7 +23,7 @@ export function DeleteOpportunityButton() {
           <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-lg font-bold tracking-tight text-slate-950">Supprimer cette opportunite ?</h2>
+                <h2 className="text-lg font-bold tracking-tight text-slate-950">Supprimer cette opportunité ?</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                   Cette action supprimera le calcul sauvegarde de votre tableau commercial.
                 </p>

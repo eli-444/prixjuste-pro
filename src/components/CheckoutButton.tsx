@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { showToast } from '@/lib/toast';
 
 type CheckoutButtonProps = {
   className?: string;
@@ -11,16 +12,14 @@ type CheckoutButtonProps = {
 export function CheckoutButton({ className, children }: CheckoutButtonProps) {
   const [loading, setLoading] = useState(false);
   const [legalAccepted, setLegalAccepted] = useState(false);
-  const [error, setError] = useState('');
 
   async function handleCheckout() {
     if (!legalAccepted) {
-      setError('Vous devez accepter les conditions avant de continuer.');
+      showToast('Vous devez accepter les conditions avant de continuer.', 'error');
       return;
     }
 
     setLoading(true);
-    setError('');
 
     try {
       const response = await fetch('/api/checkout', {
@@ -37,7 +36,7 @@ export function CheckoutButton({ className, children }: CheckoutButtonProps) {
       }
 
       if (!response.ok) {
-        throw new Error('Impossible de preparer le paiement pour le moment.');
+        throw new Error('Impossible de préparer le paiement pour le moment.');
       }
 
       const data = (await response.json()) as { url?: string };
@@ -48,7 +47,7 @@ export function CheckoutButton({ className, children }: CheckoutButtonProps) {
 
       window.location.href = data.url;
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Une erreur est survenue.');
+      showToast(error instanceof Error ? error.message : 'Une erreur est survenue.', 'error');
       setLoading(false);
     }
   }
@@ -59,12 +58,7 @@ export function CheckoutButton({ className, children }: CheckoutButtonProps) {
         <input
           type="checkbox"
           checked={legalAccepted}
-          onChange={(event) => {
-            setLegalAccepted(event.target.checked);
-            if (event.target.checked) {
-              setError('');
-            }
-          }}
+          onChange={(event) => setLegalAccepted(event.target.checked)}
           className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
         />
         <span>
@@ -79,7 +73,6 @@ export function CheckoutButton({ className, children }: CheckoutButtonProps) {
           .
         </span>
       </label>
-      {error ? <p className="text-sm font-semibold text-rose-600">{error}</p> : null}
       <button
         type="button"
         onClick={handleCheckout}
@@ -89,7 +82,7 @@ export function CheckoutButton({ className, children }: CheckoutButtonProps) {
           'rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60'
         }
       >
-        {loading ? 'Redirection...' : children ?? 'Debloquer Premium'}
+        {loading ? 'Redirection...' : children ?? 'Débloquer Premium'}
       </button>
     </div>
   );

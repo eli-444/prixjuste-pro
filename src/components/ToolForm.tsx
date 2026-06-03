@@ -7,6 +7,7 @@ import { formatCurrency, formatPercent } from '@/lib/utils';
 import { createQuotePdf, createTariflyPdf } from '@/lib/pdf';
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser';
 import { getSupabaseConfig } from '@/lib/supabase/env';
+import { showToast } from '@/lib/toast';
 import {
   defaultOpportunityMeta,
   getQuoteHealthLabel,
@@ -142,13 +143,11 @@ export function ToolForm({
   const [premiumStatus, setPremiumStatus] = useState<'loading' | 'free' | 'premium'>('loading');
   const [hasFreeFullUse, setHasFreeFullUse] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [saveStatus, setSaveStatus] = useState('');
   const [marketRateRows, setMarketRateRows] = useState<MarketRate[]>(marketRates);
   const [marketRateStatRows, setMarketRateStatRows] = useState<MarketRateStat[]>(marketRateStats);
   const [marketDataStatus, setMarketDataStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [serviceTemplates, setServiceTemplates] = useState<ServiceTemplate[]>([]);
   const [templateName, setTemplateName] = useState('');
-  const [templateStatus, setTemplateStatus] = useState('');
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
   const [quoteError, setQuoteError] = useState('');
   const [quoteShareUrl, setQuoteShareUrl] = useState('');
@@ -262,7 +261,7 @@ export function ToolForm({
           console.info('[Tarifly market_rates]', {
             selectedProfessionSlug: market.professionSlug,
             selectedRegion: market.region,
-            selectedCity: market.city || 'Moyenne regionale',
+            selectedCity: market.city || 'Moyenne régionale',
             query: {
               table: 'market_rates',
               filters: {
@@ -277,7 +276,7 @@ export function ToolForm({
           console.info('[Tarifly market_rate_stats]', {
             selectedProfessionSlug: market.professionSlug,
             selectedRegion: market.region,
-            selectedCity: market.city || 'Moyenne regionale',
+            selectedCity: market.city || 'Moyenne régionale',
             data: statData,
             error: statError,
           });
@@ -302,7 +301,7 @@ export function ToolForm({
           console.info('[Tarifly market_rates]', {
             selectedProfessionSlug: market.professionSlug,
             selectedRegion: market.region,
-            selectedCity: market.city || 'Moyenne regionale',
+            selectedCity: market.city || 'Moyenne régionale',
             error,
           });
         }
@@ -518,7 +517,7 @@ export function ToolForm({
       city: template.market_city ?? '',
       unit: template.market_unit ?? current.unit,
     }));
-    setTemplateStatus(`Modele "${template.name}" applique.`);
+    showToast(`Modèle "${template.name}" appliqué.`, 'success');
   }
 
   function applyStarterTemplate(template: (typeof starterTemplates)[number]) {
@@ -528,15 +527,13 @@ export function ToolForm({
       ...current,
       title: current.title || template.name,
     }));
-    setTemplateStatus(`Preset "${template.name}" applique.`);
+    showToast(`Preset "${template.name}" appliqué.`, 'success');
   }
 
   async function saveCurrentTemplate() {
     const name = templateName.trim() || meta.title.trim();
-    setTemplateStatus('');
-
     if (!name) {
-      setTemplateStatus('Donnez un nom au modele avant de l enregistrer.');
+      showToast("Donnez un nom au modèle avant de l'enregistrer.", 'error');
       return;
     }
 
@@ -546,7 +543,7 @@ export function ToolForm({
     }
 
     if (!hasFullAccess) {
-      setSaveStatus('Votre premier calcul complet a deja ete utilise. Passez en Premium pour sauvegarder de nouvelles opportunites.');
+      showToast('Votre premier calcul complet a déjà été utilisé. Passez en Premium pour sauvegarder de nouvelles opportunités.', 'error');
       return;
     }
 
@@ -584,9 +581,9 @@ export function ToolForm({
 
       setServiceTemplates((current) => [data as ServiceTemplate, ...current]);
       setTemplateName('');
-      setTemplateStatus('Modele enregistre.');
+      showToast('Modèle enregistré.', 'success');
     } catch (error) {
-      setTemplateStatus(error instanceof Error ? error.message : 'Impossible d enregistrer le modele.');
+      showToast(error instanceof Error ? error.message : "Impossible d'enregistrer le modèle.", 'error');
     }
   }
 
@@ -622,10 +619,8 @@ export function ToolForm({
   }
 
   async function saveCalculation() {
-    setSaveStatus('');
-
     if (!getSupabaseConfig().isConfigured) {
-      setSaveStatus('La sauvegarde est momentanement indisponible.');
+      showToast('La sauvegarde est momentanément indisponible.', 'error');
       return;
     }
 
@@ -652,7 +647,7 @@ export function ToolForm({
         throw error;
       }
 
-      setSaveStatus('Opportunite enregistree.');
+      showToast('Opportunité enregistrée.', 'success');
       if (!isPremium) {
         setHasFreeFullUse(false);
       }
@@ -661,44 +656,44 @@ export function ToolForm({
         window.location.href = `/dashboard/opportunites/${data.id}/devis?setup=1`;
       }
     } catch (error) {
-      setSaveStatus(error instanceof Error ? error.message : 'Sauvegarde impossible pour le moment.');
+      showToast(error instanceof Error ? error.message : 'Sauvegarde impossible pour le moment.', 'error');
     }
   }
 
   async function downloadExport() {
     const blob = await createTariflyPdf({
-      title: 'Rapport de rentabilite',
+      title: 'Rapport de rentabilité',
       generatedAt: new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeStyle: 'short' }).format(new Date()),
       metrics: [
         { label: 'Prix client TTC', value: formatCurrency(activePrice) },
         { label: 'Prix hors taxes estime', value: formatCurrency(proposedAnalysis.priceExcludingTax) },
         { label: 'Profit net estime', value: formatCurrency(proposedAnalysis.netProfit) },
-        { label: 'Marge reelle', value: formatPercent(proposedAnalysis.marginRate) },
-        { label: 'Couts renseignes', value: formatCurrency(result.baseCost) },
+        { label: 'Marge réelle', value: formatPercent(proposedAnalysis.marginRate) },
+        { label: 'Coûts renseignés', value: formatCurrency(result.baseCost) },
         { label: 'Niveau de risque', value: effectiveRiskLevel },
       ],
       sections: [
         {
-          title: 'Resume du formulaire',
+          title: 'Résumé du formulaire',
           body: [
-            `Opportunite : ${meta.title || 'Calcul sans titre'}`,
-            `Client : ${meta.clientName || 'Non renseigne'}`,
+            `Opportunité : ${meta.title || 'Calcul sans titre'}`,
+            `Client : ${meta.clientName || 'Non renseigné'}`,
             `Statut : ${statusLabels[meta.status]}`,
             `Budget client : ${formatCurrency(Number(meta.clientBudget || 0))}`,
-            `Probabilite : ${formatPercent(meta.probability)}`,
+            `Probabilité : ${formatPercent(meta.probability)}`,
             `Mode de facturation : ${getBillingModeLabel(input.billingMode)}`,
             `Prix client TTC : ${formatCurrency(activePrice)}`,
           ],
         },
         {
-          title: 'Couts et facturation',
+          title: 'Coûts et facturation',
           body: [
             `Type d activite : ${getActivityTypeLabel(input.activityType)}`,
             `Cout matiere / achat : ${formatCurrency(input.productCost)}`,
             `Frais fixes : ${formatCurrency(input.fixedFees)}`,
             `Frais paiement / plateforme : ${formatPercent(input.transactionFeesPercent)}`,
             `TVA / taxe : ${formatPercent(input.taxPercent)}`,
-            `Temps prevu : ${input.workHours} h`,
+            `Temps prévu : ${input.workHours} h`,
             `Tarif facture : ${formatCurrency(input.hourlyRate)}`,
           ],
         },
@@ -729,23 +724,23 @@ export function ToolForm({
   function downloadCsvExport() {
     const rows = [
       ['Section', 'Champ', 'Valeur'],
-      ['Client', 'Opportunite', meta.title || 'Calcul sans titre'],
-      ['Client', 'Client / prospect', meta.clientName || 'Non renseigne'],
+      ['Client', 'Opportunité', meta.title || 'Calcul sans titre'],
+      ['Client', 'Client / prospect', meta.clientName || 'Non renseigné'],
       ['Client', 'Statut', statusLabels[meta.status]],
       ['Client', 'Budget annonce', formatCurrency(Number(meta.clientBudget || 0))],
-      ['Client', 'Probabilite', formatPercent(meta.probability)],
-      ['Couts', 'Type activite', getActivityTypeLabel(input.activityType)],
-      ['Couts', 'Cout matiere / achat', formatCurrency(input.productCost)],
-      ['Couts', 'Frais fixes', formatCurrency(input.fixedFees)],
-      ['Couts', 'Frais paiement / plateforme', formatPercent(input.transactionFeesPercent)],
-      ['Couts', 'TVA / taxe', formatPercent(input.taxPercent)],
+      ['Client', 'Probabilité', formatPercent(meta.probability)],
+      ['Coûts', 'Type activité', getActivityTypeLabel(input.activityType)],
+      ['Coûts', 'Coût matière / achat', formatCurrency(input.productCost)],
+      ['Coûts', 'Frais fixes', formatCurrency(input.fixedFees)],
+      ['Coûts', 'Frais paiement / plateforme', formatPercent(input.transactionFeesPercent)],
+      ['Coûts', 'TVA / taxe', formatPercent(input.taxPercent)],
       ['Facturation', 'Mode', getBillingModeLabel(input.billingMode)],
-      ['Facturation', 'Temps prevu', `${input.workHours} h`],
+      ['Facturation', 'Temps prévu', `${input.workHours} h`],
       ['Facturation', 'Tarif facture', formatCurrency(input.hourlyRate)],
       ['Facturation', 'Prix client TTC', formatCurrency(activePrice)],
       ['Rentabilite', 'Prix HT estime', formatCurrency(proposedAnalysis.priceExcludingTax)],
       ['Rentabilite', 'Profit net estime', formatCurrency(proposedAnalysis.netProfit)],
-      ['Rentabilite', 'Marge reelle', formatPercent(proposedAnalysis.marginRate)],
+      ['Rentabilite', 'Marge réelle', formatPercent(proposedAnalysis.marginRate)],
       ['Rentabilite', 'Niveau de risque', effectiveRiskLevel],
       ...buildMarketCsvRows(selectedProfession?.label, market, matchingMarketRate, matchingMarketStat, marketReferencePrice),
     ];
@@ -761,7 +756,7 @@ export function ToolForm({
     }
 
     if (!hasFullAccess) {
-      setSaveStatus('Votre premier calcul complet a deja ete utilise. Passez en Premium pour generer de nouveaux devis.');
+      showToast('Votre premier calcul complet a déjà été utilisé. Passez en Premium pour générer de nouveaux devis.', 'error');
       return;
     }
 
@@ -805,8 +800,8 @@ export function ToolForm({
     if (missingField) {
       setQuoteError(
         missingField === 'companyName' || missingField === 'companyAddress'
-          ? "Renseignez votre entreprise dans Mon compte avant de generer un devis."
-          : 'Merci de remplir les informations client et le numero de devis.',
+          ? 'Renseignez votre entreprise dans Mon compte avant de générer un devis.'
+          : 'Merci de remplir les informations client et le numéro de devis.',
       );
       return;
     }
@@ -899,9 +894,9 @@ export function ToolForm({
           setQuoteShareUrl(`${window.location.origin}/devis/${savedQuote.public_token}`);
         }
 
-        setSaveStatus('Devis genere et sauvegarde dans votre compte.');
+        showToast('Devis généré et sauvegardé dans votre compte.', 'success');
       } catch {
-        setSaveStatus('PDF genere, mais sauvegarde du devis impossible pour le moment.');
+        showToast('PDF généré, mais sauvegarde du devis impossible pour le moment.', 'error');
       }
     }
 
@@ -916,7 +911,7 @@ export function ToolForm({
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft md:p-8">
           <FormSection number="01" title="Client" tone="teal">
             <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <TextField label="Nom de l'opportunite" value={meta.title} onChange={(value) => updateMeta('title', value)} placeholder="Site vitrine - client X" help="Nom interne du calcul ou du dossier commercial que vous voulez retrouver plus tard." />
+              <TextField label="Nom de l'opportunité" value={meta.title} onChange={(value) => updateMeta('title', value)} placeholder="Site vitrine - client X" help="Nom interne du calcul ou du dossier commercial que vous voulez retrouver plus tard." />
               <TextField label="Client / prospect" value={meta.clientName} onChange={(value) => updateMeta('clientName', value)} placeholder="Nom du client" help="Nom de l'entreprise ou de la personne a qui vous allez proposer le prix." />
               <label className="space-y-2">
                 <LabelWithInfo label="Statut commercial" help="Position du dossier dans votre suivi : a chiffrer, proposition envoyee, negociation, gagne ou perdu." />
@@ -933,7 +928,7 @@ export function ToolForm({
                 </select>
               </label>
               <NumberField label="Budget annonce par le client (EUR)" value={meta.clientBudget ? String(meta.clientBudget) : ''} onChange={(value) => updateMeta('clientBudget', value === '' ? 0 : Number(value))} help="Montant que le client pense pouvoir investir. Sert a situer votre prix face a son budget." />
-              <NumberField label="Probabilite de signature (%)" value={String(meta.probability)} onChange={(value) => updateMeta('probability', value === '' ? 0 : Number(value))} help="Estimation commerciale de vos chances de gagner le dossier. Sert au tableau des opportunites." />
+              <NumberField label="Probabilite de signature (%)" value={String(meta.probability)} onChange={(value) => updateMeta('probability', value === '' ? 0 : Number(value))} help="Estimation commerciale de vos chances de gagner le dossier. Sert au tableau des opportunités." />
               <label className="space-y-2">
                 <LabelWithInfo label="Deadline" help="Date limite de reponse ou date a laquelle vous devez relancer le client." />
                 <input
@@ -944,7 +939,7 @@ export function ToolForm({
                 />
               </label>
               <div className="md:col-span-2">
-                <TextField label="Prochaine action" value={meta.nextAction} onChange={(value) => updateMeta('nextAction', value)} placeholder="Relancer mardi, envoyer une proposition..." help="Prochaine tache a effectuer pour faire avancer l'opportunite." />
+                <TextField label="Prochaine action" value={meta.nextAction} onChange={(value) => updateMeta('nextAction', value)} placeholder="Relancer mardi, envoyer une proposition..." help="Prochaine tâche à effectuer pour faire avancer l'opportunité." />
               </div>
               <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 md:col-span-2">
                 <input
@@ -956,7 +951,7 @@ export function ToolForm({
                 <span>
                   <span className="block text-sm font-bold text-slate-950">Devis valide / prix accepte</span>
                   <span className="mt-1 block text-sm leading-6 text-slate-600">
-                    Ce prix alimentera les statistiques anonymisees Tarifly pour ce metier, cette zone et cette unite.
+                    Ce prix alimentera les statistiques anonymisées Tarifly pour ce métier, cette zone et cette unité.
                   </span>
                 </span>
               </label>
@@ -965,7 +960,7 @@ export function ToolForm({
 
           <FormSection
             number="02"
-            title="Couts"
+            title="Coûts"
             tone="blue"
           >
           <div className="mt-5 grid gap-5 md:grid-cols-2">
@@ -1020,7 +1015,7 @@ export function ToolForm({
             {input.billingMode === 'hourly' ? (
               <>
                 <NumberField label="Tarif horaire facture au client (EUR)" value={fields.hourlyRate} onChange={(value) => updateNumber('hourlyRate', value)} help="Prix que vous facturez au client pour une heure de travail." />
-                <NumberField label="Temps prevu (heures)" value={fields.workHours} onChange={(value) => updateNumber('workHours', value)} help="Nombre d'heures estime pour produire la mission." />
+                <NumberField label="Temps prévu (heures)" value={fields.workHours} onChange={(value) => updateNumber('workHours', value)} help="Nombre d'heures estime pour produire la mission." />
               </>
             ) : input.billingMode === 'daily' ? (
               <>
@@ -1030,7 +1025,7 @@ export function ToolForm({
             ) : (
               <>
                 <NumberField label="Montant global du devis (EUR TTC)" value={fields.proposedPrice} onChange={(value) => updateNumber('proposedPrice', value)} help="Prix total que vous souhaitez annoncer au client pour la mission." />
-                <NumberField label="Temps prevu (heures)" value={fields.workHours} onChange={(value) => updateNumber('workHours', value)} help="Temps estime pour mesurer la rentabilite horaire du forfait." />
+                <NumberField label="Temps prévu (heures)" value={fields.workHours} onChange={(value) => updateNumber('workHours', value)} help="Temps estimé pour mesurer la rentabilité horaire du forfait." />
               </>
             )}
             <details className="rounded-xl border border-slate-200 bg-white p-4 md:col-span-2">
@@ -1053,7 +1048,7 @@ export function ToolForm({
           >
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <label className="space-y-2">
-                <LabelWithInfo label="Metier" help="Metier utilise pour retrouver les prix de marche dans Supabase. La valeur technique envoyee est le slug." />
+                <LabelWithInfo label="Métier" help="Métier utilisé pour retrouver les prix de marché dans Supabase. La valeur technique envoyée est le slug." />
                 <select
                   value={market.professionSlug}
                   onChange={(event) => {
@@ -1062,7 +1057,7 @@ export function ToolForm({
                   }}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
                 >
-                  <option value="">Selectionner un metier</option>
+                  <option value="">Sélectionner un métier</option>
                   {professions.map((profession) => (
                     <option key={profession.slug} value={profession.slug}>
                       {profession.label}
@@ -1071,7 +1066,7 @@ export function ToolForm({
                 </select>
               </label>
               <label className="space-y-2">
-                <LabelWithInfo label="Region" help="Zone geographique utilisee pour charger les villes et les prix de marche disponibles." />
+                <LabelWithInfo label="Région" help="Zone géographique utilisée pour charger les villes et les prix de marché disponibles." />
                 <select
                   value={market.region}
                   onChange={(event) => {
@@ -1080,7 +1075,7 @@ export function ToolForm({
                   }}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
                 >
-                  <option value="">Selectionner une region</option>
+                  <option value="">Sélectionner une région</option>
                   {franceRegions.map((region) => (
                     <option key={region} value={region}>
                       {region}
@@ -1089,13 +1084,13 @@ export function ToolForm({
                 </select>
               </label>
               <label className="space-y-2">
-                <LabelWithInfo label="Ville optionnelle" help="Choisissez une ville precise si elle existe, ou gardez Moyenne regionale pour utiliser une moyenne des villes disponibles." />
+                <LabelWithInfo label="Ville optionnelle" help="Choisissez une ville précise si elle existe, ou gardez Moyenne régionale pour utiliser une moyenne des villes disponibles." />
                 <select
                   value={market.city}
                   onChange={(event) => updateMarket('city', event.target.value)}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
                 >
-                  <option value="">Moyenne regionale</option>
+                  <option value="">Moyenne régionale</option>
                   {getCitiesForRegion(marketRateRows, market.region, market.professionSlug).map((city) => (
                     <option key={city} value={city}>
                       {city}
@@ -1104,14 +1099,14 @@ export function ToolForm({
                 </select>
               </label>
               <label className="space-y-2">
-                <LabelWithInfo label="Prix compare" help="Unite de comparaison disponible pour ce metier et cette region : heure, prestation, jour, projet ou m2." />
+                <LabelWithInfo label="Prix comparé" help="Unité de comparaison disponible pour ce métier et cette région : heure, prestation, jour, projet ou m2." />
                 <select
                   value={market.unit}
                   onChange={(event) => updateMarket('unit', event.target.value as MarketUnit)}
                   disabled={!market.professionSlug || availableMarketUnits.length === 0}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
                 >
-                  {!market.professionSlug ? <option value={market.unit}>Selectionner un metier</option> : null}
+                  {!market.professionSlug ? <option value={market.unit}>Sélectionner un métier</option> : null}
                   {market.professionSlug && availableMarketUnits.length === 0 ? (
                     <option value={market.unit}>Aucune unite disponible</option>
                   ) : null}
@@ -1148,12 +1143,12 @@ export function ToolForm({
               )}
               {marketDataStatus === 'loading' ? (
                 <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500 md:col-span-2">
-                  Chargement des donnees marche...
+                  Chargement des données marché...
                 </p>
               ) : null}
               {marketDataStatus === 'error' ? (
                 <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 md:col-span-2">
-                  Impossible de charger les donnees marche pour cette selection.
+                  Impossible de charger les données marché pour cette sélection.
                 </p>
               ) : null}
               {market.professionSlug && market.region && marketDataStatus === 'ready' ? (
@@ -1178,7 +1173,6 @@ export function ToolForm({
               Valider
             </button>
           </div>
-          {saveStatus ? <p className="mt-4 rounded-2xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700">{saveStatus}</p> : null}
         </section>
       </div>
     </section>
@@ -1263,7 +1257,7 @@ function QuoteModal({
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-3">
-          <TextField label="Numero du devis" value={form.quoteNumber} onChange={(value) => onChange('quoteNumber', value)} help="Reference unique du devis pour votre suivi commercial et administratif." />
+          <TextField label="Numéro du devis" value={form.quoteNumber} onChange={(value) => onChange('quoteNumber', value)} help="Référence unique du devis pour votre suivi commercial et administratif." />
           <TextField label="Validite (jours)" value={form.validityDays} onChange={(value) => onChange('validityDays', value)} help="Duree pendant laquelle le prix propose reste valable." />
           <div className="md:col-span-3">
             <TextAreaField label="Intitule de la prestation" value={form.description} onChange={(value) => onChange('description', value)} help="Description courte de ce qui sera vendu au client dans le devis." />
@@ -1274,7 +1268,7 @@ function QuoteModal({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="font-bold text-slate-950">Lignes du devis</h3>
-              <p className="mt-1 text-sm text-slate-500">Ajoutez les prestations visibles par le client, sans les donnees internes de rentabilite.</p>
+              <p className="mt-1 text-sm text-slate-500">Ajoutez les prestations visibles par le client, sans les données internes de rentabilité.</p>
             </div>
             <button
               type="button"
@@ -1474,26 +1468,26 @@ function getRiskLevel(marginRate: number) {
 
 function getDiagnosis(marginRate: number) {
   if (marginRate < 15) {
-    return 'La rentabilite est fragile : le prix client couvre difficilement les couts renseignes et laisse peu de marge pour les imprevus.';
+    return 'La rentabilité est fragile : le prix client couvre difficilement les coûts renseignés et laisse peu de marge pour les imprévus.';
   }
 
   if (marginRate < 30) {
-    return 'La rentabilite est correcte mais limitee. Verifiez les frais annexes, le temps reel et les ajustements possibles avant d envoyer le devis.';
+    return 'La rentabilité est correcte mais limitée. Vérifiez les frais annexes, le temps réel et les ajustements possibles avant d’envoyer le devis.';
   }
 
-  return 'La rentabilite est saine : le prix client couvre les couts renseignes et conserve une marge confortable pour executer la mission proprement.';
+  return 'La rentabilité est saine : le prix client couvre les coûts renseignés et conserve une marge confortable pour exécuter la mission proprement.';
 }
 
 function getClientJustification(input: PricingInput, activePrice: number) {
   if (input.billingMode === 'hourly') {
-    return `Prix client : ${formatCurrency(activePrice)}. Ce montant correspond au tarif horaire facture multiplie par le temps estime, avec les couts directs et frais renseignes controles dans la marge.`;
+    return `Prix client : ${formatCurrency(activePrice)}. Ce montant correspond au tarif horaire facturé multiplié par le temps estimé, avec les coûts directs et frais renseignés contrôlés dans la marge.`;
   }
 
   if (input.billingMode === 'daily') {
     return `Prix client : ${formatCurrency(activePrice)}. Ce montant correspond au tarif journee multiplie par le nombre de journees prevues.`;
   }
 
-  return `Prix client : ${formatCurrency(activePrice)}. Ce montant correspond au forfait du devis, avec une rentabilite controlee a partir des couts directs, frais fixes, frais de paiement et taxes renseignes.`;
+  return `Prix client : ${formatCurrency(activePrice)}. Ce montant correspond au forfait du devis, avec une rentabilité contrôlée à partir des coûts directs, frais fixes, frais de paiement et taxes renseignés.`;
 }
 
 function getBillingModeLabel(mode: PricingInput['billingMode']) {
@@ -1521,9 +1515,9 @@ function buildMarketExportLines(
   referencePrice: number,
 ) {
   const lines = [
-    `Metier : ${professionLabel || 'Non renseigne'}`,
-    `Region : ${market.region || 'Non renseignee'}`,
-    `Ville : ${market.city || 'Moyenne regionale'}`,
+    `Métier : ${professionLabel || 'Non renseigné'}`,
+    `Région : ${market.region || 'Non renseignée'}`,
+    `Ville : ${market.city || 'Moyenne régionale'}`,
     `Unite comparee : ${marketUnitLabels[market.unit]}`,
     `Prix utilise : ${formatCurrency(referencePrice)}`,
   ];
@@ -1558,23 +1552,23 @@ function buildMarketCsvRows(
   referencePrice: number,
 ) {
   const rows = [
-    ['Veille marche', 'Metier', professionLabel || 'Non renseigne'],
-    ['Veille marche', 'Region', market.region || 'Non renseignee'],
-    ['Veille marche', 'Ville', market.city || 'Moyenne regionale'],
-    ['Veille marche', 'Unite comparee', marketUnitLabels[market.unit]],
-    ['Veille marche', 'Prix utilise', formatCurrency(referencePrice)],
+    ['Veille marché', 'Metier', professionLabel || 'Non renseigné'],
+    ['Veille marché', 'Région', market.region || 'Non renseignée'],
+    ['Veille marché', 'Ville', market.city || 'Moyenne régionale'],
+    ['Veille marché', 'Unite comparee', marketUnitLabels[market.unit]],
+    ['Veille marché', 'Prix utilise', formatCurrency(referencePrice)],
   ];
 
   if (rate) {
-    rows.push(['Veille marche', 'Prix bas marche', formatCurrency(rate.price_low)]);
-    rows.push(['Veille marche', 'Prix median marche', formatCurrency(rate.price_median)]);
-    rows.push(['Veille marche', 'Prix haut marche', formatCurrency(rate.price_high)]);
+    rows.push(['Veille marché', 'Prix bas marche', formatCurrency(rate.price_low)]);
+    rows.push(['Veille marché', 'Prix median marche', formatCurrency(rate.price_median)]);
+    rows.push(['Veille marché', 'Prix haut marche', formatCurrency(rate.price_high)]);
   }
 
   if (stat) {
-    rows.push(['Veille marche', 'Moyenne utilisateurs validee', formatCurrency(stat.average_price)]);
-    rows.push(['Veille marche', 'Mediane utilisateurs validee', formatCurrency(stat.median_price)]);
-    rows.push(['Veille marche', 'Devis utilisateurs valides', String(stat.sample_count)]);
+    rows.push(['Veille marché', 'Moyenne utilisateurs validee', formatCurrency(stat.average_price)]);
+    rows.push(['Veille marché', 'Mediane utilisateurs validee', formatCurrency(stat.median_price)]);
+    rows.push(['Veille marché', 'Devis utilisateurs valides', String(stat.sample_count)]);
   }
 
   return rows;

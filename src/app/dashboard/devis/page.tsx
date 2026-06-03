@@ -39,7 +39,7 @@ export default async function DashboardQuotesPage() {
             ))}
           </div>
         ) : (
-          <div className="p-6 text-sm text-slate-500">Aucun devis genere.</div>
+          <div className="p-6 text-sm text-slate-500">Aucun devis généré.</div>
         )}
       </div>
     </DashboardPageShell>

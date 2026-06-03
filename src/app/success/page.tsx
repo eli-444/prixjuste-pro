@@ -5,14 +5,14 @@ import { useEffect, useState } from 'react';
 import { ArrowRight, CheckCircle2, FileText, LayoutDashboard, ShieldCheck } from 'lucide-react';
 
 export default function SuccessPage() {
-  const [status, setStatus] = useState('Activation de votre acces premium...');
+  const [status, setStatus] = useState('Activation de votre accès premium...');
   const [isActivated, setIsActivated] = useState(false);
 
   useEffect(() => {
     const sessionId = new URLSearchParams(window.location.search).get('session_id');
 
     if (!sessionId) {
-      setStatus('Paiement valide. Votre acces sera verifie automatiquement dans votre espace compte.');
+      setStatus('Paiement validé. Votre accès sera vérifié automatiquement dans votre espace compte.');
       return;
     }
 
@@ -34,8 +34,8 @@ export default function SuccessPage() {
       .catch((error) => {
         setStatus(
           error instanceof Error
-            ? `Paiement valide, activation en verification : ${error.message}`
-            : 'Paiement valide, activation en verification.',
+            ? `Paiement validé, activation en vérification : ${error.message}`
+            : 'Paiement validé, activation en vérification.',
         );
       });
   }, []);
@@ -48,7 +48,7 @@ export default function SuccessPage() {
             <div className="grid h-14 w-14 place-items-center rounded-2xl bg-brand-50 text-brand-600">
               <CheckCircle2 size={30} />
             </div>
-            <p className="mt-6 text-sm font-bold uppercase tracking-[0.2em] text-brand-600">Paiement confirme</p>
+            <p className="mt-6 text-sm font-bold uppercase tracking-[0.2em] text-brand-600">Paiement confirmé</p>
             <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-950 md:text-5xl">
               Bienvenue dans Tarifly Premium.
             </h1>
@@ -66,11 +66,11 @@ export default function SuccessPage() {
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <p className="text-sm font-bold uppercase tracking-[0.2em] text-slate-500">Prochaines etapes</p>
+            <p className="text-sm font-bold uppercase tracking-[0.2em] text-slate-500">Prochaines étapes</p>
             <div className="mt-5 grid gap-3">
-              <Step icon={<ShieldCheck />} title={isActivated ? 'Acces active' : 'Acces en verification'} text="Votre statut premium est rattache a votre compte." />
-              <Step icon={<LayoutDashboard />} title="Nouveau calcul" text="Renseignez vos hypotheses et consultez le diagnostic complet." />
-              <Step icon={<FileText />} title="Exporter le rapport" text="Telechargez un PDF professionnel pour vos dossiers et propositions." />
+              <Step icon={<ShieldCheck />} title={isActivated ? 'Accès activé' : 'Accès en vérification'} text="Votre statut premium est rattaché à votre compte." />
+              <Step icon={<LayoutDashboard />} title="Nouveau calcul" text="Renseignez vos hypothèses et consultez le diagnostic complet." />
+              <Step icon={<FileText />} title="Exporter le rapport" text="Téléchargez un PDF professionnel pour vos dossiers et propositions." />
             </div>
           </div>
         </div>

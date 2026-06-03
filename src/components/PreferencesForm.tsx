@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser';
 import { franceRegions, type Profession } from '@/lib/market';
+import { showToast } from '@/lib/toast';
 
 type PreferencesFormState = {
   fullName: string;
@@ -28,7 +29,6 @@ export function PreferencesForm({
   initialValues: PreferencesFormState;
 }) {
   const [form, setForm] = useState<PreferencesFormState>(initialValues);
-  const [status, setStatus] = useState('');
 
   function updateField<K extends keyof PreferencesFormState>(name: K, value: PreferencesFormState[K]) {
     setForm((current) => ({
@@ -38,8 +38,6 @@ export function PreferencesForm({
   }
 
   async function savePreferences() {
-    setStatus('');
-
     try {
       const supabase = createBrowserSupabaseClient();
       const { error } = await supabase
@@ -63,9 +61,9 @@ export function PreferencesForm({
         throw error;
       }
 
-      setStatus('Preferences enregistrees.');
+      showToast('Préférences enregistrées.', 'success');
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Enregistrement impossible pour le moment.');
+      showToast(error instanceof Error ? error.message : 'Enregistrement impossible pour le moment.', 'error');
     }
   }
 
@@ -73,8 +71,8 @@ export function PreferencesForm({
     <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-soft md:p-8">
       <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-950">Preferences</h2>
-          <p className="mt-2 text-sm text-slate-500">Ces informations pre-remplissent l'outil et les devis.</p>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-950">Préférences</h2>
+          <p className="mt-2 text-sm text-slate-500">Ces informations pré-remplissent l'outil et les devis.</p>
         </div>
         <button
           type="button"
@@ -86,9 +84,9 @@ export function PreferencesForm({
       </div>
 
       <div className="mt-6 grid gap-5 md:grid-cols-2">
-        <TextInput label="Nom / societe" value={form.fullName} onChange={(value) => updateField('fullName', value)} />
+        <TextInput label="Nom / société" value={form.fullName} onChange={(value) => updateField('fullName', value)} />
         <label className="space-y-2">
-          <span className="text-sm font-semibold text-slate-700">Type d'activite</span>
+          <span className="text-sm font-semibold text-slate-700">Type d'activité</span>
           <select
             value={form.activityType}
             onChange={(event) => updateField('activityType', event.target.value as PreferencesFormState['activityType'])}
@@ -100,13 +98,13 @@ export function PreferencesForm({
           </select>
         </label>
         <label className="space-y-2">
-          <span className="text-sm font-semibold text-slate-700">Metier principal</span>
+          <span className="text-sm font-semibold text-slate-700">Métier principal</span>
           <select
             value={form.professionSlug}
             onChange={(event) => updateField('professionSlug', event.target.value)}
             className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
           >
-            <option value="">Selectionner</option>
+            <option value="">Sélectionner</option>
             {professions.map((profession) => (
               <option key={profession.slug} value={profession.slug}>
                 {profession.label}
@@ -115,13 +113,13 @@ export function PreferencesForm({
           </select>
         </label>
         <label className="space-y-2">
-          <span className="text-sm font-semibold text-slate-700">Region</span>
+          <span className="text-sm font-semibold text-slate-700">Région</span>
           <select
             value={form.region}
             onChange={(event) => updateField('region', event.target.value)}
             className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
           >
-            <option value="">Selectionner</option>
+            <option value="">Sélectionner</option>
             {franceRegions.map((region) => (
               <option key={region} value={region}>
                 {region}
@@ -130,15 +128,13 @@ export function PreferencesForm({
           </select>
         </label>
         <TextInput label="Ville" value={form.city} onChange={(value) => updateField('city', value)} />
-        <NumberInput label="TVA par defaut (%)" value={form.defaultTaxPercent} onChange={(value) => updateField('defaultTaxPercent', value)} />
+        <NumberInput label="TVA par défaut (%)" value={form.defaultTaxPercent} onChange={(value) => updateField('defaultTaxPercent', value)} />
         <NumberInput label="Tarif horaire habituel (EUR)" value={form.defaultHourlyRate} onChange={(value) => updateField('defaultHourlyRate', value)} />
         <TextInput label="Nom entreprise devis" value={form.companyName} onChange={(value) => updateField('companyName', value)} />
         <TextArea label="Adresse entreprise devis" value={form.companyAddress} onChange={(value) => updateField('companyAddress', value)} />
         <TextInput label="Email entreprise devis" value={form.companyEmail} onChange={(value) => updateField('companyEmail', value)} />
-        <TextInput label="Telephone entreprise devis" value={form.companyPhone} onChange={(value) => updateField('companyPhone', value)} />
+        <TextInput label="Téléphone entreprise devis" value={form.companyPhone} onChange={(value) => updateField('companyPhone', value)} />
       </div>
-
-      {status ? <p className="mt-5 rounded-xl bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">{status}</p> : null}
     </section>
   );
 }
