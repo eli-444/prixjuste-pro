@@ -23,41 +23,36 @@ export default async function HomePage({
       <AuthCodeRedirect />
       <Header />
       <main>
-        <section className="relative overflow-hidden bg-[linear-gradient(180deg,#ffffff_0%,#f4fbfb_52%,#f1f5f9_100%)]">
+        <section className="relative overflow-hidden bg-[radial-gradient(circle_at_12%_10%,rgba(17,207,194,0.22),transparent_32%),radial-gradient(circle_at_88%_4%,rgba(8,120,242,0.18),transparent_30%),linear-gradient(180deg,#ffffff_0%,#eefcff_58%,#f7fbff_100%)]">
           <div className="mx-auto grid max-w-6xl gap-10 px-4 py-20 md:grid-cols-[1.1fr_0.9fr] md:py-28">
             <div>
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-teal-100 bg-white px-4 py-2 text-sm font-bold text-teal-700 shadow-sm">
-                <span className="h-2 w-2 rounded-full bg-[#ff7043]" />
-                Prix, devis, pipeline et acompte
-              </div>
               <h1 className="text-4xl font-bold tracking-tight text-slate-950 md:text-6xl">
-                Fixez le bon tarif avant d'envoyer votre devis.
+                Fixez le <span className="text-brand-600">bon tarif</span> avant d'envoyer votre devis.
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-                Tarifly transforme vos couts, votre temps, vos frais et votre objectif de marge en un prix clair,
-                defendable et rentable. Vous gagnez du temps, vous securisez votre marge et vous presentez un tarif
-                coherent a vos clients.
+                Tarifly transforme vos couts, votre temps et vos frais en un prix clair, defendable et rentable.
+                Vous gagnez du temps, vous securisez votre marge et vous arrivez face au client avec une proposition
+                qui tient debout.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link href="/outil" className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-6 py-4 text-sm font-semibold text-white shadow-soft transition hover:bg-slate-800">
+                <Link href="/outil" className="inline-flex items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#061747_0%,#0878f2_55%,#11cfc2_100%)] px-6 py-4 text-sm font-semibold text-white shadow-glow transition hover:brightness-110">
                   Calculer mon prix
                   <ArrowRight size={16} />
                 </Link>
-                <Link href="#tarifs" className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-6 py-4 text-sm font-semibold text-slate-950 transition hover:bg-slate-50">
+                <Link href="#tarifs" className="inline-flex items-center justify-center rounded-full border border-aqua-100 bg-white px-6 py-4 text-sm font-semibold text-brand-900 shadow-sm transition hover:border-aqua-500 hover:text-brand-600">
                   Voir l'offre
                 </Link>
               </div>
             </div>
 
-            <div className="relative overflow-hidden rounded-2xl border border-teal-100 bg-white shadow-soft">
-              <div className="absolute left-0 top-0 h-2 w-full bg-[linear-gradient(90deg,#1f2f68,#21b7b6,#ff7043)]" />
+            <div className="relative self-center overflow-hidden rounded-3xl border border-aqua-100 bg-white shadow-glow">
               <Image
                 src="/home-target.png"
                 alt="Objectif commercial atteint avec un devis mieux positionne"
                 width={1680}
                 height={945}
                 priority
-                className="h-full min-h-[320px] w-full object-cover"
+                className="h-auto w-full object-contain"
               />
             </div>
           </div>
@@ -71,22 +66,20 @@ export default async function HomePage({
               description="Tarifly remet de la methode dans une decision souvent prise trop vite : combien facturer sans rogner sa marge ni perdre en credibilite commerciale."
             />
             <div className="mt-10 grid gap-5 md:grid-cols-3">
-              <Feature icon={<Timer />} title="1. Renseignez vos donnees" text="Temps prevu, couts directs, frais, taux horaire, marge souhaitee et taxes eventuelles." />
-              <Feature icon={<BarChart3 />} title="2. Analysez votre rentabilite" text="L'outil calcule un prix recommande et met en evidence la marge reelle de votre prestation." />
-              <Feature icon={<FileText />} title="3. Presentez un tarif clair" text="Vous repartez avec une formulation professionnelle pour expliquer votre prix sans vous justifier maladroitement." />
+              <Feature accent="aqua" icon={<Timer />} title="1. Renseignez vos donnees" text="Temps prevu, couts directs, frais, taux horaire, marge souhaitee et taxes eventuelles." />
+              <Feature accent="blue" icon={<BarChart3 />} title="2. Analysez votre rentabilite" text="L'outil calcule un prix recommande et met en evidence la marge reelle de votre prestation." />
+              <Feature accent="orange" icon={<FileText />} title="3. Presentez un tarif clair" text="Vous repartez avec une formulation professionnelle pour expliquer votre prix sans vous justifier maladroitement." />
             </div>
           </div>
         </section>
 
-        <section id="cibles" className="bg-[linear-gradient(180deg,#f8fafc_0%,#effafa_100%)] py-20">
+        <section id="cibles" className="bg-[linear-gradient(180deg,#f8fafc_0%,#eafffb_100%)] py-20">
           <div className="mx-auto grid max-w-6xl gap-10 px-4 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
-            <div className="overflow-hidden rounded-2xl border border-teal-100 bg-white shadow-soft">
-              <Image
-                src="/home-profiles.png"
+            <div className="self-center overflow-hidden rounded-2xl border border-teal-100 bg-white shadow-soft">
+              <img
+                src="/home-profiles-v2.png"
                 alt="Professionnel qui suit ses devis et ses opportunites commerciales"
-                width={1680}
-                height={945}
-                className="h-full min-h-[320px] w-full object-cover"
+                className="block h-auto w-full"
               />
             </div>
             <div>
@@ -99,12 +92,12 @@ export default async function HomePage({
                 {['Freelances', 'Artisans', 'Consultants', 'Createurs', 'Formateurs', 'Coachings', 'Prestataires', 'TPE'].map((target, index) => (
                   <div
                     key={target}
-                    className={`rounded-2xl border p-5 font-semibold shadow-sm ${
+                    className={`rounded-2xl border p-5 font-bold shadow-sm transition hover:-translate-y-0.5 hover:shadow-soft ${
                       index % 3 === 0
-                        ? 'border-teal-100 bg-white text-teal-900'
+                        ? 'border-aqua-100 bg-aqua-50 text-teal-950'
                         : index % 3 === 1
                           ? 'border-orange-100 bg-[#fff7ed] text-slate-900'
-                          : 'border-slate-200 bg-white text-slate-800'
+                          : 'border-brand-100 bg-brand-50 text-brand-900'
                     }`}
                   >
                     {target}
@@ -124,9 +117,9 @@ export default async function HomePage({
                 description="Un prix trop bas fatigue votre activite. Un prix mal explique fragilise la vente. Tarifly vous aide a poser un tarif argumente, lisible et coherent avec vos objectifs."
               />
               <div className="mt-10 grid gap-5 md:grid-cols-3 lg:grid-cols-1">
-                <Feature icon={<ShieldCheck />} title="Proteger votre marge" text="Chaque prix tient compte de vos couts reels, de votre temps et du niveau de rentabilite attendu." />
-                <Feature icon={<Sparkles />} title="Gagner en credibilite" text="Vous presentez un tarif structure, moins improvise, plus facile a assumer face au client." />
-                <Feature icon={<CheckCircle2 />} title="Decider plus vite" text="Vous remplacez les hesitations et les calculs disperses par une recommandation exploitable immediatement." />
+                <Feature accent="blue" icon={<ShieldCheck />} title="Proteger votre marge" text="Chaque prix tient compte de vos couts reels, de votre temps et du niveau de rentabilite attendu." />
+                <Feature accent="aqua" icon={<Sparkles />} title="Gagner en credibilite" text="Vous presentez un tarif structure, moins improvise, plus facile a assumer face au client." />
+                <Feature accent="orange" icon={<CheckCircle2 />} title="Decider plus vite" text="Vous remplacez les hesitations et les calculs disperses par une recommandation exploitable immediatement." />
               </div>
             </div>
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-[#f8fbff] shadow-soft">
@@ -141,7 +134,7 @@ export default async function HomePage({
           </div>
         </section>
 
-        <section id="tarifs" className="bg-slate-100 py-20">
+        <section id="tarifs" className="bg-[linear-gradient(180deg,#eefcff_0%,#f8fafc_100%)] py-20">
           <div className="mx-auto grid max-w-6xl gap-10 px-4 lg:grid-cols-[0.9fr_1.1fr]">
             <div>
               <SectionTitle
@@ -156,8 +149,8 @@ export default async function HomePage({
                   'Texte de justification professionnel pour accompagner votre proposition.',
                   'Export PDF professionnel et abonnement mensuel resiliable en ligne.',
                 ].map((item) => (
-                  <p key={item} className="flex items-center gap-3 text-slate-700">
-                    <CheckCircle2 className="h-5 w-5 text-brand-600" />
+                  <p key={item} className="flex items-center gap-3 rounded-2xl border border-brand-100 bg-white px-4 py-3 font-medium text-slate-700 shadow-sm">
+                    <CheckCircle2 className="h-5 w-5 text-aqua-600" />
                     {item}
                   </p>
                 ))}
@@ -213,10 +206,31 @@ function SectionTitle({
   );
 }
 
-function Feature({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
+function Feature({
+  icon,
+  title,
+  text,
+  accent = 'blue',
+}: {
+  icon: React.ReactNode;
+  title: string;
+  text: string;
+  accent?: 'blue' | 'aqua' | 'orange';
+}) {
+  const accents = {
+    blue: 'border-brand-100 bg-[linear-gradient(135deg,#ffffff_0%,#eefcff_100%)] text-brand-600',
+    aqua: 'border-aqua-100 bg-[linear-gradient(135deg,#ffffff_0%,#ecfffd_100%)] text-aqua-600',
+    orange: 'border-orange-100 bg-[linear-gradient(135deg,#ffffff_0%,#fff7ed_100%)] text-orange-500',
+  };
+  const iconAccents = {
+    blue: 'bg-brand-50 text-brand-600',
+    aqua: 'bg-aqua-50 text-aqua-600',
+    orange: 'bg-orange-50 text-orange-500',
+  };
+
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
-      <div className="grid h-12 w-12 place-items-center rounded-xl bg-brand-50 text-brand-600">{icon}</div>
+    <div className={`rounded-2xl border p-7 shadow-sm transition hover:-translate-y-0.5 hover:shadow-soft ${accents[accent]}`}>
+      <div className={`grid h-12 w-12 place-items-center rounded-xl ${iconAccents[accent]}`}>{icon}</div>
       <h3 className="mt-5 text-lg font-bold text-slate-950">{title}</h3>
       <p className="mt-2 leading-7 text-slate-600">{text}</p>
     </div>

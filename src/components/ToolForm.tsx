@@ -139,6 +139,7 @@ export function ToolForm({
   const [market, setMarket] = useState<MarketBenchmarkInput>(initialMarket);
   const [isPremium, setIsPremium] = useState(false);
   const [premiumStatus, setPremiumStatus] = useState<'loading' | 'free' | 'premium'>('loading');
+  const [hasFreeFullUse, setHasFreeFullUse] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState('');
   const [marketRateRows, setMarketRateRows] = useState<MarketRate[]>(marketRates);
@@ -188,6 +189,11 @@ export function ToolForm({
   const effectiveDiagnosis = getDiagnosis(proposedAnalysis.marginRate);
   const effectiveJustification = getClientJustification(input, activePrice);
   const selectedProfession = professions.find((profession) => profession.slug === market.professionSlug);
+  const hasFullAccess = isPremium || hasFreeFullUse;
+  const accessLabel = isPremium ? 'Premium actif' : hasFreeFullUse ? 'Premier calcul complet offert' : 'Premium requis';
+  const lockedAccessMessage = userId
+    ? 'Votre premier calcul complet a deja ete utilise. Le premium debloque la marge, le risque, le diagnostic, les exports et les devis avances sans limite.'
+    : 'Connectez-vous pour profiter de votre premier calcul complet offert. Ensuite, les calculs complets demandent Tarifly Premium.';
 
   useEffect(() => {
     if (!market.professionSlug || availableMarketUnits.length === 0 || availableMarketUnits.includes(market.unit)) {
@@ -378,19 +384,27 @@ export function ToolForm({
           }));
         }
 
-        const { data: entitlement } = await supabase
-          .from('premium_entitlements')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('status', 'active')
-          .maybeSingle();
+        const [{ data: entitlement }, { count: savedCalculationCount }] = await Promise.all([
+          supabase
+            .from('premium_entitlements')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .maybeSingle(),
+          supabase
+            .from('pricing_calculations')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id),
+        ]);
 
         if (entitlement) {
           setIsPremium(true);
+          setHasFreeFullUse(false);
           setPremiumStatus('premium');
           window.localStorage.setItem(PREMIUM_KEY, 'true');
         } else {
           setIsPremium(false);
+          setHasFreeFullUse((savedCalculationCount ?? 0) === 0);
           setPremiumStatus('free');
           window.localStorage.removeItem(PREMIUM_KEY);
         }
@@ -544,6 +558,11 @@ export function ToolForm({
       return;
     }
 
+    if (!hasFullAccess) {
+      setSaveStatus('Votre premier calcul complet a deja ete utilise. Passez en Premium pour sauvegarder de nouvelles opportunites.');
+      return;
+    }
+
     try {
       const supabase = createBrowserSupabaseClient();
       const { data, error } = await supabase
@@ -633,6 +652,9 @@ export function ToolForm({
       }
 
       setSaveStatus('Calcul sauvegarde dans votre compte.');
+      if (!isPremium) {
+        setHasFreeFullUse(false);
+      }
     } catch (error) {
       setSaveStatus(error instanceof Error ? error.message : 'Sauvegarde impossible pour le moment.');
     }
@@ -728,6 +750,16 @@ export function ToolForm({
 
   function openQuoteModal() {
     setQuoteError('');
+    if (!userId) {
+      window.location.href = '/connexion?redirect=/outil';
+      return;
+    }
+
+    if (!hasFullAccess) {
+      setSaveStatus('Votre premier calcul complet a deja ete utilise. Passez en Premium pour generer de nouveaux devis.');
+      return;
+    }
+
     setQuoteForm((current) => ({
       ...current,
       clientName: current.clientName || meta.clientName,
@@ -881,7 +913,7 @@ export function ToolForm({
             number="01"
             title="Client"
             description="Identifiez le prospect, l'etape du pipeline et le contexte de decision."
-            tone="dark"
+            tone="teal"
           >
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <TextField label="Nom de l'opportunite" value={meta.title} onChange={(value) => updateMeta('title', value)} placeholder="Site vitrine - client X" help="Nom interne du calcul ou du dossier commercial que vous voulez retrouver plus tard." />
@@ -933,63 +965,8 @@ export function ToolForm({
 
           <FormSection
             number="02"
-            title="Modeles"
-            description="Reutilisez une prestation frequente ou enregistrez les reglages actuels."
-          >
-            <div className="mt-5 grid gap-4 md:grid-cols-[1fr_auto]">
-              <label className="space-y-2">
-                <LabelWithInfo label="Modele existant" help="Applique les couts, la facturation et le benchmark sauvegardes dans un modele." />
-                <select
-                  value=""
-                  onChange={(event) => applyTemplate(event.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                >
-                  <option value="">Selectionner un modele</option>
-                  {serviceTemplates.map((template) => (
-                    <option key={template.id} value={template.id}>
-                      {template.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="space-y-2">
-                <LabelWithInfo label="Nom du nouveau modele" help="Nom court pour retrouver cette prestation plus tard." />
-                <div className="flex gap-2">
-                  <input
-                    value={templateName}
-                    onChange={(event) => setTemplateName(event.target.value)}
-                    placeholder="Ex : Site vitrine"
-                    className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={saveCurrentTemplate}
-                    className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-                  >
-                    Enregistrer
-                  </button>
-                </div>
-              </label>
-            </div>
-            <div className="mt-5 grid gap-3 md:grid-cols-3">
-              {starterTemplates.map((template) => (
-                <button
-                  key={template.name}
-                  type="button"
-                  onClick={() => applyStarterTemplate(template)}
-                  className="rounded-xl border border-slate-200 bg-white p-4 text-left transition hover:bg-slate-50"
-                >
-                  <span className="block font-bold text-slate-950">{template.name}</span>
-                  <span className="mt-1 block text-sm leading-6 text-slate-500">{template.description}</span>
-                </button>
-              ))}
-            </div>
-            {templateStatus ? <p className="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">{templateStatus}</p> : null}
-          </FormSection>
-
-          <FormSection
-            number="03"
             title="Couts"
+            tone="blue"
           >
           <div className="mt-5 grid gap-5 md:grid-cols-2">
             <label className="space-y-2 md:col-span-2">
@@ -1018,9 +995,9 @@ export function ToolForm({
           </FormSection>
 
           <FormSection
-            number="04"
+            number="03"
             title="Facturation client"
-            tone="muted"
+            tone="violet"
           >
           <div className="mt-5 grid gap-5 md:grid-cols-2">
             <label className="space-y-2 md:col-span-2">
@@ -1071,8 +1048,9 @@ export function ToolForm({
           </FormSection>
 
           <FormSection
-            number="05"
+            number="04"
             title="Comparaison marche"
+            tone="green"
           >
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <label className="space-y-2">
@@ -1201,6 +1179,9 @@ export function ToolForm({
           <p className="mt-2 text-sm text-slate-300">
             {input.billingMode === 'hourly' ? 'Tarif horaire x temps prevu' : 'Montant forfaitaire du devis'}
           </p>
+          <p className="mt-3 inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-brand-100">
+            {accessLabel}
+          </p>
         </div>
 
         {premiumStatus === 'loading' ? (
@@ -1211,20 +1192,26 @@ export function ToolForm({
 
         <div className="mt-6 grid gap-3 text-sm">
           <Metric label="Couts renseignes" value={formatCurrency(result.baseCost)} />
-          <Metric label="Score devis" value={isPremium ? `${quoteHealthScore}/100` : 'Premium'} locked={!isPremium} />
-          <Metric label="Profit net estime" value={isPremium ? formatCurrency(proposedAnalysis.netProfit) : 'Premium'} locked={!isPremium} />
-          <Metric label="Marge reelle" value={isPremium ? formatPercent(proposedAnalysis.marginRate) : 'Premium'} locked={!isPremium} />
-          <Metric label="Rentabilite horaire" value={isPremium ? formatCurrency(proposedAnalysis.hourlyReality) : 'Premium'} locked={!isPremium} />
-          <Metric label="Niveau de risque" value={isPremium ? effectiveRiskLevel : 'Premium'} locked={!isPremium} />
+          <Metric label="Score devis" value={hasFullAccess ? `${quoteHealthScore}/100` : 'Premium'} locked={!hasFullAccess} />
+          <Metric label="Profit net estime" value={hasFullAccess ? formatCurrency(proposedAnalysis.netProfit) : 'Premium'} locked={!hasFullAccess} />
+          <Metric label="Marge reelle" value={hasFullAccess ? formatPercent(proposedAnalysis.marginRate) : 'Premium'} locked={!hasFullAccess} />
+          <Metric label="Rentabilite horaire" value={hasFullAccess ? formatCurrency(proposedAnalysis.hourlyReality) : 'Premium'} locked={!hasFullAccess} />
+          <Metric label="Niveau de risque" value={hasFullAccess ? effectiveRiskLevel : 'Premium'} locked={!hasFullAccess} />
         </div>
 
-        {isPremium ? (
+        {hasFullAccess ? (
           <div className="mt-6 rounded-2xl bg-white/10 p-4">
             <p className="font-semibold">Diagnostic</p>
             <p className="mt-2 text-sm font-semibold text-brand-100">{getQuoteHealthLabel(quoteHealthScore)}</p>
             <p className="mt-2 text-sm leading-6 text-slate-200">{effectiveDiagnosis}</p>
             <p className="mt-4 font-semibold">Justification client</p>
             <p className="mt-2 text-sm leading-6 text-slate-200">{effectiveJustification}</p>
+            {hasFreeFullUse ? (
+              <p className="mt-4 rounded-xl border border-brand-100/30 bg-white/10 px-4 py-3 text-sm leading-6 text-brand-50">
+                Cette analyse complete est offerte pour votre premier calcul sauvegarde. Les prochains calculs complets
+                demanderont Tarifly Premium.
+              </p>
+            ) : null}
           </div>
         ) : (
           <div className="mt-6 rounded-2xl border border-white/15 bg-white/10 p-4">
@@ -1233,8 +1220,7 @@ export function ToolForm({
               Analyse complete verrouillee
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-200">
-              La version gratuite affiche le prix client. Le premium debloque la marge, le risque, le diagnostic et
-              l'export PDF professionnel.
+              {lockedAccessMessage}
             </p>
             <CheckoutButton className="mt-4 w-full rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100">
               Demarrer Premium - 9,90 EUR / mois
@@ -1244,16 +1230,16 @@ export function ToolForm({
 
         <div id="exports" className="mt-6 grid gap-3 sm:grid-cols-2">
           <button
-            onClick={isPremium ? downloadExport : undefined}
-            disabled={!isPremium}
+            onClick={hasFullAccess ? downloadExport : undefined}
+            disabled={!hasFullAccess}
             className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Download size={16} />
             Export PDF
           </button>
           <button
-            onClick={isPremium ? downloadCsvExport : undefined}
-            disabled={!isPremium}
+            onClick={hasFullAccess ? downloadCsvExport : undefined}
+            disabled={!hasFullAccess}
             className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 px-4 py-3 text-sm font-semibold transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <FileSpreadsheet size={16} />
@@ -1516,18 +1502,33 @@ function FormSection({
   title: string;
   description?: string;
   children: React.ReactNode;
-  tone?: 'light' | 'muted' | 'dark';
+  tone?: 'light' | 'muted' | 'dark' | 'teal' | 'orange' | 'blue' | 'violet' | 'green';
 }) {
   const styles = {
     light: 'border-slate-200 bg-white',
     muted: 'border-slate-200 bg-slate-50',
     dark: 'border-slate-950 bg-slate-950 text-white',
+    teal: 'border-aqua-500/35 bg-[linear-gradient(135deg,#ffffff_0%,#ddfbf7_100%)]',
+    orange: 'border-orange-300 bg-[linear-gradient(135deg,#ffffff_0%,#ffedd5_100%)]',
+    blue: 'border-brand-500/30 bg-[linear-gradient(135deg,#ffffff_0%,#dff4ff_100%)]',
+    violet: 'border-indigo-300 bg-[linear-gradient(135deg,#ffffff_0%,#e8edff_100%)]',
+    green: 'border-emerald-300 bg-[linear-gradient(135deg,#ffffff_0%,#dcfce7_100%)]',
+  };
+  const pills = {
+    light: 'bg-slate-950 text-white',
+    muted: 'bg-slate-950 text-white',
+    dark: 'bg-white text-slate-950',
+    teal: 'bg-aqua-600 text-white',
+    orange: 'bg-orange-500 text-white',
+    blue: 'bg-brand-600 text-white',
+    violet: 'bg-indigo-600 text-white',
+    green: 'bg-emerald-600 text-white',
   };
   const mutedText = tone === 'dark' ? 'text-slate-300' : 'text-slate-500';
-  const pill = tone === 'dark' ? 'bg-white text-slate-950' : 'bg-slate-950 text-white';
+  const pill = pills[tone];
 
   return (
-    <section className={`mt-8 rounded-2xl border p-5 ${styles[tone]}`}>
+    <section className={`mt-8 rounded-2xl border p-5 shadow-sm ${styles[tone]}`}>
       <div className="flex items-start gap-4">
         <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-sm font-bold ${pill}`}>{number}</span>
         <div>

@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #f4f9fb;
+  --foreground: #061747;
 }
 
 * {
@@ -13,7 +13,10 @@
 
 body {
   margin: 0;
-  background: var(--background);
+  background:
+    radial-gradient(circle at 12% -10%, rgba(17, 207, 194, 0.16), transparent 34%),
+    radial-gradient(circle at 88% 0%, rgba(14, 132, 255, 0.14), transparent 30%),
+    var(--background);
   color: var(--foreground);
 }
 
@@ -24,5 +27,5 @@ textarea {
 }
 
 ::selection {
-  background: #c7d2fe;
+  background: #ccfbf6;
 }
