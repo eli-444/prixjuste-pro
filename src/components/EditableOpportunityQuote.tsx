@@ -84,14 +84,8 @@ export function EditableOpportunityQuote({ initialOpen, quote }: EditableOpportu
             </section>
 
             <section>
-              <h2 className="text-2xl font-black text-brand-600">Devis N°</h2>
+              <h2 className="text-2xl font-black text-brand-600">Devis N° {quoteNumber}</h2>
               <p className="mt-2 text-sm font-semibold">Ville, le {formatDateInput(quoteDate)}</p>
-              <dl className="mt-8 grid grid-cols-[96px_1fr] gap-x-3 gap-y-2 text-sm">
-                <dt className="font-bold">N° devis</dt>
-                <dd className="text-right">{quoteNumber}</dd>
-                <dt className="font-bold">Validite</dt>
-                <dd className="text-right">{formatDateInput(validUntil)}</dd>
-              </dl>
             </section>
           </header>
 
