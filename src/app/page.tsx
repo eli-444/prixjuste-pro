@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { redirect } from 'next/navigation';
-import { ArrowRight, BarChart3, CheckCircle2, CircleCheck, FileSignature, FileText, LineChart, Link2, Timer, TrendingUp } from 'lucide-react';
+import { ArrowRight, BarChart3, CheckCircle2, CircleCheck, FileSignature, FileText, LineChart, Link2, ShieldCheck, Sparkles, Target, Timer, TrendingUp } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { PricingCard } from '@/components/PricingCard';
@@ -112,13 +113,6 @@ const homeJsonLd = [
   },
 ];
 
-const trustItems = [
-  'Sans engagement',
-  'Résiliable à tout moment',
-  'Devis consultable sans compte client',
-  'Statistiques basées sur les devis acceptés',
-];
-
 const pillars = [
   {
     icon: <Timer size={20} />,
@@ -182,34 +176,24 @@ export default async function HomePage({
         <section className="relative border-b border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#eefcff_56%,#f6f9fc_100%)]">
           <div className="mx-auto grid max-w-6xl gap-12 px-4 py-16 md:py-24 lg:grid-cols-[1fr_0.9fr] lg:items-center">
             <div>
-              <div className="inline-flex rounded-full border border-brand-100 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-brand-600 shadow-sm">
-                Prix, marché, devis et suivi client
-              </div>
-              <h1 className="mt-7 max-w-4xl text-4xl font-black leading-[1.03] tracking-tight text-brand-900 md:text-6xl">
+              <h1 className="max-w-4xl text-4xl font-black leading-[1.03] tracking-tight text-brand-900 md:text-6xl">
                 Fixez un prix rentable, comparez-le au marché et envoyez un devis prêt à signer.
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-700">
                 Tarifly aide les indépendants, artisans, freelances et petites entreprises à calculer leurs prix, protéger leur marge, générer des devis professionnels et suivre les réponses clients.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link href="/outil" className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-600 px-6 py-4 text-sm font-black text-white shadow-glow transition hover:bg-brand-900">
-                  Calculer mon prix
+                <Link href="/dashboard/facturation" className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-600 px-6 py-4 text-sm font-black text-white shadow-glow transition hover:bg-brand-900">
+                  Démarrer Premium
                   <ArrowRight size={16} />
                 </Link>
                 <Link href="#exemple" className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-6 py-4 text-sm font-black text-brand-900 shadow-sm transition hover:border-brand-100 hover:text-brand-600">
                   Voir un exemple de devis
                 </Link>
               </div>
-              <div className="mt-7 flex flex-wrap gap-2">
-                {trustItems.map((item) => (
-                  <span key={item} className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700">
-                    {item}
-                  </span>
-                ))}
-              </div>
             </div>
 
-            <HeroMockup />
+            <HeroVisual />
           </div>
         </section>
 
@@ -266,7 +250,25 @@ export default async function HomePage({
                 ))}
               </div>
             </div>
-            <MiniDashboardMockup />
+            <ProfilesVisual />
+          </div>
+        </section>
+
+        <section className="bg-white py-16 md:py-20">
+          <div className="mx-auto grid max-w-6xl gap-10 px-4 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+            <ValueVisual />
+            <div>
+              <SectionTitle
+                eyebrow="Valeur"
+                title="Arrêtez de fixer vos prix au feeling."
+                description="Un prix trop bas fatigue votre activité. Un prix mal expliqué fragilise la vente. Tarifly vous aide à poser un tarif argumenté, lisible et cohérent avec vos objectifs."
+              />
+              <div className="mt-8 grid gap-4">
+                <TrustRow icon={<Target size={18} />} title="Protéger votre marge" text="Chaque prix tient compte des coûts réels, du temps, des frais et du niveau de rentabilité attendu." />
+                <TrustRow icon={<Sparkles size={18} />} title="Gagner en crédibilité" text="Vous présentez un tarif structuré, plus facile à assumer face au client." />
+                <TrustRow icon={<ShieldCheck size={18} />} title="Décider plus vite" text="Vous remplacez les hésitations par une recommandation exploitable immédiatement." />
+              </div>
+            </div>
           </div>
         </section>
 
@@ -366,9 +368,62 @@ export default async function HomePage({
   );
 }
 
+function HeroVisual() {
+  return (
+    <div className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-soft">
+      <div className="overflow-hidden rounded-[1.5rem] border border-slate-100 bg-[#f8fbff]">
+        <Image
+          src="/home-target.png"
+          alt="Objectif commercial atteint avec un tarif bien positionné"
+          width={1680}
+          height={945}
+          priority
+          className="h-auto w-full object-contain"
+        />
+      </div>
+      <div className="mt-4">
+        <HeroMockup />
+      </div>
+    </div>
+  );
+}
+
+function ProfilesVisual() {
+  return (
+    <div className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-soft">
+      <div className="overflow-hidden rounded-[1.5rem] border border-slate-100 bg-[#f8fbff]">
+        <Image
+          src="/home-profiles-v2.png"
+          alt="Professionnel qui suit ses devis et ses opportunités commerciales"
+          width={1680}
+          height={945}
+          className="h-auto w-full object-contain"
+        />
+      </div>
+      <div className="mt-4">
+        <MiniDashboardMockup />
+      </div>
+    </div>
+  );
+}
+
+function ValueVisual() {
+  return (
+    <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-4 shadow-soft">
+      <Image
+        src="/home-value.png"
+        alt="Professionnel qui réfléchit au bon prix à proposer"
+        width={1680}
+        height={945}
+        className="h-auto w-full rounded-[1.5rem] object-contain"
+      />
+    </div>
+  );
+}
+
 function HeroMockup() {
   return (
-    <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-soft">
+    <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between border-b border-slate-100 pb-4">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Mission</p>
@@ -401,7 +456,7 @@ function HeroMockup() {
 
 function MiniDashboardMockup() {
   return (
-    <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-soft">
+    <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Dashboard</p>

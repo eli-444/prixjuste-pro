@@ -116,7 +116,7 @@ const sections: ConditionSection[] = [
       },
       {
         type: 'paragraph',
-        text: 'Certaines fonctionnalités peuvent être limitées, réservées à l’offre Premium ou accessibles gratuitement une seule fois avant souscription.',
+        text: 'L’accès au SaaS Tarifly et à ses fonctionnalités principales est réservé à l’offre Premium, sauf accès exceptionnel ou période promotionnelle expressément indiquée par l’éditeur.',
       },
     ],
   },

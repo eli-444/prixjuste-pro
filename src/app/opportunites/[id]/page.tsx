@@ -1,10 +1,9 @@
 import Link from 'next/link';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { ArrowLeft, CalendarClock, Target } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { SavedCalculationActions } from '@/components/SavedCalculationActions';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import {
   getOpportunityScore,
@@ -15,6 +14,7 @@ import {
 } from '@/lib/opportunities';
 import { compareToMarket, marketUnitLabels, type MarketRate, type MarketUnit } from '@/lib/market';
 import type { PricingInput, PricingResult } from '@/lib/pricing';
+import { requireActivePremium } from '@/lib/premium/server';
 
 type CalculationDetail = {
   id: string;
@@ -63,14 +63,7 @@ export default async function OpportunityDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
-
-  if (!user || !supabase) {
-    redirect(`/connexion?redirect=/opportunites/${id}`);
-  }
+  const { supabase, user } = await requireActivePremium({ loginRedirect: `/opportunites/${id}` });
 
   const { data } = await supabase
     .from('pricing_calculations')

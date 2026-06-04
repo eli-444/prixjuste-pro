@@ -1,16 +1,8 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { requireActivePremium } from '@/lib/premium/server';
 
 export default async function DashboardQuotesPage() {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
-
-  if (!user || !supabase) {
-    redirect('/connexion?redirect=/dashboard/devis');
-  }
+  const { supabase, user } = await requireActivePremium({ loginRedirect: '/dashboard/devis' });
 
   const { data } = await supabase
     .from('quotes')

@@ -141,7 +141,6 @@ export function ToolForm({
   const [market, setMarket] = useState<MarketBenchmarkInput>(initialMarket);
   const [isPremium, setIsPremium] = useState(false);
   const [premiumStatus, setPremiumStatus] = useState<'loading' | 'free' | 'premium'>('loading');
-  const [hasFreeFullUse, setHasFreeFullUse] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [marketRateRows, setMarketRateRows] = useState<MarketRate[]>(marketRates);
   const [marketRateStatRows, setMarketRateStatRows] = useState<MarketRateStat[]>(marketRateStats);
@@ -191,7 +190,7 @@ export function ToolForm({
   const effectiveDiagnosis = getDiagnosis(proposedAnalysis.marginRate);
   const effectiveJustification = getClientJustification(input, activePrice);
   const selectedProfession = professions.find((profession) => profession.slug === market.professionSlug);
-  const hasFullAccess = isPremium || hasFreeFullUse;
+  const hasFullAccess = isPremium;
 
   useEffect(() => {
     if (!market.professionSlug || availableMarketUnits.length === 0 || availableMarketUnits.includes(market.unit)) {
@@ -370,27 +369,19 @@ export function ToolForm({
           }));
         }
 
-        const [{ data: entitlement }, { count: savedCalculationCount }] = await Promise.all([
-          supabase
-            .from('premium_entitlements')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('status', 'active')
-            .maybeSingle(),
-          supabase
-            .from('pricing_calculations')
-            .select('id', { count: 'exact', head: true })
-            .eq('user_id', user.id),
-        ]);
+        const { data: entitlement } = await supabase
+          .from('premium_entitlements')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .maybeSingle();
 
         if (entitlement) {
           setIsPremium(true);
-          setHasFreeFullUse(false);
           setPremiumStatus('premium');
           window.localStorage.setItem(PREMIUM_KEY, 'true');
         } else {
           setIsPremium(false);
-          setHasFreeFullUse((savedCalculationCount ?? 0) === 0);
           setPremiumStatus('free');
           window.localStorage.removeItem(PREMIUM_KEY);
         }
@@ -538,12 +529,12 @@ export function ToolForm({
     }
 
     if (!userId) {
-      window.location.href = '/connexion?redirect=/outil';
+      window.location.href = '/connexion?redirect=/dashboard/facturation';
       return;
     }
 
     if (!hasFullAccess) {
-      showToast('Votre premier calcul complet a déjà été utilisé. Passez en Premium pour sauvegarder de nouvelles opportunités.', 'error');
+      showToast('Passez en Premium pour sauvegarder des modèles.', 'error');
       return;
     }
 
@@ -623,7 +614,12 @@ export function ToolForm({
     }
 
     if (!userId) {
-      window.location.href = '/connexion?redirect=/outil';
+      window.location.href = '/connexion?redirect=/dashboard/facturation';
+      return;
+    }
+
+    if (!hasFullAccess) {
+      showToast('Passez en Premium pour sauvegarder des opportunités.', 'error');
       return;
     }
 
@@ -646,10 +642,6 @@ export function ToolForm({
       }
 
       showToast('Opportunité enregistrée.', 'success');
-      if (!isPremium) {
-        setHasFreeFullUse(false);
-      }
-
       if (data?.id) {
         window.location.href = `/dashboard/opportunites/${data.id}/devis?setup=1`;
       }
@@ -749,12 +741,12 @@ export function ToolForm({
   function openQuoteModal() {
     setQuoteError('');
     if (!userId) {
-      window.location.href = '/connexion?redirect=/outil';
+      window.location.href = '/connexion?redirect=/dashboard/facturation';
       return;
     }
 
     if (!hasFullAccess) {
-      showToast('Votre premier calcul complet a déjà été utilisé. Passez en Premium pour générer de nouveaux devis.', 'error');
+      showToast('Passez en Premium pour générer des devis.', 'error');
       return;
     }
 

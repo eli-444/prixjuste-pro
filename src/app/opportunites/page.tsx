@@ -1,14 +1,14 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { ArrowUpRight, KanbanSquare, Search } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { DeleteOpportunityButton } from '@/components/DeleteOpportunityButton';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import { getOpportunityScore, statusLabels, type OpportunityStatus } from '@/lib/opportunities';
 import type { PricingResult } from '@/lib/pricing';
+import { requireActivePremium } from '@/lib/premium/server';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 type CalculationRow = {
   id: string;
@@ -39,14 +39,7 @@ export default async function OpportunitiesPage({
   const query = String(params.q ?? '').trim().toLowerCase();
   const statusFilter = String(params.status ?? 'all');
   const sort = String(params.sort ?? 'recent');
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
-
-  if (!user || !supabase) {
-    redirect('/connexion?redirect=/opportunites');
-  }
+  const { supabase, user } = await requireActivePremium({ loginRedirect: '/opportunites' });
 
   const { data: calculations } = await supabase
     .from('pricing_calculations')

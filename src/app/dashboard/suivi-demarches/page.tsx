@@ -1,9 +1,8 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { type OpportunityStatus } from '@/lib/opportunities';
 import { getQuoteExpirationDate, isFinalQuoteStatus, isQuoteExpired } from '@/lib/quotes';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { formatCurrency } from '@/lib/utils';
+import { requireActivePremium } from '@/lib/premium/server';
 
 type ProspectRow = {
   id: string;
@@ -33,14 +32,7 @@ type NotificationRow = {
 };
 
 export default async function DashboardProspectFollowUpPage() {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
-
-  if (!user || !supabase) {
-    redirect('/connexion?redirect=/dashboard/suivi-demarches');
-  }
+  const { supabase, user } = await requireActivePremium({ loginRedirect: '/dashboard/suivi-demarches' });
 
   const [{ data: calculations }, { data: quotes }, { data: notifications }] = await Promise.all([
     supabase

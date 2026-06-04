@@ -38,8 +38,11 @@ export async function Header() {
           <Link href={user ? '/dashboard' : '/connexion'} className="transition hover:text-brand-600">
             {user ? 'Dashboard' : 'Connexion'}
           </Link>
-          <Link href={user ? '/outil' : '/connexion?redirect=/outil'} className="rounded-full bg-[linear-gradient(135deg,#061747_0%,#0878f2_55%,#11cfc2_100%)] px-4 py-2 text-white shadow-glow transition hover:brightness-110">
-            Nouveau calcul
+          <Link
+            href={entitlement ? '/outil' : user ? '/dashboard/facturation?paywall=1' : '/connexion?redirect=/dashboard/facturation'}
+            className="rounded-full bg-[linear-gradient(135deg,#061747_0%,#0878f2_55%,#11cfc2_100%)] px-4 py-2 text-white shadow-glow transition hover:brightness-110"
+          >
+            {entitlement ? 'Nouveau calcul' : 'Démarrer Premium'}
           </Link>
           {entitlement ? (
             <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-brand-600">

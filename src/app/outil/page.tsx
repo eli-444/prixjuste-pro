@@ -1,11 +1,10 @@
 import { Footer } from '@/components/Footer';
 import { Header } from '@/components/Header';
 import { ToolForm } from '@/components/ToolForm';
-import { redirect } from 'next/navigation';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { defaultOpportunityMeta, type OpportunityMeta } from '@/lib/opportunities';
 import { defaultMarketBenchmark, type MarketBenchmarkInput, type Profession } from '@/lib/market';
 import type { PricingInput } from '@/lib/pricing';
+import { requireActivePremium } from '@/lib/premium/server';
 
 export default async function ToolPage({
   searchParams,
@@ -18,14 +17,7 @@ export default async function ToolPage({
   let initialMeta: OpportunityMeta | undefined;
   let initialMarket: MarketBenchmarkInput | undefined;
   let professions: Profession[] = [];
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
-
-  if (!user) {
-    redirect('/connexion?redirect=/outil');
-  }
+  const { supabase, user } = await requireActivePremium({ loginRedirect: '/outil' });
 
   if (supabase) {
     const [{ data: professionRows }, { data: profile }] = await Promise.all([

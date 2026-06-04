@@ -27,8 +27,12 @@ export function MobileNav({ isPremium, isSignedIn }: { isPremium: boolean; isSig
             <Link href="/#cibles" className="rounded-xl px-3 py-3 hover:bg-slate-100" onClick={() => setOpen(false)}>
               Pour qui ?
             </Link>
-            <Link href={isSignedIn ? '/outil' : '/connexion?redirect=/outil'} className="rounded-xl px-3 py-3 hover:bg-slate-100" onClick={() => setOpen(false)}>
-              Nouveau calcul
+            <Link
+              href={isPremium ? '/outil' : isSignedIn ? '/dashboard/facturation?paywall=1' : '/connexion?redirect=/dashboard/facturation'}
+              className="rounded-xl px-3 py-3 hover:bg-slate-100"
+              onClick={() => setOpen(false)}
+            >
+              {isPremium ? 'Nouveau calcul' : 'Démarrer Premium'}
             </Link>
             <Link href="/#tarifs" className="rounded-xl px-3 py-3 hover:bg-slate-100" onClick={() => setOpen(false)}>
               Tarifs

@@ -1,8 +1,7 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { formatCurrency } from '@/lib/utils';
 import { statusLabels, type OpportunityStatus } from '@/lib/opportunities';
+import { requireActivePremium } from '@/lib/premium/server';
 
 type CalculationRow = {
   id: string;
@@ -14,14 +13,7 @@ type CalculationRow = {
 };
 
 export default async function DashboardOpportunitiesPage() {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
-
-  if (!user || !supabase) {
-    redirect('/connexion?redirect=/dashboard/opportunites');
-  }
+  const { supabase, user } = await requireActivePremium({ loginRedirect: '/dashboard/opportunites' });
 
   const { data } = await supabase
     .from('pricing_calculations')

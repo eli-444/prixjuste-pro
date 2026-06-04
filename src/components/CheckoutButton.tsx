@@ -31,7 +31,7 @@ export function CheckoutButton({ className, children }: CheckoutButtonProps) {
       });
 
       if (response.status === 401) {
-        window.location.href = '/connexion?redirect=/outil';
+        window.location.href = '/connexion?redirect=/dashboard/facturation';
         return;
       }
 

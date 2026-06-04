@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { EditableOpportunityQuote } from '@/components/EditableOpportunityQuote';
 import { statusLabels, type OpportunityStatus } from '@/lib/opportunities';
 import type { PricingInput } from '@/lib/pricing';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { requireActivePremium } from '@/lib/premium/server';
 
 type CalculationRow = {
   id: string;
@@ -42,14 +42,7 @@ export default async function DashboardOpportunityQuotePage({
 }) {
   const { id } = await params;
   const { setup } = await searchParams;
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
-
-  if (!user || !supabase) {
-    redirect(`/connexion?redirect=/dashboard/opportunites/${id}/devis`);
-  }
+  const { supabase, user } = await requireActivePremium({ loginRedirect: `/dashboard/opportunites/${id}/devis` });
 
   const [{ data: calculation }, { data: profile }] = await Promise.all([
     supabase

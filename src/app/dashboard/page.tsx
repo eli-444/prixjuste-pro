@@ -1,10 +1,9 @@
-import { redirect } from 'next/navigation';
 import { BarChart3, CheckCircle2, Send, TrendingUp, Users, XCircle } from 'lucide-react';
 import { SignOutButton } from '@/components/SignOutButton';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getSupabaseConfig } from '@/lib/supabase/env';
 import { formatCurrency } from '@/lib/utils';
 import type { OpportunityStatus } from '@/lib/opportunities';
+import { requireActivePremium } from '@/lib/premium/server';
 
 type QuoteStatus = 'draft' | 'generated' | 'sent' | 'accepted' | 'refused' | 'expired';
 
@@ -43,7 +42,7 @@ const sentQuoteStatuses: QuoteStatus[] = ['generated', 'sent', 'accepted', 'refu
 
 export default async function DashboardPage() {
   const { isConfigured } = getSupabaseConfig();
-  const supabase = await createServerSupabaseClient();
+  const { supabase, user } = await requireActivePremium({ loginRedirect: '/dashboard' });
 
   if (!isConfigured || !supabase) {
     return (
@@ -54,14 +53,6 @@ export default async function DashboardPage() {
         </section>
       </div>
     );
-  }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect('/connexion?redirect=/dashboard');
   }
 
   const [{ data: quotesData }, { data: calculationsData }] = await Promise.all([
