@@ -84,25 +84,7 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
           }
         `}</style>
 
-        <section className="print:hidden mx-auto grid max-w-6xl gap-5 px-4 py-8 lg:grid-cols-[1fr_470px]">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-              <div>
-                <h1 className="text-3xl font-black tracking-tight md:text-4xl">Devis {quote.quote_number}</h1>
-                <p className="mt-3 text-sm leading-6 text-slate-600">
-                  Proposition envoyée par {company.name || 'l’entreprise émettrice'} à {client.name || 'son client'}.
-                </p>
-              </div>
-              <StatusBadge status={expired ? 'expired' : status} />
-            </div>
-          </div>
-
-          <aside>
-            <PublicQuoteActions token={token} status={expired ? 'expired' : status} isExpired={expired} />
-          </aside>
-        </section>
-
-        <section id="devis" className="mx-auto max-w-[850px] px-4 pb-10 print:max-w-none print:px-0 print:pb-0">
+        <section id="devis" className="mx-auto max-w-[850px] px-4 py-8 print:max-w-none print:px-0 print:py-0">
           <article className="quote-sheet min-h-[1123px] bg-white p-8 text-[13px] text-slate-950 shadow-xl md:p-10 print:min-h-0 print:p-0">
             <header className="grid gap-8 md:grid-cols-[1fr_280px]">
               <section>
@@ -206,21 +188,14 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
               <p>N° Siret : {company.siret || getSiret(company.lines) || '...'}</p>
             </footer>
           </article>
+
+          <div className="print:hidden mt-6">
+            <PublicQuoteActions token={token} status={expired ? 'expired' : status} isExpired={expired} />
+          </div>
         </section>
       </main>
     </>
   );
-}
-
-function StatusBadge({ status }: { status: QuoteStatus }) {
-  const tone =
-    status === 'accepted'
-      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-      : status === 'refused' || status === 'expired'
-        ? 'border-red-200 bg-red-50 text-red-700'
-        : 'border-amber-200 bg-amber-50 text-amber-700';
-
-  return <span className={`inline-flex rounded-full border px-4 py-2 text-sm font-black ${tone}`}>{statusLabel(status)}</span>;
 }
 
 function statusLabel(status: QuoteStatus) {

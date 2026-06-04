@@ -27,7 +27,7 @@ export async function Header() {
 
         <nav className="hidden items-center gap-6 text-sm font-semibold text-slate-600 md:flex">
           <Link href="/#fonctionnement" className="transition hover:text-brand-600">
-            Methode
+            Méthode
           </Link>
           <Link href="/#cibles" className="transition hover:text-brand-600">
             Pour qui ?

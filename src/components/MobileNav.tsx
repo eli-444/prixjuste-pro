@@ -21,6 +21,12 @@ export function MobileNav({ isPremium, isSignedIn }: { isPremium: boolean; isSig
       {open ? (
         <div className="absolute left-4 right-4 top-[88px] rounded-2xl border border-slate-200 bg-white p-4 shadow-soft">
           <div className="grid gap-2 text-sm font-semibold text-slate-700">
+            <Link href="/#fonctionnement" className="rounded-xl px-3 py-3 hover:bg-slate-100" onClick={() => setOpen(false)}>
+              Méthode
+            </Link>
+            <Link href="/#cibles" className="rounded-xl px-3 py-3 hover:bg-slate-100" onClick={() => setOpen(false)}>
+              Pour qui ?
+            </Link>
             <Link href={isSignedIn ? '/outil' : '/connexion?redirect=/outil'} className="rounded-xl px-3 py-3 hover:bg-slate-100" onClick={() => setOpen(false)}>
               Nouveau calcul
             </Link>

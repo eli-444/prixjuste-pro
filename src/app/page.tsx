@@ -1,17 +1,17 @@
 import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import Image from 'next/image';
-import { ArrowRight, BarChart3, CheckCircle2, FileText, ShieldCheck, Sparkles, Timer } from 'lucide-react';
+import { ArrowRight, BarChart3, CheckCircle2, CircleCheck, FileSignature, FileText, LineChart, Link2, Timer, TrendingUp } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { PricingCard } from '@/components/PricingCard';
 import { AuthCodeRedirect } from '@/components/AuthCodeRedirect';
 
 export const metadata: Metadata = {
-  title: 'Logiciel de calcul de prix, marge et devis pour indépendants',
+  title: 'Logiciel de calcul de prix, comparaison marché et devis pour indépendants',
   description:
-    'Tarifly est un logiciel SaaS pour calculer un prix rentable, analyser sa marge, comparer son tarif au marché, suivre ses opportunités commerciales et générer des devis professionnels.',
+    'Tarifly aide les indépendants, artisans, freelances et TPE à calculer un prix rentable, comparer leur tarif au marché, générer des devis professionnels et suivre les réponses clients.',
   alternates: {
     canonical: '/',
   },
@@ -19,34 +19,34 @@ export const metadata: Metadata = {
 
 const faqItems = [
   {
-    question: "A qui s'adresse Tarifly ?",
+    question: "À qui s'adresse Tarifly ?",
     answer:
-      'Aux professionnels qui doivent chiffrer une prestation, un produit ou une offre sur mesure : indépendants, artisans, consultants, formateurs, créateurs et petites entreprises.',
+      'Aux indépendants, artisans, freelances, consultants, prestataires de services et petites entreprises qui doivent chiffrer une mission, protéger leur marge et envoyer un devis clair.',
   },
   {
-    question: "L'outil remplace-t-il un expert-comptable ?",
+    question: 'Tarifly remplace-t-il un expert-comptable ?',
     answer:
-      'Non. Tarifly aide à structurer un prix de vente et à vérifier une rentabilité. Pour les décisions comptables, fiscales ou juridiques, un conseiller spécialisé reste la référence.',
+      'Non. Tarifly structure un prix de vente, une marge et une comparaison indicative au marché. Pour les décisions comptables, fiscales ou juridiques, un conseiller spécialisé reste la référence.',
   },
   {
-    question: 'Quelles informations dois-je préparer ?',
+    question: 'Les données de marché sont-elles fiables ?',
     answer:
-      'Quelques données suffisent : temps estimé, coûts directs, frais, marge souhaitée et taxes éventuelles.',
+      'Elles sont indicatives et servent à situer un prix selon le métier, la région, la ville et l’unité de facturation. Les statistiques utilisateurs sont alimentées uniquement par les devis acceptés.',
   },
   {
-    question: 'Puis-je utiliser le résultat dans mes devis ?',
+    question: 'Le client doit-il créer un compte pour signer ?',
     answer:
-      'Oui. Tarifly permet de générer des devis professionnels et des documents PDF à partir des informations renseignées.',
+      'Non. Vous pouvez envoyer un lien public : le client consulte le devis, le télécharge, le signe électroniquement puis l’accepte ou le refuse sans compte Tarifly.',
   },
   {
-    question: 'Est-ce adapté si mes prestations changent souvent ?',
+    question: 'Puis-je suivre mes devis après envoi ?',
     answer:
-      'Oui. Chaque mission peut être chiffrée séparément avec ses propres hypothèses, coûts, délais et données de marché.',
+      'Oui. Le dashboard permet de suivre les opportunités, les devis envoyés, les acceptations, les refus, les performances commerciales et le portefeuille client.',
   },
   {
-    question: 'Y a-t-il un abonnement ?',
+    question: 'Y a-t-il un engagement ?',
     answer:
-      'Oui. Tarifly Premium est un abonnement mensuel sans engagement, résiliable depuis l’espace compte.',
+      'Non. Tarifly Premium est un abonnement mensuel sans engagement, résiliable à tout moment depuis votre espace compte.',
   },
 ];
 
@@ -72,9 +72,9 @@ const homeJsonLd = [
     applicationCategory: 'BusinessApplication',
     operatingSystem: 'Web',
     url: 'https://tarifly.vercel.app',
-    image: 'https://tarifly.vercel.app/home-target.png',
+    image: 'https://tarifly.vercel.app/logo.png',
     description:
-      'Logiciel SaaS de calcul de prix, analyse de marge, comparaison marché, gestion d’opportunités commerciales et génération de devis professionnels.',
+      'Logiciel SaaS pour calculer un prix rentable, comparer son tarif au marché, générer des devis professionnels, envoyer un lien client et suivre les acceptations ou refus.',
     offers: {
       '@type': 'Offer',
       price: '9.90',
@@ -86,9 +86,12 @@ const homeJsonLd = [
       'Calcul de prix rentable',
       'Analyse de marge',
       'Comparaison avec des données de marché',
-      'Gestion des opportunités commerciales',
-      'Génération de devis PDF',
-      'Export CSV',
+      'Génération de devis professionnels',
+      'Lien public client',
+      'Signature électronique',
+      'Suivi accepté/refusé',
+      'Dashboard commercial',
+      'Export PDF',
     ],
     audience: {
       '@type': 'Audience',
@@ -107,6 +110,51 @@ const homeJsonLd = [
       },
     })),
   },
+];
+
+const trustItems = [
+  'Sans engagement',
+  'Résiliable à tout moment',
+  'Devis consultable sans compte client',
+  'Statistiques basées sur les devis acceptés',
+];
+
+const pillars = [
+  {
+    icon: <Timer size={20} />,
+    title: 'Calculer un prix rentable',
+    text: 'Tarifly prend en compte vos coûts réels, votre temps de travail, vos frais fixes, la TVA, vos frais de paiement et votre niveau de marge pour produire un prix exploitable.',
+  },
+  {
+    icon: <BarChart3 size={20} />,
+    title: 'Comparer au marché',
+    text: 'Situez votre prix avec des données indicatives selon le métier, la région, la ville et l’unité de facturation, afin d’éviter les écarts trop risqués.',
+  },
+  {
+    icon: <FileSignature size={20} />,
+    title: 'Envoyer un devis professionnel',
+    text: 'Transformez votre calcul en devis propre, partageable par lien, téléchargeable, signable et acceptable ou refusable par le client.',
+  },
+];
+
+const steps = [
+  'Renseignez vos coûts et votre temps de travail.',
+  'Obtenez un prix conseillé et une analyse de marge.',
+  'Comparez votre prix au marché.',
+  'Générez un devis professionnel.',
+  'Envoyez le lien au client et suivez sa réponse.',
+];
+
+const premiumFeatures = [
+  'Calculs complets pour chiffrer vos prestations',
+  'Diagnostic de marge et lecture du risque commercial',
+  'Comparaison marché par métier, région, ville et unité',
+  'Génération de devis professionnels',
+  'Lien public client sans création de compte',
+  'Signature électronique et réponse accepté/refusé',
+  'Dashboard commercial et suivi des opportunités',
+  'Export PDF professionnel',
+  'Abonnement mensuel sans engagement',
 ];
 
 export default async function HomePage({
@@ -130,85 +178,71 @@ export default async function HomePage({
         }}
       />
       <Header />
-      <main>
-        <section className="relative overflow-hidden bg-[radial-gradient(circle_at_12%_10%,rgba(17,207,194,0.22),transparent_32%),radial-gradient(circle_at_88%_4%,rgba(8,120,242,0.18),transparent_30%),linear-gradient(180deg,#ffffff_0%,#eefcff_58%,#f7fbff_100%)]">
-          <div className="mx-auto grid max-w-6xl gap-10 px-4 py-20 md:grid-cols-[1.1fr_0.9fr] md:py-28">
+      <main className="overflow-hidden bg-[#f6f9fc] text-slate-950">
+        <section className="relative border-b border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#eefcff_56%,#f6f9fc_100%)]">
+          <div className="mx-auto grid max-w-6xl gap-12 px-4 py-16 md:py-24 lg:grid-cols-[1fr_0.9fr] lg:items-center">
             <div>
-              <h1 className="text-4xl font-bold tracking-tight text-slate-950 md:text-6xl">
-                Le logiciel pour fixer le <span className="text-brand-600">bon tarif</span> avant d'envoyer votre devis.
+              <div className="inline-flex rounded-full border border-brand-100 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-brand-600 shadow-sm">
+                Prix, marché, devis et suivi client
+              </div>
+              <h1 className="mt-7 max-w-4xl text-4xl font-black leading-[1.03] tracking-tight text-brand-900 md:text-6xl">
+                Fixez un prix rentable, comparez-le au marché et envoyez un devis prêt à signer.
               </h1>
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-                Tarifly transforme vos coûts, votre temps et vos frais en un prix clair, défendable et rentable.
-                Ce calculateur de prix aide les indépendants, artisans et prestataires à protéger leur marge,
-                comparer leur tarif au marché et préparer des devis professionnels.
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-700">
+                Tarifly aide les indépendants, artisans, freelances et petites entreprises à calculer leurs prix, protéger leur marge, générer des devis professionnels et suivre les réponses clients.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link href="/outil" className="inline-flex items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#061747_0%,#0878f2_55%,#11cfc2_100%)] px-6 py-4 text-sm font-semibold text-white shadow-glow transition hover:brightness-110">
+                <Link href="/outil" className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-600 px-6 py-4 text-sm font-black text-white shadow-glow transition hover:bg-brand-900">
                   Calculer mon prix
                   <ArrowRight size={16} />
                 </Link>
-                <Link href="#tarifs" className="inline-flex items-center justify-center rounded-full border border-aqua-100 bg-white px-6 py-4 text-sm font-semibold text-brand-900 shadow-sm transition hover:border-aqua-500 hover:text-brand-600">
-                  Voir l'offre
+                <Link href="#exemple" className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-6 py-4 text-sm font-black text-brand-900 shadow-sm transition hover:border-brand-100 hover:text-brand-600">
+                  Voir un exemple de devis
                 </Link>
+              </div>
+              <div className="mt-7 flex flex-wrap gap-2">
+                {trustItems.map((item) => (
+                  <span key={item} className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700">
+                    {item}
+                  </span>
+                ))}
               </div>
             </div>
 
-            <div className="relative self-center overflow-hidden rounded-3xl border border-aqua-100 bg-white shadow-glow">
-              <Image
-                src="/home-target.png"
-                alt="Objectif commercial atteint avec un devis mieux positionne"
-                width={1680}
-                height={945}
-                priority
-                className="h-auto w-full object-contain"
-              />
-            </div>
+            <HeroMockup />
           </div>
         </section>
 
-        <section id="fonctionnement" className="bg-white py-20">
+        <section id="fonctionnement" className="bg-white py-16 md:py-20">
           <div className="mx-auto max-w-6xl px-4">
-              <SectionTitle
-                eyebrow="Methode"
-                title="Un calcul de marge simple pour une décision de prix plus solide."
-                description="Tarifly remet de la méthode dans une décision souvent prise trop vite : combien facturer sans rogner sa marge, perdre en crédibilité commerciale ou sous-estimer ses frais."
+            <SectionTitle
+              eyebrow="Méthode"
+              title="Une décision de prix plus solide, du calcul jusqu’à la signature."
+              description="Tarifly relie les données que vous renseignez, l’analyse de marge, la comparaison marché, le devis et le suivi client dans un seul parcours."
             />
             <div className="mt-10 grid gap-5 md:grid-cols-3">
-              <Feature accent="aqua" icon={<Timer />} title="1. Renseignez vos données" text="Temps prévu, coûts directs, frais, taux horaire, marge souhaitée et taxes éventuelles." />
-              <Feature accent="blue" icon={<BarChart3 />} title="2. Analysez votre rentabilité" text="L'outil calcule un prix recommandé et met en évidence la marge réelle de votre prestation." />
-              <Feature accent="orange" icon={<FileText />} title="3. Presentez un tarif clair" text="Vous repartez avec une formulation professionnelle pour expliquer votre prix sans vous justifier maladroitement." />
+              {pillars.map((pillar, index) => (
+                <ProductCard key={pillar.title} index={index + 1} icon={pillar.icon} title={pillar.title} text={pillar.text} />
+              ))}
             </div>
           </div>
         </section>
 
-        <section id="cibles" className="bg-[linear-gradient(180deg,#f8fafc_0%,#eafffb_100%)] py-20">
+        <section className="bg-[#f6f9fc] py-16 md:py-20">
           <div className="mx-auto grid max-w-6xl gap-10 px-4 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
-            <div className="self-center overflow-hidden rounded-2xl border border-teal-100 bg-white shadow-soft">
-              <img
-                src="/home-profiles-v2.png"
-                alt="Professionnel qui suit ses devis et ses opportunites commerciales"
-                className="block h-auto w-full"
-              />
-            </div>
             <div>
               <SectionTitle
-                eyebrow="Profils"
-                title="Un logiciel de devis pensé pour ceux qui vendent leur temps, leur savoir-faire ou une prestation sur mesure."
-                description="Que vous soyez indépendant, artisan, consultant ou dirigeant de TPE, l'enjeu reste le même : vendre au bon prix, avec une marge maîtrisée et un devis clair."
+                eyebrow="Comment ça fonctionne"
+                title="Cinq étapes pour passer d’une mission à un devis suivi."
+                description="Le parcours reste volontairement simple : vous renseignez les éléments utiles, Tarifly structure le prix, puis vous envoyez une proposition propre."
               />
-              <div className="mt-10 grid gap-4 sm:grid-cols-2">
-                {['Freelances', 'Artisans', 'Consultants', 'Createurs', 'Formateurs', 'Coachings', 'Prestataires', 'TPE'].map((target, index) => (
-                  <div
-                    key={target}
-                    className={`rounded-2xl border p-5 font-bold shadow-sm transition hover:-translate-y-0.5 hover:shadow-soft ${
-                      index % 3 === 0
-                        ? 'border-aqua-100 bg-aqua-50 text-teal-950'
-                        : index % 3 === 1
-                          ? 'border-orange-100 bg-[#fff7ed] text-slate-900'
-                          : 'border-brand-100 bg-brand-50 text-brand-900'
-                    }`}
-                  >
-                    {target}
+            </div>
+            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft md:p-6">
+              <div className="grid gap-3">
+                {steps.map((step, index) => (
+                  <div key={step} className="flex gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-600 text-sm font-black text-white">{index + 1}</span>
+                    <p className="pt-1 font-bold text-brand-900">{step}</p>
                   </div>
                 ))}
               </div>
@@ -216,50 +250,93 @@ export default async function HomePage({
           </div>
         </section>
 
-        <section className="bg-white py-20">
-          <div className="mx-auto grid max-w-6xl gap-10 px-4 lg:grid-cols-[1fr_0.92fr] lg:items-center">
+        <section id="cibles" className="bg-white py-16 md:py-20">
+          <div className="mx-auto grid max-w-6xl gap-10 px-4 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
             <div>
               <SectionTitle
-                eyebrow="Valeur"
-                title="Arrêtez de fixer vos prix au feeling."
-                description="Un prix trop bas fatigue votre activité. Un prix mal expliqué fragilise la vente. Tarifly vous aide à poser un tarif argumenté, lisible et cohérent avec vos objectifs."
+                eyebrow="Pour qui ?"
+                title="Pensé pour les professionnels qui vendent du temps, du savoir-faire ou une prestation sur mesure."
+                description="Freelances, artisans, consultants, formateurs, prestataires et TPE : Tarifly aide à défendre un tarif cohérent sans transformer chaque devis en tableur."
               />
-              <div className="mt-10 grid gap-5 md:grid-cols-3 lg:grid-cols-1">
-                <Feature accent="blue" icon={<ShieldCheck />} title="Protéger votre marge" text="Chaque prix tient compte de vos coûts réels, de votre temps et du niveau de rentabilité attendu." />
-                <Feature accent="aqua" icon={<Sparkles />} title="Gagner en crédibilité" text="Vous présentez un tarif structuré, moins improvisé, plus facile à assumer face au client." />
-                <Feature accent="orange" icon={<CheckCircle2 />} title="Décider plus vite" text="Vous remplacez les hésitations et les calculs dispersés par une recommandation exploitable immédiatement." />
+              <div className="mt-9 grid gap-3 sm:grid-cols-2">
+                {['Indépendants', 'Artisans', 'Freelances', 'Consultants', 'Créateurs', 'Formateurs', 'Prestataires', 'TPE'].map((target) => (
+                  <div key={target} className="rounded-2xl border border-slate-200 bg-[#f8fbff] px-5 py-4 font-black text-brand-900 shadow-sm">
+                    {target}
+                  </div>
+                ))}
               </div>
             </div>
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-[#f8fbff] shadow-soft">
-              <Image
-                src="/home-value.png"
-                alt="Professionnel qui reflechit au bon prix a proposer"
-                width={1680}
-                height={945}
-                className="h-full min-h-[340px] w-full object-cover"
-              />
+            <MiniDashboardMockup />
+          </div>
+        </section>
+
+        <section id="exemple" className="bg-[linear-gradient(180deg,#eefcff_0%,#f6f9fc_100%)] py-16 md:py-20">
+          <div className="mx-auto max-w-6xl px-4">
+            <SectionTitle
+              eyebrow="Exemple de résultat Tarifly"
+              title="Un résultat concret, prêt à transformer en devis."
+              description="Le visiteur doit voir ce que Tarifly produit réellement : un prix, une marge, un positionnement marché et un suivi commercial."
+            />
+            <div className="mt-10 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <ResultLine label="Métier" value="Développeur web" />
+                  <ResultLine label="Ville" value="Lyon" />
+                  <ResultLine label="Mission" value="Landing page professionnelle" />
+                  <ResultLine label="Temps estimé" value="12 h" />
+                  <ResultLine label="Coûts directs" value="80 €" />
+                  <ResultLine label="Frais fixes estimés" value="45 €" />
+                </div>
+              </div>
+              <div className="rounded-3xl border border-brand-100 bg-white p-6 shadow-soft">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <MetricCard label="Prix recommandé" value="950 € HT" tone="blue" />
+                  <MetricCard label="Marge estimée" value="38 %" tone="aqua" />
+                  <MetricCard label="Position marché" value="Cohérente" tone="green" />
+                  <MetricCard label="Statut devis" value="Accepté" tone="green" />
+                </div>
+                <div className="mt-5 rounded-2xl border border-aqua-100 bg-aqua-50 p-4 text-sm font-semibold leading-6 text-teal-950">
+                  Ce prix pourra alimenter les données marché uniquement si le devis est accepté.
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
-        <section id="tarifs" className="bg-[linear-gradient(180deg,#eefcff_0%,#f8fafc_100%)] py-20">
-          <div className="mx-auto grid max-w-6xl gap-10 px-4 lg:grid-cols-[0.9fr_1.1fr]">
+        <section className="bg-white py-16 md:py-20">
+          <div className="mx-auto grid max-w-6xl gap-10 px-4 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+            <div className="rounded-3xl border border-slate-200 bg-[#f8fbff] p-5 shadow-soft">
+              <QuotePreview />
+            </div>
             <div>
               <SectionTitle
-                eyebrow="Acces"
-                title="Un abonnement mensuel pour chiffrer vos prestations avec plus de methode."
-                description="Testez le calcul gratuitement, puis débloquez le diagnostic complet lorsque vous voulez exploiter le résultat dans vos devis et échanges clients. L'abonnement est mensuel, sans engagement et résiliable depuis votre compte."
+                eyebrow="Devis client"
+                title="Un lien public pour faire avancer la décision."
+                description="Le client consulte le devis sans compte, télécharge le PDF, signe électroniquement puis accepte ou refuse. Vous suivez la réponse depuis votre dashboard."
               />
-              <div className="mt-8 space-y-4">
-                {[
-                  'Calcul gratuit pour obtenir une premiere estimation.',
-                  'Diagnostic complet pour comprendre votre marge et votre niveau de risque.',
-                  'Texte de justification professionnel pour accompagner votre proposition.',
-                  'Export PDF professionnel et abonnement mensuel résiliable en ligne.',
-                ].map((item) => (
-                  <p key={item} className="flex items-center gap-3 rounded-2xl border border-brand-100 bg-white px-4 py-3 font-medium text-slate-700 shadow-sm">
-                    <CheckCircle2 className="h-5 w-5 text-aqua-600" />
-                    {item}
+              <div className="mt-8 grid gap-4">
+                <TrustRow icon={<Link2 size={18} />} title="Lien partageable" text="Envoyez le devis sans demander au client de créer un compte." />
+                <TrustRow icon={<FileText size={18} />} title="Export PDF professionnel" text="Le document reste téléchargeable et présentable." />
+                <TrustRow icon={<CircleCheck size={18} />} title="Statut automatiquement mis à jour" text="Accepté ou refusé, le suivi commercial reste propre." />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="tarifs" className="bg-[#061747] py-16 text-white md:py-20">
+          <div className="mx-auto grid max-w-6xl gap-10 px-4 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+            <div>
+              <SectionTitle
+                eyebrow="Tarifs"
+                title="Un abonnement mensuel pour mieux chiffrer et mieux convertir."
+                description="Un seul devis mieux tarifé peut rentabiliser plusieurs mois d’abonnement."
+                dark
+              />
+              <div className="mt-8 grid gap-3">
+                {premiumFeatures.map((feature) => (
+                  <p key={feature} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.08] px-4 py-3 text-sm font-semibold leading-6 text-slate-100">
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-aqua-500" />
+                    {feature}
                   </p>
                 ))}
               </div>
@@ -268,27 +345,142 @@ export default async function HomePage({
           </div>
         </section>
 
-        <section className="bg-slate-950 py-20 text-white">
+        <section className="bg-slate-950 py-16 text-white md:py-20">
           <div className="mx-auto max-w-6xl px-4">
             <SectionTitle
               eyebrow="FAQ"
-              title="Questions frequentes"
-              description="Les réponses essentielles avant d'utiliser Tarifly pour préparer vos prix et vos devis."
+              title="Questions fréquentes"
+              description="Les réponses essentielles avant d’utiliser Tarifly pour préparer vos prix, vos devis et votre suivi commercial."
               dark
             />
             <div className="mt-10 grid gap-4 md:grid-cols-2">
-              <Faq q="A qui s'adresse Tarifly ?" a="Aux professionnels qui doivent chiffrer une prestation, un produit ou une offre sur mesure : independants, artisans, consultants, formateurs, createurs et petites entreprises." />
-              <Faq q="L'outil remplace-t-il un expert-comptable ?" a="Non. Tarifly vous aide à structurer votre prix de vente et à vérifier votre rentabilité. Pour les décisions comptables, fiscales ou juridiques, votre conseiller reste la référence." />
-              <Faq q="Quelles informations dois-je préparer ?" a="Quelques données suffisent : temps estimé, coûts directs, frais, marge souhaitée et taxes éventuelles. L'objectif est d'obtenir rapidement un prix exploitable, sans tableur complexe." />
-              <Faq q="Puis-je utiliser le résultat dans mes devis ?" a="Oui. L'accès premium fournit une justification commerciale que vous pouvez reprendre dans vos échanges clients pour présenter un prix plus clair et plus professionnel." />
-              <Faq q="Est-ce adapté si mes prestations changent souvent ?" a="Oui. Vous pouvez relancer un calcul pour chaque mission, ajuster vos hypothèses et comparer plusieurs scénarios avant d'envoyer votre proposition." />
-              <Faq q="Y a-t-il un abonnement ?" a="Oui. Tarifly Premium est un abonnement mensuel sans engagement. Vous pouvez le résilier depuis votre espace compte." />
+              {faqItems.map((item) => (
+                <Faq key={item.question} q={item.question} a={item.answer} />
+              ))}
             </div>
           </div>
         </section>
       </main>
       <Footer />
     </>
+  );
+}
+
+function HeroMockup() {
+  return (
+    <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-soft">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Mission</p>
+          <p className="mt-1 text-lg font-black text-brand-900">Site vitrine professionnel</p>
+        </div>
+        <span className="rounded-full bg-amber-50 px-3 py-2 text-xs font-black text-amber-700">En attente</span>
+      </div>
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <MetricCard label="Prix recommandé" value="1 240 € HT" tone="blue" />
+        <MetricCard label="Marge estimée" value="34 %" tone="aqua" />
+        <MetricCard label="Position marché" value="Moyenne haute" tone="navy" />
+        <MetricCard label="Risque commercial" value="Modéré" tone="amber" />
+      </div>
+      <div className="mt-5 rounded-2xl border border-brand-100 bg-brand-50 p-4">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-brand-600">Devis</p>
+            <p className="mt-1 text-xl font-black text-brand-900">Prêt à envoyer</p>
+          </div>
+          <FileSignature className="h-9 w-9 text-brand-600" />
+        </div>
+        <div className="mt-4 h-2 overflow-hidden rounded-full bg-white">
+          <div className="h-full w-[72%] rounded-full bg-[linear-gradient(90deg,#0878f2,#11cfc2)]" />
+        </div>
+        <p className="mt-3 text-sm font-semibold text-slate-700">Statut client : en attente de signature</p>
+      </div>
+    </div>
+  );
+}
+
+function MiniDashboardMockup() {
+  return (
+    <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-soft">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Dashboard</p>
+          <p className="mt-1 text-xl font-black text-brand-900">Suivi commercial</p>
+        </div>
+        <LineChart className="h-8 w-8 text-aqua-600" />
+      </div>
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        <MetricCard label="Envoyés" value="18" tone="blue" compact />
+        <MetricCard label="Acceptés" value="11" tone="green" compact />
+        <MetricCard label="Refusés" value="3" tone="red" compact />
+      </div>
+      <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div className="mb-4 flex items-center justify-between">
+          <p className="font-black text-brand-900">Performance mensuelle</p>
+          <TrendingUp className="h-5 w-5 text-brand-600" />
+        </div>
+        <div className="flex h-36 items-end gap-3">
+          {[42, 68, 55, 88, 74, 96].map((height, index) => (
+            <div key={height} className="flex flex-1 flex-col items-center gap-2">
+              <div className="w-full rounded-t-xl bg-[linear-gradient(180deg,#0878f2,#11cfc2)]" style={{ height: `${height}%` }} />
+              <span className="text-[10px] font-black uppercase text-slate-400">{['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'][index]}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QuotePreview() {
+  return (
+    <div className="rounded-2xl bg-white p-5 text-xs shadow-sm">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.14em] text-brand-600">Tarifly</p>
+          <p className="mt-2 font-black text-brand-900">Aurora Web & Security</p>
+          <p className="mt-1 text-slate-500">Villeurbanne, France</p>
+        </div>
+        <div className="text-right">
+          <p className="text-2xl font-black text-brand-900">DEVIS</p>
+          <p className="mt-1 font-bold text-slate-500">DV-2026-014</p>
+        </div>
+      </div>
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <p className="font-black text-brand-600">CLIENT</p>
+          <p className="mt-2 font-black text-slate-950">Studio Martin</p>
+          <p className="text-slate-500">Landing page professionnelle</p>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <p className="font-black text-brand-600">VALIDITÉ</p>
+          <p className="mt-2 font-black text-slate-950">30 jours</p>
+          <p className="text-slate-500">Signature en ligne</p>
+        </div>
+      </div>
+      <div className="mt-5 overflow-hidden rounded-xl border border-slate-200">
+        <div className="grid grid-cols-[1fr_90px_90px] bg-brand-600 px-3 py-2 font-black text-white">
+          <span>Désignation</span>
+          <span className="text-right">Qté</span>
+          <span className="text-right">Total HT</span>
+        </div>
+        <div className="grid grid-cols-[1fr_90px_90px] border-t border-slate-200 px-3 py-3 text-slate-700">
+          <span>Conception et intégration</span>
+          <span className="text-right">1</span>
+          <span className="text-right font-black">950 €</span>
+        </div>
+      </div>
+      <div className="ml-auto mt-5 w-full max-w-xs overflow-hidden rounded-xl border border-slate-200">
+        <div className="flex justify-between px-4 py-3">
+          <span>Total HT</span>
+          <strong>950 €</strong>
+        </div>
+        <div className="flex justify-between bg-brand-600 px-4 py-3 font-black text-white">
+          <span>Total TTC</span>
+          <span>1 140 €</span>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -305,52 +497,72 @@ function SectionTitle({
 }) {
   return (
     <div>
-      <p className="text-sm font-bold uppercase tracking-[0.2em] text-brand-500">{eyebrow}</p>
-      <h2 className={`mt-3 max-w-3xl text-3xl font-bold tracking-tight md:text-5xl ${dark ? 'text-white' : 'text-slate-950'}`}>
+      <p className="text-sm font-black uppercase tracking-[0.2em] text-aqua-600">{eyebrow}</p>
+      <h2 className={`mt-3 max-w-3xl text-3xl font-black tracking-tight md:text-5xl ${dark ? 'text-white' : 'text-brand-900'}`}>
         {title}
       </h2>
-      <p className={`mt-4 max-w-2xl text-lg leading-8 ${dark ? 'text-slate-300' : 'text-slate-600'}`}>{description}</p>
+      <p className={`mt-4 max-w-2xl text-lg leading-8 ${dark ? 'text-slate-300' : 'text-slate-700'}`}>{description}</p>
     </div>
   );
 }
 
-function Feature({
-  icon,
-  title,
-  text,
-  accent = 'blue',
-}: {
-  icon: React.ReactNode;
-  title: string;
-  text: string;
-  accent?: 'blue' | 'aqua' | 'orange';
-}) {
-  const accents = {
-    blue: 'border-brand-100 bg-[linear-gradient(135deg,#ffffff_0%,#eefcff_100%)] text-brand-600',
-    aqua: 'border-aqua-100 bg-[linear-gradient(135deg,#ffffff_0%,#ecfffd_100%)] text-aqua-600',
-    orange: 'border-orange-100 bg-[linear-gradient(135deg,#ffffff_0%,#fff7ed_100%)] text-orange-500',
-  };
-  const iconAccents = {
-    blue: 'bg-brand-50 text-brand-600',
-    aqua: 'bg-aqua-50 text-aqua-600',
-    orange: 'bg-orange-50 text-orange-500',
+function ProductCard({ index, icon, title, text }: { index: number; icon: ReactNode; title: string; text: string }) {
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-soft">
+      <div className="flex items-center justify-between gap-4">
+        <span className="grid h-11 w-11 place-items-center rounded-2xl bg-brand-50 text-brand-600">{icon}</span>
+        <span className="text-sm font-black text-aqua-600">0{index}</span>
+      </div>
+      <h3 className="mt-6 text-xl font-black text-brand-900">{title}</h3>
+      <p className="mt-3 leading-7 text-slate-700">{text}</p>
+    </div>
+  );
+}
+
+function MetricCard({ label, value, tone, compact }: { label: string; value: string; tone: 'blue' | 'aqua' | 'green' | 'amber' | 'navy' | 'red'; compact?: boolean }) {
+  const tones = {
+    blue: 'border-brand-100 bg-brand-50 text-brand-900',
+    aqua: 'border-aqua-100 bg-aqua-50 text-teal-950',
+    green: 'border-emerald-100 bg-emerald-50 text-emerald-950',
+    amber: 'border-amber-100 bg-amber-50 text-amber-950',
+    navy: 'border-slate-200 bg-slate-50 text-brand-900',
+    red: 'border-red-100 bg-red-50 text-red-950',
   };
 
   return (
-    <div className={`rounded-2xl border p-7 shadow-sm transition hover:-translate-y-0.5 hover:shadow-soft ${accents[accent]}`}>
-      <div className={`grid h-12 w-12 place-items-center rounded-xl ${iconAccents[accent]}`}>{icon}</div>
-      <h3 className="mt-5 text-lg font-bold text-slate-950">{title}</h3>
-      <p className="mt-2 leading-7 text-slate-600">{text}</p>
+    <div className={`rounded-2xl border p-4 ${tones[tone]}`}>
+      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">{label}</p>
+      <p className={`${compact ? 'mt-2 text-2xl' : 'mt-3 text-3xl'} font-black tracking-tight`}>{value}</p>
+    </div>
+  );
+}
+
+function ResultLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">{label}</p>
+      <p className="mt-2 font-black text-brand-900">{value}</p>
+    </div>
+  );
+}
+
+function TrustRow({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
+  return (
+    <div className="flex gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-600">{icon}</span>
+      <div>
+        <h3 className="font-black text-brand-900">{title}</h3>
+        <p className="mt-1 text-sm leading-6 text-slate-600">{text}</p>
+      </div>
     </div>
   );
 }
 
 function Faq({ q, a }: { q: string; a: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-      <h3 className="font-semibold">{q}</h3>
+    <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-6">
+      <h3 className="font-black">{q}</h3>
       <p className="mt-2 text-sm leading-6 text-slate-300">{a}</p>
     </div>
   );
 }
-
