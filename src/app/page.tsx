@@ -174,7 +174,7 @@ export default async function HomePage({
       <Header />
       <main className="overflow-hidden bg-[#f6f9fc] text-slate-950">
         <section className="relative border-b border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#eefcff_56%,#f6f9fc_100%)]">
-          <div className="mx-auto grid max-w-6xl gap-12 px-4 pb-14 pt-8 md:pb-20 md:pt-12 lg:grid-cols-[1fr_0.9fr] lg:items-center">
+          <div className="mx-auto grid max-w-6xl gap-12 px-4 pb-14 pt-3 md:pb-20 md:pt-5 lg:grid-cols-[1fr_0.9fr] lg:items-start">
             <div>
               <h1 className="max-w-4xl text-4xl font-black leading-[1.03] tracking-tight text-brand-900 md:text-6xl">
                 Fixez un prix rentable, comparez-le au marché et envoyez un devis prêt à signer.
@@ -484,52 +484,92 @@ function MiniDashboardMockup() {
 
 function QuotePreview() {
   return (
-    <div className="rounded-2xl bg-white p-5 text-xs shadow-sm">
-      <div className="flex items-start justify-between gap-4">
+    <div className="rounded-2xl bg-white p-6 text-[11px] shadow-sm">
+      <header className="grid gap-5 border-b border-slate-200 pb-5 sm:grid-cols-[1fr_auto]">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.14em] text-brand-600">Tarifly</p>
-          <p className="mt-2 font-black text-brand-900">Aurora Web & Security</p>
-          <p className="mt-1 text-slate-500">Villeurbanne, France</p>
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-50 text-sm font-black text-brand-600">T</span>
+            <div>
+              <p className="text-lg font-black leading-none text-brand-900">Aurora Web & Security</p>
+              <p className="mt-1 text-slate-500">Villeurbanne, France</p>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-1 text-slate-600">
+            <span>contact@aurora-web.fr</span>
+            <span>SIRET : 991 249 228 00016</span>
+          </div>
         </div>
-        <div className="text-right">
-          <p className="text-2xl font-black text-brand-900">DEVIS</p>
-          <p className="mt-1 font-bold text-slate-500">DV-2026-014</p>
+        <div className="sm:text-right">
+          <p className="text-4xl font-black tracking-tight text-brand-900">DEVIS</p>
+          <p className="mt-2 font-black text-brand-600">DV-2026-014</p>
+          <p className="mt-1 text-slate-500">Valable jusqu’au 04 juil. 2026</p>
         </div>
-      </div>
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <p className="font-black text-brand-600">CLIENT</p>
-          <p className="mt-2 font-black text-slate-950">Studio Martin</p>
-          <p className="text-slate-500">Landing page professionnelle</p>
+      </header>
+
+      <section className="mt-5 grid gap-4 sm:grid-cols-2">
+        <div>
+          <p className="border-b border-brand-200 pb-2 text-xs font-black uppercase tracking-[0.16em] text-brand-600">Client</p>
+          <div className="mt-3 space-y-1 text-slate-700">
+            <p className="font-black text-slate-950">Studio Martin</p>
+            <p>12 rue des Créateurs</p>
+            <p>69002 Lyon</p>
+          </div>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <p className="font-black text-brand-600">VALIDITÉ</p>
-          <p className="mt-2 font-black text-slate-950">30 jours</p>
-          <p className="text-slate-500">Signature en ligne</p>
+        <div>
+          <p className="border-b border-brand-200 pb-2 text-xs font-black uppercase tracking-[0.16em] text-brand-600">Mission</p>
+          <div className="mt-3 space-y-1 text-slate-700">
+            <p className="font-black text-slate-950">Landing page professionnelle</p>
+            <p>Conception, intégration et préparation à la mise en ligne</p>
+          </div>
         </div>
-      </div>
-      <div className="mt-5 overflow-hidden rounded-xl border border-slate-200">
-        <div className="grid grid-cols-[1fr_90px_90px] bg-brand-600 px-3 py-2 font-black text-white">
+      </section>
+
+      <section className="mt-6 overflow-hidden rounded-xl border border-slate-200">
+        <div className="grid grid-cols-[1fr_64px_96px_96px] bg-brand-900 px-3 py-2 font-black uppercase tracking-[0.08em] text-white">
           <span>Désignation</span>
           <span className="text-right">Qté</span>
+          <span className="text-right">PU HT</span>
           <span className="text-right">Total HT</span>
         </div>
-        <div className="grid grid-cols-[1fr_90px_90px] border-t border-slate-200 px-3 py-3 text-slate-700">
-          <span>Conception et intégration</span>
-          <span className="text-right">1</span>
-          <span className="text-right font-black">950 €</span>
+        {[
+          ['Audit & cadrage', '1', '150 €', '150 €'],
+          ['Conception et intégration', '1', '650 €', '650 €'],
+          ['Préparation livraison', '1', '150 €', '150 €'],
+        ].map(([label, qty, unit, total]) => (
+          <div key={label} className="grid grid-cols-[1fr_64px_96px_96px] border-t border-slate-200 px-3 py-3 text-slate-700">
+            <span className="font-semibold text-slate-950">{label}</span>
+            <span className="text-right">{qty}</span>
+            <span className="text-right">{unit}</span>
+            <span className="text-right font-black">{total}</span>
+          </div>
+        ))}
+      </section>
+
+      <section className="mt-5 grid gap-5 sm:grid-cols-[1fr_260px]">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <p className="font-black uppercase tracking-[0.12em] text-brand-600">Conditions</p>
+          <p className="mt-2 leading-5 text-slate-600">Règlement à réception du devis accepté. Ajustements possibles sur demande complémentaire.</p>
         </div>
-      </div>
-      <div className="ml-auto mt-5 w-full max-w-xs overflow-hidden rounded-xl border border-slate-200">
-        <div className="flex justify-between px-4 py-3">
-          <span>Total HT</span>
-          <strong>950 €</strong>
+        <div className="overflow-hidden rounded-xl border border-slate-200">
+          <div className="flex justify-between px-4 py-3 text-slate-700">
+            <span>Total HT</span>
+            <strong>950 €</strong>
+          </div>
+          <div className="flex justify-between border-t border-slate-200 px-4 py-3 text-slate-700">
+            <span>TVA 20%</span>
+            <strong>190 €</strong>
+          </div>
+          <div className="flex justify-between bg-brand-900 px-4 py-3 font-black text-white">
+            <span>Total TTC</span>
+            <span>1 140 €</span>
+          </div>
         </div>
-        <div className="flex justify-between bg-brand-600 px-4 py-3 font-black text-white">
-          <span>Total TTC</span>
-          <span>1 140 €</span>
-        </div>
-      </div>
+      </section>
+
+      <footer className="mt-6 grid gap-4 border-t border-slate-200 pt-5 sm:grid-cols-[1fr_240px]">
+        <p className="text-slate-500">Document généré depuis Tarifly.</p>
+        <div className="h-16 rounded-xl border border-slate-300 bg-white p-3 text-slate-500">Signature client</div>
+      </footer>
     </div>
   );
 }
