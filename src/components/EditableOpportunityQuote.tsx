@@ -387,3 +387,4 @@ function formatDateInput(value: string) {
 function formatQuantity(value: number) {
   return Number.isInteger(value) ? String(value) : value.toFixed(2).replace('.', ',');
 }
+

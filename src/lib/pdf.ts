@@ -513,3 +513,4 @@ function buildImagePdf(images: Uint8Array[]) {
 function normalizeText(text: string) {
   return text.replace(/€/g, 'EUR').replace(/[“”]/g, '"').replace(/[’]/g, "'");
 }
+

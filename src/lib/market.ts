@@ -150,25 +150,25 @@ export function compareToMarket(referencePrice: number, rate: MarketRate | null)
 
   const gapToMedian = ((referencePrice - rate.price_median) / rate.price_median) * 100;
   let level: 'inside' | 'warning' | 'critical' = 'inside';
-  let title = 'Prix coherent avec le marche';
-  let message = 'Votre prix se situe dans la fourchette indicative observee pour ce metier et cette zone.';
+  let title = 'Prix cohérent avec le marché';
+  let message = 'Votre prix se situe dans la fourchette indicative observée pour ce métier et cette zone.';
 
   if (referencePrice < rate.price_low) {
     const gapToLow = ((rate.price_low - referencePrice) / rate.price_low) * 100;
     level = gapToLow > 20 ? 'critical' : 'warning';
-    title = gapToLow > 20 ? 'Prix tres sous le marche' : 'Prix sous le marche';
+    title = gapToLow > 20 ? 'Prix très inférieur au marché' : 'Prix inférieur à la fourchette marché';
     message =
       gapToLow > 20
-        ? 'Votre prix est tres inferieur a la fourchette basse. Verifiez que la mission reste rentable et que rien n a ete oublie.'
-        : 'Votre prix est inferieur a la fourchette basse. L ecart reste a surveiller avant de valider.';
+        ? "Votre prix est nettement sous la fourchette basse. Vérifiez que la mission reste rentable et qu'aucun coût n'a été oublié."
+        : "Votre prix est sous la fourchette basse. L'écart reste à surveiller avant d'envoyer le devis.";
   } else if (referencePrice > rate.price_high) {
     const gapToHigh = ((referencePrice - rate.price_high) / rate.price_high) * 100;
     level = gapToHigh > 20 ? 'critical' : 'warning';
-    title = gapToHigh > 20 ? 'Prix tres au-dessus du marche' : 'Prix au-dessus du marche';
+    title = gapToHigh > 20 ? 'Prix nettement supérieur au marché' : 'Prix supérieur à la fourchette marché';
     message =
       gapToHigh > 20
-        ? 'Votre prix depasse nettement la fourchette haute. Il faudra un positionnement premium ou une justification commerciale solide.'
-        : 'Votre prix est au-dessus de la fourchette haute. L ecart peut rester defendable si la valeur ajoutee est claire.';
+        ? 'Votre prix dépasse nettement la fourchette haute. Il faut pouvoir justifier clairement la valeur apportée.'
+        : "Votre prix dépasse la fourchette haute. L'écart peut rester cohérent si votre positionnement est clair.";
   }
 
   return {
@@ -226,3 +226,4 @@ function aggregateMarketRateStats(stats: MarketRateStat[]) {
     price_high: average(stats.map((stat) => stat.price_high)),
   };
 }
+

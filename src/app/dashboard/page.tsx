@@ -299,3 +299,4 @@ function formatDate(value: string | null) {
 
   return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(new Date(value));
 }
+

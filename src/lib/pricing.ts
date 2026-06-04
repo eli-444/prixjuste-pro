@@ -127,3 +127,4 @@ export function analyzeProposedPrice(input: PricingInput): ProposedPriceAnalysis
     hourlyReality,
   };
 }
+

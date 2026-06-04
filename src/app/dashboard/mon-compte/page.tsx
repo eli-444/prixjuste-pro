@@ -74,3 +74,4 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 function formatEuro(amount: number) {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
 }
+

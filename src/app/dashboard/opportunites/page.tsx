@@ -86,3 +86,4 @@ function DashboardPageShell({ title, children }: { title: string; children: Reac
 function EmptyState({ text }: { text: string }) {
   return <div className="p-6 text-sm text-slate-500">{text}</div>;
 }
+

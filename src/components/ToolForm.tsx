@@ -597,8 +597,6 @@ export function ToolForm({
       deadline: meta.deadline || null,
       client_budget: meta.clientBudget || null,
       next_action: meta.nextAction || null,
-      quote_validated: meta.quoteValidated,
-      quote_validated_at: meta.quoteValidated ? new Date().toISOString() : null,
       market_profession_slug: market.professionSlug || null,
       market_region: market.region || null,
       market_city: market.city || null,
@@ -941,20 +939,6 @@ export function ToolForm({
               <div className="md:col-span-2">
                 <TextField label="Prochaine action" value={meta.nextAction} onChange={(value) => updateMeta('nextAction', value)} placeholder="Relancer mardi, envoyer une proposition..." help="Prochaine tâche à effectuer pour faire avancer l'opportunité." />
               </div>
-              <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 md:col-span-2">
-                <input
-                  type="checkbox"
-                  checked={meta.quoteValidated}
-                  onChange={(event) => updateMeta('quoteValidated', event.target.checked)}
-                  className="mt-1 h-4 w-4 rounded border-slate-300"
-                />
-                <span>
-                  <span className="block text-sm font-bold text-slate-950">Devis valide / prix accepte</span>
-                  <span className="mt-1 block text-sm leading-6 text-slate-600">
-                    Ce prix alimentera les statistiques anonymisées Tarifly pour ce métier, cette zone et cette unité.
-                  </span>
-                </span>
-              </label>
             </div>
           </FormSection>
 
@@ -1657,7 +1641,7 @@ function MarketBenchmarkCard({
           <div className="mt-3 grid gap-3 text-sm md:grid-cols-3">
             <BenchmarkMetric label="Moyenne observee" value={formatCurrency(stat.average_price)} />
             <BenchmarkMetric label="Mediane observee" value={formatCurrency(stat.median_price)} />
-            <BenchmarkMetric label="Devis valides" value={`${stat.sample_count}`} />
+            <BenchmarkMetric label="Devis acceptés" value={`${stat.sample_count}`} />
           </div>
         </div>
       ) : null}
@@ -1842,3 +1826,4 @@ function Metric({ label, value, locked }: { label: string; value: string; locked
     </div>
   );
 }
+

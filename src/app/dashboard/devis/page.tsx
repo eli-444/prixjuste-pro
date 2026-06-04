@@ -64,3 +64,4 @@ function formatEuro(amount: number) {
 function formatDate(value: string | null) {
   return value ? new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(new Date(value)) : 'Date indisponible';
 }
+

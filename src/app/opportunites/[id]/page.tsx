@@ -198,7 +198,7 @@ export default async function OpportunityDetailPage({
                 <div className="mt-5 space-y-4 text-sm">
                   <InfoRow label="Budget client" value={calculation.client_budget ? formatCurrency(calculation.client_budget) : 'Non renseigné'} />
                   <InfoRow label="Probabilite" value={`${calculation.probability ?? 0} %`} />
-                  <InfoRow label="Devis valide" value={calculation.quote_validated ? 'Oui' : 'Non'} />
+                  <InfoRow label="Devis accepté" value={calculation.quote_validated ? 'Oui' : 'Non'} />
                   <InfoRow label="Prochaine action" value={calculation.next_action || 'Non renseignée'} />
                   <InfoRow label="Deadline" value={calculation.deadline ? formatDate(calculation.deadline) : 'Non renseignée'} />
                 </div>

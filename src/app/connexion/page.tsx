@@ -40,3 +40,4 @@ async function LoginFormFromParams({
   const params = await searchParams;
   return <AuthForm redirectTo={params.redirect ?? '/dashboard'} />;
 }
+

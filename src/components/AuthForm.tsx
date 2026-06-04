@@ -321,3 +321,4 @@ function getSubmitLabel(mode: AuthMode, signupStep: SignupStep) {
 
   return signupStep === 'type' ? 'Continuer' : 'Créer mon compte';
 }
+

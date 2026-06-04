@@ -87,3 +87,4 @@ export function CheckoutButton({ className, children }: CheckoutButtonProps) {
     </div>
   );
 }
+

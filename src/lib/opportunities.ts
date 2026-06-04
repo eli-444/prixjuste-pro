@@ -26,11 +26,11 @@ export const defaultOpportunityMeta: OpportunityMeta = {
 
 export const statusLabels: Record<OpportunityStatus, string> = {
   new: 'Nouveau prospect',
-  to_price: 'A chiffrer',
-  proposal_sent: 'Prix propose',
-  negotiation: 'Negociation',
-  won: 'Accepte',
-  lost: 'Refuse',
+  to_price: 'À chiffrer',
+  proposal_sent: 'Prix proposé',
+  negotiation: 'Négociation',
+  won: 'Accepté',
+  lost: 'Refusé',
 };
 
 export function getOpportunityScore({
@@ -77,8 +77,9 @@ export function getQuoteHealthLabel(score: number) {
   }
 
   if (score >= 55) {
-    return 'Devis a surveiller';
+    return 'Devis à surveiller';
   }
 
-  return 'Devis risque';
+  return 'Devis risqué';
 }
+

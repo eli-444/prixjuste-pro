@@ -18,7 +18,7 @@ export default function DashboardLayout({
   return (
     <>
       <Header />
-      <main className="flex h-[calc(100vh-73px)] overflow-hidden bg-[#f4f8fb] text-slate-950">
+      <main className="flex h-[calc(100vh-73px)] flex-col overflow-hidden bg-[#f4f8fb] text-slate-950 lg:flex-row">
         <DashboardSidebar />
         <section className="min-w-0 flex-1 overflow-hidden">{children}</section>
       </main>
