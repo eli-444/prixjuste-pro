@@ -88,7 +88,7 @@ export default async function DashboardPage() {
   const yearStats = buildYearStats(calculations);
 
   return (
-    <div className="h-full overflow-auto p-3 md:p-4 xl:overflow-hidden">
+    <div className="h-full overflow-auto p-3 md:p-4">
       <header className="mb-3 flex items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-black tracking-tight text-slate-950">Tableau de bord</h1>
@@ -96,16 +96,16 @@ export default async function DashboardPage() {
         <SignOutButton className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" />
       </header>
 
-      <div className="grid h-[calc(100%_-_52px)] min-h-[860px] gap-5 xl:min-h-0 xl:grid-cols-[1.05fr_0.95fr]">
-        <section className="grid min-h-0 gap-5 xl:grid-rows-[1fr_0.82fr]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)]">
+        <section className="grid gap-4">
           <StatPanel title="Performance de réussite" icon={<TrendingUp size={18} />}>
-            <div className="grid h-full gap-4 md:grid-cols-[220px_1fr] md:items-center">
+            <div className="grid gap-4 md:grid-cols-[150px_1fr] md:items-center">
               <DonutChart
                 accepted={successStats.accepted}
                 refused={successStats.refused}
                 pending={successStats.pending}
               />
-              <div className="grid gap-5 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-3">
                 <KpiCard icon={<Send size={17} />} label="Devis envoyés" value={`${successStats.sent}`} tone="blue" />
                 <KpiCard icon={<CheckCircle2 size={17} />} label="Acceptés" value={`${successStats.accepted}`} tone="green" detail={`${successStats.successRate}% réussite`} />
                 <KpiCard icon={<XCircle size={17} />} label="Refusés" value={`${successStats.refused}`} tone="red" />
@@ -114,7 +114,7 @@ export default async function DashboardPage() {
           </StatPanel>
 
           <StatPanel title="Performance mois / année" icon={<BarChart3 size={18} />}>
-            <div className="grid h-full gap-4 lg:grid-cols-[1fr_240px]">
+            <div className="grid gap-4 lg:grid-cols-[1fr_210px]">
               <ColumnChart months={monthStats} />
               <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
                 <MiniMetric label="Année en cours" value={`${yearStats.total}`} detail="opportunités" />
@@ -125,8 +125,8 @@ export default async function DashboardPage() {
           </StatPanel>
         </section>
 
-        <section className="grid min-h-0 gap-5 xl:grid-rows-[0.62fr_1fr]">
-          <div className="grid gap-5 sm:grid-cols-3">
+        <section className="grid gap-4">
+          <div className="grid gap-3 sm:grid-cols-3">
             <KpiCard icon={<Users size={17} />} label="Clients" value={`${clientStats.uniqueClients}`} tone="aqua" detail={`${clientStats.activeClients} actifs`} />
             <KpiCard icon={<CheckCircle2 size={17} />} label="Clients gagnés" value={`${clientStats.acceptedClients}`} tone="green" />
             <KpiCard icon={<TrendingUp size={17} />} label="Portefeuille" value={formatCurrency(clientStats.totalValue)} tone="blue" />
@@ -233,10 +233,10 @@ function buildYearStats(calculations: CalculationRow[]) {
 
 function StatPanel({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="min-h-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-4 flex items-center gap-2">
-        <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-50 text-brand-600">{icon}</span>
-        <h2 className="text-sm font-black uppercase tracking-[0.14em] text-slate-950">{title}</h2>
+    <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+      <div className="mb-3 flex items-center gap-2">
+        <span className="grid h-8 w-8 place-items-center rounded-xl bg-brand-50 text-brand-600">{icon}</span>
+        <h2 className="text-xs font-black uppercase tracking-[0.14em] text-slate-950">{title}</h2>
       </div>
       {children}
     </section>
@@ -252,12 +252,12 @@ function KpiCard({ icon, label, value, detail, tone }: { icon: React.ReactNode; 
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
       <div className="flex items-center justify-between gap-3">
-        <span className={`grid h-10 w-10 place-items-center rounded-xl ${tones[tone]}`}>{icon}</span>
-        <span className="text-right text-xs font-black uppercase tracking-[0.12em] text-slate-500">{label}</span>
+        <span className={`grid h-8 w-8 place-items-center rounded-xl ${tones[tone]}`}>{icon}</span>
+        <span className="text-right text-[11px] font-black uppercase tracking-[0.12em] text-slate-500">{label}</span>
       </div>
-      <p className="mt-4 text-3xl font-black tracking-tight text-slate-950">{value}</p>
+      <p className="mt-3 text-2xl font-black tracking-tight text-slate-950">{value}</p>
       {detail ? <p className="mt-1 text-xs font-semibold text-slate-500">{detail}</p> : null}
     </div>
   );
@@ -265,10 +265,10 @@ function KpiCard({ icon, label, value, detail, tone }: { icon: React.ReactNode; 
 
 function MiniMetric({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-      <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">{label}</p>
-      <p className="mt-3 text-2xl font-black text-slate-950">{value}</p>
-      <p className="mt-1 text-sm text-slate-500">{detail}</p>
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+      <p className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-500">{label}</p>
+      <p className="mt-2 text-xl font-black text-slate-950">{value}</p>
+      <p className="mt-1 text-xs text-slate-500">{detail}</p>
     </div>
   );
 }
@@ -282,19 +282,19 @@ function DonutChart({ accepted, refused, pending }: { accepted: number; refused:
   return (
     <div className="flex flex-col items-center justify-center">
       <div
-        className="grid h-44 w-44 place-items-center rounded-full"
+        className="grid h-32 w-32 place-items-center rounded-full"
         style={{
           background: `conic-gradient(#10b981 0 ${acceptedPercent}%, #ef4444 ${acceptedPercent}% ${acceptedPercent + refusedPercent}%, #cbd5e1 ${acceptedPercent + refusedPercent}% ${acceptedPercent + refusedPercent + pendingPercent}%, #e2e8f0 0)`,
         }}
       >
-        <div className="grid h-28 w-28 place-items-center rounded-full bg-white text-center shadow-inner">
+        <div className="grid h-20 w-20 place-items-center rounded-full bg-white text-center shadow-inner">
           <span>
-            <span className="block text-3xl font-black text-slate-950">{total}</span>
-            <span className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">devis</span>
+            <span className="block text-2xl font-black text-slate-950">{total}</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">devis</span>
           </span>
         </div>
       </div>
-      <div className="mt-4 flex flex-wrap justify-center gap-3 text-xs font-bold text-slate-600">
+      <div className="mt-2 flex flex-wrap justify-center gap-2 text-[11px] font-bold text-slate-600">
         <Legend color="bg-emerald-500" label="Acceptés" />
         <Legend color="bg-red-500" label="Refusés" />
         <Legend color="bg-slate-300" label="En attente" />
@@ -307,14 +307,14 @@ function ColumnChart({ months }: { months: MonthStat[] }) {
   const maxTotal = Math.max(1, ...months.map((month) => month.total));
 
   return (
-    <div className="flex h-full min-h-64 items-end gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 pb-4 pt-6">
+    <div className="flex min-h-44 items-end gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 pb-3 pt-4">
       {months.map((month) => {
-        const totalHeight = Math.max(8, (month.total / maxTotal) * 180);
+        const totalHeight = Math.max(8, (month.total / maxTotal) * 112);
         const acceptedHeight = month.total > 0 ? Math.max(0, (month.accepted / month.total) * totalHeight) : 0;
 
         return (
           <div key={month.key} className="flex min-w-0 flex-1 flex-col items-center gap-2">
-            <div className="flex h-48 w-full max-w-14 items-end rounded-full bg-white px-1.5 py-1.5 shadow-inner">
+            <div className="flex h-32 w-full max-w-10 items-end rounded-full bg-white px-1 py-1 shadow-inner">
               <div className="relative w-full overflow-hidden rounded-full bg-brand-200" style={{ height: `${totalHeight}px` }}>
                 <div className="absolute bottom-0 left-0 right-0 rounded-full bg-brand-600" style={{ height: `${acceptedHeight}px` }} />
               </div>
@@ -329,11 +329,11 @@ function ColumnChart({ months }: { months: MonthStat[] }) {
 
 function ClientPortfolioChart({ clients, totalValue }: { clients: ClientPortfolioRow[]; totalValue: number }) {
   if (clients.length === 0) {
-    return <div className="grid h-full place-items-center rounded-2xl bg-slate-50 p-6 text-sm text-slate-500">Aucun client renseigné pour le moment.</div>;
+    return <div className="grid min-h-40 place-items-center rounded-2xl bg-slate-50 p-6 text-sm text-slate-500">Aucun client renseigné pour le moment.</div>;
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {clients.map((client) => {
         const width = totalValue > 0 ? Math.max(7, (client.total / totalValue) * 100) : 0;
 
@@ -343,7 +343,7 @@ function ClientPortfolioChart({ clients, totalValue }: { clients: ClientPortfoli
               <span className="truncate font-black text-slate-950">{client.name}</span>
               <span className="shrink-0 font-bold text-slate-600">{formatCurrency(client.total)}</span>
             </div>
-            <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+            <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
               <div className="h-full rounded-full bg-[linear-gradient(90deg,#0878f2,#11cfc2)]" style={{ width: `${width}%` }} />
             </div>
             <p className="mt-1 text-xs text-slate-500">

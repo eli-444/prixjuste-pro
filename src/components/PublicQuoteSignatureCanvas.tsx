@@ -8,10 +8,16 @@ export function getQuoteSignatureStorageKey(token: string) {
   return `tarifly_quote_signature_${token}`;
 }
 
-export function PublicQuoteSignatureCanvas({ token, disabled }: { token: string; disabled: boolean }) {
+type PublicQuoteSignatureCanvasProps = {
+  token: string;
+  disabled: boolean;
+  initialSignature?: string | null;
+};
+
+export function PublicQuoteSignatureCanvas({ token, disabled, initialSignature }: PublicQuoteSignatureCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [hasSignature, setHasSignature] = useState(false);
+  const [hasSignature, setHasSignature] = useState(Boolean(initialSignature));
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -35,7 +41,21 @@ export function PublicQuoteSignatureCanvas({ token, disabled }: { token: string;
     context.lineCap = 'round';
     context.lineJoin = 'round';
     context.strokeStyle = '#07122f';
-  }, []);
+
+    if (!initialSignature) {
+      return;
+    }
+
+    const image = new Image();
+    image.onload = () => {
+      context.clearRect(0, 0, rect.width, rect.height);
+      context.drawImage(image, 0, 0, rect.width, rect.height);
+      window.sessionStorage.setItem(getQuoteSignatureStorageKey(token), initialSignature);
+      window.dispatchEvent(new CustomEvent(quoteSignatureEventName, { detail: { token, signature: initialSignature } }));
+      setHasSignature(true);
+    };
+    image.src = initialSignature;
+  }, [initialSignature, token]);
 
   function getPoint(event: React.PointerEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current;
@@ -109,6 +129,10 @@ export function PublicQuoteSignatureCanvas({ token, disabled }: { token: string;
   }
 
   function clearSignature() {
+    if (disabled) {
+      return;
+    }
+
     const canvas = canvasRef.current;
     const context = canvas?.getContext('2d');
 

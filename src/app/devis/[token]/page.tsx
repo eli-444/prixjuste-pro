@@ -30,6 +30,7 @@ type PublicQuote = {
   public_token: string;
   quote_number: string;
   status: QuoteStatus | null;
+  client_acceptance: { signature?: string } | null;
   company_snapshot: Snapshot | null;
   client_snapshot: Snapshot | null;
   items: QuoteItem[] | null;
@@ -52,7 +53,7 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
 
   const { data } = await supabase
     .from('quotes')
-    .select('public_token, quote_number, status, company_snapshot, client_snapshot, items, subtotal_excluding_tax, tax_percent, tax_amount, total_including_tax, validity_days, generated_at, created_at')
+    .select('public_token, quote_number, status, client_acceptance, company_snapshot, client_snapshot, items, subtotal_excluding_tax, tax_percent, tax_amount, total_including_tax, validity_days, generated_at, created_at')
     .eq('public_token', token)
     .maybeSingle();
 
@@ -68,6 +69,7 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
   const expiresAt = getQuoteExpirationDate(quote.generated_at ?? quote.created_at, quote.validity_days);
   const expired = !isFinalQuoteStatus(status) && isQuoteExpired(quote.generated_at ?? quote.created_at, quote.validity_days);
   const locked = expired || status === 'expired' || status === 'accepted' || status === 'refused';
+  const savedSignature = typeof quote.client_acceptance?.signature === 'string' ? quote.client_acceptance.signature : '';
 
   return (
     <>
@@ -191,7 +193,7 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
 
                 <p className="mt-10 text-center text-xs font-semibold">Signature / bon pour accord :</p>
                 <div className="mt-3">
-                  <PublicQuoteSignatureCanvas token={token} disabled={locked} />
+                  <PublicQuoteSignatureCanvas token={token} disabled={locked} initialSignature={savedSignature} />
                 </div>
               </div>
             </section>
