@@ -33,9 +33,6 @@ export function PricingCard() {
           </li>
         ))}
       </ul>
-      <p className="mt-6 rounded-2xl border border-aqua-100 bg-aqua-50 px-4 py-3 text-sm font-black leading-6 text-teal-950">
-        Un seul devis mieux tarifé peut rentabiliser plusieurs mois d’abonnement.
-      </p>
       <CheckoutButton className="mt-5 w-full rounded-2xl bg-brand-900 px-5 py-4 text-sm font-black text-white transition hover:bg-slate-950">
         Démarrer l’abonnement Premium
       </CheckoutButton>

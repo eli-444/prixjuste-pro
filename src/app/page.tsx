@@ -174,7 +174,7 @@ export default async function HomePage({
       <Header />
       <main className="overflow-hidden bg-[#f6f9fc] text-slate-950">
         <section className="relative border-b border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#eefcff_56%,#f6f9fc_100%)]">
-          <div className="mx-auto grid max-w-6xl gap-12 px-4 py-16 md:py-24 lg:grid-cols-[1fr_0.9fr] lg:items-center">
+          <div className="mx-auto grid max-w-6xl gap-12 px-4 pb-14 pt-8 md:pb-20 md:pt-12 lg:grid-cols-[1fr_0.9fr] lg:items-center">
             <div>
               <h1 className="max-w-4xl text-4xl font-black leading-[1.03] tracking-tight text-brand-900 md:text-6xl">
                 Fixez un prix rentable, comparez-le au marché et envoyez un devis prêt à signer.
@@ -261,7 +261,7 @@ export default async function HomePage({
               <SectionTitle
                 eyebrow="Valeur"
                 title="Arrêtez de fixer vos prix au feeling."
-                description="Un prix trop bas fatigue votre activité. Un prix mal expliqué fragilise la vente. Tarifly vous aide à poser un tarif argumenté, lisible et cohérent avec vos objectifs."
+                description="Tarifly vous aide à poser un tarif argumenté, lisible et cohérent avec vos objectifs."
               />
               <div className="mt-8 grid gap-4">
                 <TrustRow icon={<Target size={18} />} title="Protéger votre marge" text="Chaque prix tient compte des coûts réels, du temps, des frais et du niveau de rentabilité attendu." />
@@ -274,11 +274,11 @@ export default async function HomePage({
 
         <section id="exemple" className="bg-[linear-gradient(180deg,#eefcff_0%,#f6f9fc_100%)] py-16 md:py-20">
           <div className="mx-auto max-w-6xl px-4">
-            <SectionTitle
-              eyebrow="Exemple de résultat Tarifly"
-              title="Un résultat concret, prêt à transformer en devis."
-              description="Le visiteur doit voir ce que Tarifly produit réellement : un prix, une marge, un positionnement marché et un suivi commercial."
-            />
+              <SectionTitle
+                eyebrow="Exemple de résultat Tarifly"
+                title="Un résultat concret, prêt à transformer en devis."
+                description="Ce que Tarifly produit réellement : un prix, une marge, un positionnement marché et un suivi commercial."
+              />
             <div className="mt-10 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -297,9 +297,6 @@ export default async function HomePage({
                   <MetricCard label="Position marché" value="Cohérente" tone="green" />
                   <MetricCard label="Statut devis" value="Accepté" tone="green" />
                 </div>
-                <div className="mt-5 rounded-2xl border border-aqua-100 bg-aqua-50 p-4 text-sm font-semibold leading-6 text-teal-950">
-                  Ce prix pourra alimenter les données marché uniquement si le devis est accepté.
-                </div>
               </div>
             </div>
           </div>
@@ -317,9 +314,9 @@ export default async function HomePage({
                 description="Le client consulte le devis sans compte, télécharge le PDF, signe électroniquement puis accepte ou refuse. Vous suivez la réponse depuis votre dashboard."
               />
               <div className="mt-8 grid gap-4">
-                <TrustRow icon={<Link2 size={18} />} title="Lien partageable" text="Envoyez le devis sans demander au client de créer un compte." />
-                <TrustRow icon={<FileText size={18} />} title="Export PDF professionnel" text="Le document reste téléchargeable et présentable." />
-                <TrustRow icon={<CircleCheck size={18} />} title="Statut automatiquement mis à jour" text="Accepté ou refusé, le suivi commercial reste propre." />
+                <TrustRow icon={<Link2 size={18} />} title="Lien partageable" />
+                <TrustRow icon={<FileText size={18} />} title="Export PDF professionnel" />
+                <TrustRow icon={<CircleCheck size={18} />} title="Statut automatiquement mis à jour" />
               </div>
             </div>
           </div>
@@ -331,7 +328,6 @@ export default async function HomePage({
               <SectionTitle
                 eyebrow="Tarifs"
                 title="Un abonnement mensuel pour mieux chiffrer et mieux convertir."
-                description="Un seul devis mieux tarifé peut rentabiliser plusieurs mois d’abonnement."
                 dark
               />
               <div className="mt-8 grid gap-3">
@@ -349,10 +345,9 @@ export default async function HomePage({
 
         <section className="bg-slate-950 py-16 text-white md:py-20">
           <div className="mx-auto max-w-6xl px-4">
-            <SectionTitle
-              eyebrow="FAQ"
-              title="Questions fréquentes"
-              description="Les réponses essentielles avant d’utiliser Tarifly pour préparer vos prix, vos devis et votre suivi commercial."
+              <SectionTitle
+                eyebrow="FAQ"
+                title="Questions fréquentes"
               dark
             />
             <div className="mt-10 grid gap-4 md:grid-cols-2">
@@ -547,7 +542,7 @@ function SectionTitle({
 }: {
   eyebrow: string;
   title: string;
-  description: string;
+  description?: string;
   dark?: boolean;
 }) {
   return (
@@ -556,7 +551,9 @@ function SectionTitle({
       <h2 className={`mt-3 max-w-3xl text-3xl font-black tracking-tight md:text-5xl ${dark ? 'text-white' : 'text-brand-900'}`}>
         {title}
       </h2>
-      <p className={`mt-4 max-w-2xl text-lg leading-8 ${dark ? 'text-slate-300' : 'text-slate-700'}`}>{description}</p>
+      {description ? (
+        <p className={`mt-4 max-w-2xl text-lg leading-8 ${dark ? 'text-slate-300' : 'text-slate-700'}`}>{description}</p>
+      ) : null}
     </div>
   );
 }
@@ -601,13 +598,13 @@ function ResultLine({ label, value }: { label: string; value: string }) {
   );
 }
 
-function TrustRow({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
+function TrustRow({ icon, title, text }: { icon: ReactNode; title: string; text?: string }) {
   return (
     <div className="flex gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-600">{icon}</span>
       <div>
         <h3 className="font-black text-brand-900">{title}</h3>
-        <p className="mt-1 text-sm leading-6 text-slate-600">{text}</p>
+        {text ? <p className="mt-1 text-sm leading-6 text-slate-600">{text}</p> : null}
       </div>
     </div>
   );
