@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { BillingPortalButton } from '@/components/BillingPortalButton';
 import { CompanyAccountForm } from '@/components/CompanyAccountForm';
 import { SignOutButton } from '@/components/SignOutButton';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
@@ -13,11 +14,19 @@ export default async function DashboardAccountPage() {
     redirect('/connexion?redirect=/dashboard/mon-compte');
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('account_type, first_name, last_name, full_name, company_name, siret, company_address, company_email, default_tax_percent, default_hourly_rate')
-    .eq('id', user.id)
-    .maybeSingle();
+  const [{ data: profile }, { data: entitlement }] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('account_type, first_name, last_name, full_name, company_name, siret, company_address, company_email, default_tax_percent, default_hourly_rate')
+      .eq('id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('premium_entitlements')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .maybeSingle(),
+  ]);
   const accountType = profile?.account_type === 'business' ? 'business' : 'personal';
   const nameParts = (profile?.full_name ?? '').split(' ').filter(Boolean);
   const firstName = profile?.first_name ?? nameParts[0] ?? '';
@@ -53,6 +62,12 @@ export default async function DashboardAccountPage() {
           <InfoRow label="Email" value={profile?.company_email || user.email || 'Non renseigné'} />
           <InfoRow label="TVA par defaut" value={`${profile?.default_tax_percent ?? 20} %`} />
           <InfoRow label="Taux horaire" value={formatEuro(Number(profile?.default_hourly_rate ?? 0))} />
+          {entitlement ? (
+            <div className="mt-4 border-t border-slate-100 pt-4">
+              <p className="mb-3 text-sm font-bold text-slate-950">Abonnement</p>
+              <BillingPortalButton />
+            </div>
+          ) : null}
           <div className="mt-4">
             <SignOutButton />
           </div>
