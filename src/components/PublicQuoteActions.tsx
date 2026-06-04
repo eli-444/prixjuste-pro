@@ -1,6 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { Download } from 'lucide-react';
+import { getQuoteSignatureStorageKey, quoteSignatureEventName } from '@/components/PublicQuoteSignatureCanvas';
 import { showToast } from '@/lib/toast';
 
 export function PublicQuoteActions({
@@ -14,18 +17,33 @@ export function PublicQuoteActions({
 }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [signature, setSignature] = useState('');
   const [message, setMessage] = useState('');
-  const [isSignatureOpen, setIsSignatureOpen] = useState(false);
+  const [signature, setSignature] = useState('');
   const [isRefusalOpen, setIsRefusalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const isAccepted = status === 'accepted';
   const isRefused = status === 'refused';
   const isLocked = isAccepted || isRefused || isExpired || status === 'expired';
 
+  useEffect(() => {
+    setSignature(window.sessionStorage.getItem(getQuoteSignatureStorageKey(token)) ?? '');
+
+    function handleSignature(event: Event) {
+      const customEvent = event as CustomEvent<{ token: string; signature: string }>;
+
+      if (customEvent.detail?.token === token) {
+        setSignature(customEvent.detail.signature);
+      }
+    }
+
+    window.addEventListener(quoteSignatureEventName, handleSignature);
+
+    return () => window.removeEventListener(quoteSignatureEventName, handleSignature);
+  }, [token]);
+
   async function acceptQuote() {
-    if (!signature.trim()) {
-      showToast('Signature obligatoire pour accepter le devis.', 'error');
+    if (!signature) {
+      showToast('Signez le devis dans la case de signature avant de l’accepter.', 'error');
       return;
     }
 
@@ -78,56 +96,46 @@ export function PublicQuoteActions({
 
   return (
     <>
-      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center">
-        <a
-          href="#devis"
-          className="inline-flex flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-slate-50"
-        >
-          Voir devis
-        </a>
-        <button
-          type="button"
-          onClick={() => setIsSignatureOpen(true)}
-          disabled={isLocked}
-          className="inline-flex flex-1 items-center justify-center rounded-xl bg-brand-600 px-5 py-3 text-sm font-black text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-        >
-          {isAccepted ? 'Devis accepté' : 'Accepter'}
-        </button>
-        <button
-          type="button"
-          onClick={() => setIsRefusalOpen(true)}
-          disabled={isLocked}
-          className="inline-flex flex-1 items-center justify-center rounded-xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-black text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
-        >
-          {isRefused ? 'Devis refusé' : 'Refuser'}
-        </button>
+      <div className="print:hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-slate-50"
+          >
+            <Download size={16} />
+            Télécharger PDF
+          </button>
+          <button
+            type="button"
+            onClick={acceptQuote}
+            disabled={isLocked || isSaving}
+            className="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-3 text-sm font-black text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            {isAccepted ? 'Devis accepté' : isSaving ? 'Enregistrement...' : 'Accepter'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsRefusalOpen(true)}
+            disabled={isLocked || isSaving}
+            className="inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-black text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+          >
+            {isRefused ? 'Devis refusé' : 'Refuser'}
+          </button>
+        </div>
+
+        <p className="mt-4 text-sm leading-6 text-slate-600">
+          Ce devis vous a été envoyé via l’application Tarifly.{' '}
+          <Link href="/" className="font-black text-brand-600 hover:text-brand-700">
+            En savoir plus sur nous
+          </Link>
+        </p>
       </div>
 
       {isExpired || status === 'expired' ? (
-        <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+        <p className="print:hidden mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
           Ce devis n'est plus dans sa période de validité.
         </p>
-      ) : null}
-
-      {isSignatureOpen ? (
-        <DecisionModal
-          title="Signer et accepter le devis"
-          submitLabel={isSaving ? 'Enregistrement...' : 'Signer puis accepter'}
-          disabled={isSaving}
-          onClose={() => setIsSignatureOpen(false)}
-          onSubmit={acceptQuote}
-        >
-          <ClientFields name={name} email={email} message={message} onName={setName} onEmail={setEmail} onMessage={setMessage} />
-          <label className="space-y-2">
-            <span className="text-sm font-bold text-slate-950">Signature électronique</span>
-            <input
-              value={signature}
-              onChange={(event) => setSignature(event.target.value)}
-              placeholder="Nom et prénom du signataire"
-              className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            />
-          </label>
-        </DecisionModal>
       ) : null}
 
       {isRefusalOpen ? (
@@ -137,7 +145,6 @@ export function PublicQuoteActions({
           disabled={isSaving}
           onClose={() => setIsRefusalOpen(false)}
           onSubmit={refuseQuote}
-          danger
         >
           <ClientFields name={name} email={email} message={message} onName={setName} onEmail={setEmail} onMessage={setMessage} />
         </DecisionModal>
@@ -190,7 +197,6 @@ function DecisionModal({
   title,
   submitLabel,
   disabled,
-  danger,
   children,
   onClose,
   onSubmit,
@@ -198,7 +204,6 @@ function DecisionModal({
   title: string;
   submitLabel: string;
   disabled: boolean;
-  danger?: boolean;
   children: React.ReactNode;
   onClose: () => void;
   onSubmit: () => void;
@@ -221,9 +226,7 @@ function DecisionModal({
             type="button"
             onClick={onSubmit}
             disabled={disabled}
-            className={`rounded-xl px-4 py-3 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${
-              danger ? 'bg-red-600 hover:bg-red-700' : 'bg-brand-600 hover:bg-brand-700'
-            }`}
+            className="rounded-xl bg-red-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitLabel}
           </button>
