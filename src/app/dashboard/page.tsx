@@ -1,9 +1,45 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Calculator, FileText, ShieldCheck, Sparkles } from 'lucide-react';
+import { BarChart3, CheckCircle2, Send, TrendingUp, Users, XCircle } from 'lucide-react';
 import { SignOutButton } from '@/components/SignOutButton';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getSupabaseConfig } from '@/lib/supabase/env';
+import { formatCurrency } from '@/lib/utils';
+import type { OpportunityStatus } from '@/lib/opportunities';
+
+type QuoteStatus = 'draft' | 'generated' | 'sent' | 'accepted' | 'refused' | 'expired';
+
+type QuoteRow = {
+  id: string;
+  calculation_id: string | null;
+  status: QuoteStatus | null;
+  total_including_tax: number | null;
+  created_at: string;
+};
+
+type CalculationRow = {
+  id: string;
+  client_name: string | null;
+  opportunity_status: OpportunityStatus | null;
+  recommended_price: number | null;
+  created_at: string;
+};
+
+type ClientPortfolioRow = {
+  name: string;
+  total: number;
+  count: number;
+  accepted: number;
+};
+
+type MonthStat = {
+  key: string;
+  label: string;
+  total: number;
+  accepted: number;
+  value: number;
+};
+
+const sentQuoteStatuses: QuoteStatus[] = ['generated', 'sent', 'accepted', 'refused', 'expired'];
 
 export default async function DashboardPage() {
   const { isConfigured } = getSupabaseConfig();
@@ -14,7 +50,7 @@ export default async function DashboardPage() {
       <div className="grid h-full place-items-center p-5">
         <section className="max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h1 className="text-2xl font-bold">Tableau de bord indisponible</h1>
-          <p className="mt-2 text-sm leading-6 text-slate-600">Merci de reessayer plus tard.</p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">Merci de réessayer plus tard.</p>
         </section>
       </div>
     );
@@ -28,275 +64,304 @@ export default async function DashboardPage() {
     redirect('/connexion?redirect=/dashboard');
   }
 
-  const [
-    { data: profile },
-    { data: entitlement },
-    { count: calculationCount },
-    { data: purchases },
-    { count: quoteCount },
-    { data: recentQuotes },
-    { data: recentCalculations },
-  ] = await Promise.all([
-    supabase
-      .from('profiles')
-      .select('account_type, first_name, last_name, full_name, company_name, siret, company_address')
-      .eq('id', user.id)
-      .maybeSingle(),
-    supabase
-      .from('premium_entitlements')
-      .select('status, source, valid_until, updated_at')
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .maybeSingle(),
-    supabase.from('pricing_calculations').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-    supabase
-      .from('purchases')
-      .select('id, amount_total, currency, status, created_at, stripe_session_id')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(3),
-    supabase.from('quotes').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+  const [{ data: quotesData }, { data: calculationsData }] = await Promise.all([
     supabase
       .from('quotes')
-      .select('id, public_token, quote_number, status, total_including_tax, created_at')
+      .select('id, calculation_id, status, total_including_tax, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(4),
+      .limit(500),
     supabase
       .from('pricing_calculations')
-      .select('id, title, client_name, opportunity_status, recommended_price, created_at')
+      .select('id, client_name, opportunity_status, recommended_price, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(4),
+      .limit(500),
   ]);
 
-  const accountType = profile?.account_type === 'business' ? 'business' : 'personal';
-  const nameParts = (profile?.full_name ?? '').split(' ').filter(Boolean);
-  const holderName =
-    `${profile?.first_name ?? nameParts[0] ?? ''} ${profile?.last_name ?? nameParts.slice(1).join(' ') ?? ''}`.trim() ||
-    user.user_metadata?.full_name ||
-    user.email;
-  const displayName = accountType === 'business' ? profile?.company_name || holderName : holderName;
-  const isPremium = Boolean(entitlement);
-  const totalQuoteValue = (recentQuotes ?? []).reduce((total, quote) => total + Number(quote.total_including_tax ?? 0), 0);
+  const quotes = (quotesData ?? []) as QuoteRow[];
+  const calculations = (calculationsData ?? []) as CalculationRow[];
+
+  const successStats = buildSuccessStats(quotes, calculations);
+  const clientStats = buildClientStats(calculations);
+  const monthStats = buildMonthStats(calculations);
+  const yearStats = buildYearStats(calculations);
 
   return (
-    <div className="grid h-full gap-4 overflow-hidden p-4 xl:grid-cols-[1fr_300px]">
-      <div className="grid min-h-0 gap-4 grid-rows-[auto_auto_1fr]">
-        <header className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="truncate text-2xl font-bold tracking-tight">Tableau de bord</h1>
-            <p className="mt-1 truncate text-sm text-slate-500">{displayName}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <SignOutButton className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" />
-          </div>
-        </header>
-
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <MetricCard icon={<FileText />} label="Devis" value={`${quoteCount ?? 0}`} detail={`${formatEuro(totalQuoteValue)} recents`} tone="blue" />
-          <MetricCard icon={<Calculator />} label="Calculs" value={`${calculationCount ?? 0}`} detail="Sauvegardes" tone="aqua" />
-          <MetricCard icon={<ShieldCheck />} label="Abonnement" value={isPremium ? 'Actif' : 'Gratuit'} detail="9,90 EUR / mois" tone="green" />
-          <MetricCard icon={<Sparkles />} label="Acces" value={isPremium ? 'Illimite' : 'Essai'} detail={isPremium ? 'Premium' : '1 calcul complet'} tone="orange" />
+    <div className="h-full overflow-auto p-3 md:p-4 xl:overflow-hidden">
+      <header className="mb-3 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-black tracking-tight text-slate-950">Tableau de bord</h1>
+          <p className="mt-1 text-sm text-slate-500">Vue commerciale de vos devis et opportunités.</p>
         </div>
+        <SignOutButton className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" />
+      </header>
 
-        <div className="grid min-h-0 gap-4 xl:grid-cols-[1fr_0.92fr]">
-          <Panel title="Derniers calculs" actionHref="/dashboard/opportunites" actionLabel="Voir tout">
-            {recentCalculations && recentCalculations.length > 0 ? (
-              <div className="divide-y divide-slate-200">
-                {recentCalculations.map((calculation) => (
-                  <Link key={calculation.id} href={`/opportunites/${calculation.id}`} className="grid grid-cols-[1fr_auto] gap-3 px-4 py-3 text-sm transition hover:bg-slate-50">
-                    <div className="min-w-0">
-                      <p className="truncate font-bold text-slate-950">{calculation.title || 'Calcul sans titre'}</p>
-                      <p className="mt-1 truncate text-xs text-slate-500">{calculation.client_name || 'Client non renseigne'}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-slate-950">{formatEuro(Number(calculation.recommended_price ?? 0))}</p>
-                      <p className="mt-1 text-xs text-slate-500">{calculation.opportunity_status ?? 'to_price'}</p>
-                    </div>
-                  </Link>
-                ))}
+      <div className="grid h-[calc(100%_-_64px)] min-h-[760px] gap-3 xl:min-h-0 xl:grid-cols-[1.05fr_0.95fr]">
+        <section className="grid min-h-0 gap-3 xl:grid-rows-[1fr_0.82fr]">
+          <StatPanel title="Performance de réussite" icon={<TrendingUp size={18} />}>
+            <div className="grid h-full gap-4 md:grid-cols-[220px_1fr] md:items-center">
+              <DonutChart
+                accepted={successStats.accepted}
+                refused={successStats.refused}
+                pending={successStats.pending}
+              />
+              <div className="grid gap-3 sm:grid-cols-3">
+                <KpiCard icon={<Send size={17} />} label="Devis envoyés" value={`${successStats.sent}`} tone="blue" />
+                <KpiCard icon={<CheckCircle2 size={17} />} label="Acceptés" value={`${successStats.accepted}`} tone="green" detail={`${successStats.successRate}% réussite`} />
+                <KpiCard icon={<XCircle size={17} />} label="Refusés" value={`${successStats.refused}`} tone="red" />
               </div>
-            ) : (
-              <EmptyState text="Aucun calcul sauvegarde." />
-            )}
-          </Panel>
+            </div>
+          </StatPanel>
 
-          <Panel title="Derniers devis" actionHref="/dashboard/devis" actionLabel="Voir tout">
-            {recentQuotes && recentQuotes.length > 0 ? (
-              <div className="divide-y divide-slate-200">
-                {recentQuotes.map((quote) => (
-                  <div key={quote.id} className="grid grid-cols-[1fr_auto] gap-3 px-4 py-3 text-sm">
-                    <div className="min-w-0">
-                      <p className="truncate font-bold text-slate-950">Devis {quote.quote_number}</p>
-                      <p className="mt-1 text-xs text-slate-500">{formatDate(quote.created_at)}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-slate-950">{formatEuro(Number(quote.total_including_tax ?? 0))}</p>
-                      <Link href={`/devis/${quote.public_token}`} target="_blank" className="mt-1 inline-flex text-xs font-bold text-brand-600">
-                        Ouvrir
-                      </Link>
-                    </div>
-                  </div>
-                ))}
+          <StatPanel title="Performance mois / année" icon={<BarChart3 size={18} />}>
+            <div className="grid h-full gap-4 lg:grid-cols-[1fr_240px]">
+              <ColumnChart months={monthStats} />
+              <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                <MiniMetric label="Année en cours" value={`${yearStats.total}`} detail="opportunités" />
+                <MiniMetric label="Signées" value={`${yearStats.accepted}`} detail={`${yearStats.acceptanceRate}% de réussite`} />
+                <MiniMetric label="Potentiel annuel" value={formatCurrency(yearStats.value)} detail="prix proposés" />
               </div>
-            ) : (
-              <EmptyState text="Aucun devis généré." />
-            )}
-          </Panel>
-        </div>
+            </div>
+          </StatPanel>
+        </section>
+
+        <section className="grid min-h-0 gap-3 xl:grid-rows-[0.62fr_1fr]">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <KpiCard icon={<Users size={17} />} label="Clients" value={`${clientStats.uniqueClients}`} tone="aqua" detail={`${clientStats.activeClients} actifs`} />
+            <KpiCard icon={<CheckCircle2 size={17} />} label="Clients gagnés" value={`${clientStats.acceptedClients}`} tone="green" />
+            <KpiCard icon={<TrendingUp size={17} />} label="Portefeuille" value={formatCurrency(clientStats.totalValue)} tone="blue" />
+          </div>
+
+          <StatPanel title="Portefeuille client" icon={<Users size={18} />}>
+            <ClientPortfolioChart clients={clientStats.topClients} totalValue={clientStats.totalValue} />
+          </StatPanel>
+        </section>
       </div>
-
-      <aside className="min-h-0 space-y-4">
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="font-bold">Compte</h2>
-          <div className="mt-3 divide-y divide-slate-100">
-            <InfoRow label="Type" value={accountType === 'business' ? 'Entreprise' : 'Personnel'} />
-            {accountType === 'business' ? (
-              <>
-                <InfoRow label="Entreprise" value={profile?.company_name || 'Non renseigné'} />
-                <InfoRow label="SIRET" value={profile?.siret || 'Non renseigné'} />
-              </>
-            ) : (
-              <InfoRow label="Titulaire" value={holderName || 'Non renseigné'} />
-            )}
-          </div>
-          <Link href="/dashboard/mon-compte" className="mt-4 inline-flex w-full justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
-            Modifier le compte
-          </Link>
-        </section>
-
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="font-bold">Facturation</h2>
-          <div className="mt-3 divide-y divide-slate-100">
-            <InfoRow label="Abonnement" value={isPremium ? 'Actif' : 'Inactif'} />
-            <InfoRow label="Dernier paiement" value={purchases?.[0] ? formatAmount(purchases[0].amount_total, purchases[0].currency) : 'Aucun'} />
-            <InfoRow label="Statut" value={purchases?.[0]?.status ?? 'Aucun'} />
-          </div>
-          <Link href="/dashboard/facturation" className="mt-4 inline-flex w-full justify-center rounded-xl bg-brand-900 px-4 py-3 text-sm font-bold text-white">
-            Voir la facturation
-          </Link>
-        </section>
-
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="font-bold">Paiements recents</h2>
-          <div className="mt-3 space-y-2">
-            {purchases && purchases.length > 0 ? (
-              purchases.map((purchase) => (
-                <div key={purchase.id} className="rounded-xl border border-slate-200 p-3 text-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="font-semibold text-slate-950">{formatAmount(purchase.amount_total, purchase.currency)}</span>
-                    <PaymentStatus status={purchase.status} />
-                  </div>
-                  <p className="mt-1 text-xs text-slate-500">{formatDate(purchase.created_at)}</p>
-                </div>
-              ))
-            ) : (
-              <EmptyState text="Aucun paiement rattache." compact />
-            )}
-          </div>
-        </section>
-      </aside>
     </div>
   );
 }
 
-function MetricCard({
-  icon,
-  label,
-  value,
-  detail,
-  tone,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  detail: string;
-  tone: 'blue' | 'aqua' | 'green' | 'orange';
-}) {
-  const tones = {
-    blue: 'bg-brand-50 text-brand-600',
-    aqua: 'bg-aqua-50 text-aqua-600',
-    green: 'bg-emerald-50 text-emerald-600',
-    orange: 'bg-orange-50 text-orange-500',
+function buildSuccessStats(quotes: QuoteRow[], calculations: CalculationRow[]) {
+  const sentQuotes = quotes.filter((quote) => sentQuoteStatuses.includes((quote.status ?? 'draft') as QuoteStatus));
+  const acceptedQuoteCalculationIds = new Set(quotes.filter((quote) => quote.status === 'accepted' && quote.calculation_id).map((quote) => quote.calculation_id as string));
+  const refusedQuoteCalculationIds = new Set(quotes.filter((quote) => quote.status === 'refused' && quote.calculation_id).map((quote) => quote.calculation_id as string));
+  const accepted = quotes.filter((quote) => quote.status === 'accepted').length + calculations.filter((calculation) => calculation.opportunity_status === 'won' && !acceptedQuoteCalculationIds.has(calculation.id)).length;
+  const refused = quotes.filter((quote) => quote.status === 'refused').length + calculations.filter((calculation) => calculation.opportunity_status === 'lost' && !refusedQuoteCalculationIds.has(calculation.id)).length;
+  const sent = Math.max(sentQuotes.length, accepted + refused);
+  const pending = Math.max(0, sent - accepted - refused);
+  const successRate = sent > 0 ? Math.round((accepted / sent) * 100) : 0;
+
+  return { sent, accepted, refused, pending, successRate };
+}
+
+function buildClientStats(calculations: CalculationRow[]) {
+  const portfolio = new Map<string, ClientPortfolioRow>();
+
+  for (const calculation of calculations) {
+    const clientName = (calculation.client_name ?? '').trim();
+
+    if (!clientName) {
+      continue;
+    }
+
+    const current = portfolio.get(clientName) ?? { name: clientName, total: 0, count: 0, accepted: 0 };
+    current.total += Number(calculation.recommended_price ?? 0);
+    current.count += 1;
+    current.accepted += calculation.opportunity_status === 'won' ? 1 : 0;
+    portfolio.set(clientName, current);
+  }
+
+  const clients = [...portfolio.values()].sort((a, b) => b.total - a.total);
+  const activeClients = new Set(calculations.filter((calculation) => calculation.client_name && !['won', 'lost'].includes(calculation.opportunity_status ?? '')).map((calculation) => calculation.client_name)).size;
+  const acceptedClients = new Set(calculations.filter((calculation) => calculation.client_name && calculation.opportunity_status === 'won').map((calculation) => calculation.client_name)).size;
+  const totalValue = clients.reduce((total, client) => total + client.total, 0);
+
+  return {
+    uniqueClients: clients.length,
+    activeClients,
+    acceptedClients,
+    totalValue,
+    topClients: clients.slice(0, 5),
   };
-
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <span className={`grid h-10 w-10 place-items-center rounded-xl ${tones[tone]}`}>{icon}</span>
-        <span className="text-xs font-bold uppercase tracking-[0.14em] text-slate-950">{label}</span>
-      </div>
-      <p className="mt-3 text-2xl font-bold tracking-tight text-slate-950">{value}</p>
-      <p className="mt-1 text-xs text-slate-500">{detail}</p>
-    </div>
-  );
 }
 
-function Panel({ title, actionHref, actionLabel, children }: { title: string; actionHref: string; actionLabel: string; children: React.ReactNode }) {
+function buildMonthStats(calculations: CalculationRow[]) {
+  const formatter = new Intl.DateTimeFormat('fr-FR', { month: 'short' });
+  const now = new Date();
+  const months: MonthStat[] = [];
+
+  for (let index = 5; index >= 0; index -= 1) {
+    const date = new Date(now.getFullYear(), now.getMonth() - index, 1);
+    months.push({
+      key: `${date.getFullYear()}-${date.getMonth()}`,
+      label: formatter.format(date).replace('.', ''),
+      total: 0,
+      accepted: 0,
+      value: 0,
+    });
+  }
+
+  const monthMap = new Map(months.map((month) => [month.key, month]));
+
+  for (const calculation of calculations) {
+    const createdAt = new Date(calculation.created_at);
+    const key = `${createdAt.getFullYear()}-${createdAt.getMonth()}`;
+    const month = monthMap.get(key);
+
+    if (!month) {
+      continue;
+    }
+
+    month.total += 1;
+    month.accepted += calculation.opportunity_status === 'won' ? 1 : 0;
+    month.value += Number(calculation.recommended_price ?? 0);
+  }
+
+  return months;
+}
+
+function buildYearStats(calculations: CalculationRow[]) {
+  const currentYear = new Date().getFullYear();
+  const yearlyCalculations = calculations.filter((calculation) => new Date(calculation.created_at).getFullYear() === currentYear);
+  const accepted = yearlyCalculations.filter((calculation) => calculation.opportunity_status === 'won').length;
+  const total = yearlyCalculations.length;
+  const value = yearlyCalculations.reduce((sum, calculation) => sum + Number(calculation.recommended_price ?? 0), 0);
+  const acceptanceRate = total > 0 ? Math.round((accepted / total) * 100) : 0;
+
+  return { total, accepted, value, acceptanceRate };
+}
+
+function StatPanel({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="min-h-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-        <h2 className="font-bold">{title}</h2>
-        <Link href={actionHref} className="text-sm font-bold text-brand-600 hover:text-aqua-600">
-          {actionLabel}
-        </Link>
+    <section className="min-h-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-4 flex items-center gap-2">
+        <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-50 text-brand-600">{icon}</span>
+        <h2 className="text-sm font-black uppercase tracking-[0.14em] text-slate-950">{title}</h2>
       </div>
       {children}
     </section>
   );
 }
 
-function EmptyState({ text, compact }: { text: string; compact?: boolean }) {
-  return <div className={`${compact ? 'py-2' : 'p-4'} text-sm leading-6 text-slate-500`}>{text}</div>;
-}
+function KpiCard({ icon, label, value, detail, tone }: { icon: React.ReactNode; label: string; value: string; detail?: string; tone: 'blue' | 'green' | 'red' | 'aqua' }) {
+  const tones = {
+    blue: 'bg-brand-50 text-brand-600',
+    green: 'bg-emerald-50 text-emerald-600',
+    red: 'bg-red-50 text-red-600',
+    aqua: 'bg-aqua-50 text-aqua-600',
+  };
 
-function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-3">
-      <span className="text-sm text-slate-500">{label}</span>
-      <span className="text-right text-sm font-bold text-slate-950">{value}</span>
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <span className={`grid h-10 w-10 place-items-center rounded-xl ${tones[tone]}`}>{icon}</span>
+        <span className="text-right text-xs font-black uppercase tracking-[0.12em] text-slate-500">{label}</span>
+      </div>
+      <p className="mt-4 text-3xl font-black tracking-tight text-slate-950">{value}</p>
+      {detail ? <p className="mt-1 text-xs font-semibold text-slate-500">{detail}</p> : null}
     </div>
   );
 }
 
-function PaymentStatus({ status }: { status: string }) {
-  const isPaid = status === 'paid' || status === 'accepted';
-
+function MiniMetric({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
-    <span
-      className={`inline-flex justify-center rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-[0.12em] ${
-        isPaid ? 'bg-aqua-50 text-aqua-600' : 'bg-slate-100 text-slate-600'
-      }`}
-    >
-      {status}
-    </span>
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">{label}</p>
+      <p className="mt-3 text-2xl font-black text-slate-950">{value}</p>
+      <p className="mt-1 text-sm text-slate-500">{detail}</p>
+    </div>
   );
 }
 
-function formatEuro(amount: number) {
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(amount);
+function DonutChart({ accepted, refused, pending }: { accepted: number; refused: number; pending: number }) {
+  const total = accepted + refused + pending;
+  const acceptedPercent = total > 0 ? (accepted / total) * 100 : 0;
+  const refusedPercent = total > 0 ? (refused / total) * 100 : 0;
+  const pendingPercent = total > 0 ? (pending / total) * 100 : 0;
+
+  return (
+    <div className="flex flex-col items-center justify-center">
+      <div
+        className="grid h-44 w-44 place-items-center rounded-full"
+        style={{
+          background: `conic-gradient(#10b981 0 ${acceptedPercent}%, #ef4444 ${acceptedPercent}% ${acceptedPercent + refusedPercent}%, #cbd5e1 ${acceptedPercent + refusedPercent}% ${acceptedPercent + refusedPercent + pendingPercent}%, #e2e8f0 0)`,
+        }}
+      >
+        <div className="grid h-28 w-28 place-items-center rounded-full bg-white text-center shadow-inner">
+          <span>
+            <span className="block text-3xl font-black text-slate-950">{total}</span>
+            <span className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">devis</span>
+          </span>
+        </div>
+      </div>
+      <div className="mt-4 flex flex-wrap justify-center gap-3 text-xs font-bold text-slate-600">
+        <Legend color="bg-emerald-500" label="Acceptés" />
+        <Legend color="bg-red-500" label="Refusés" />
+        <Legend color="bg-slate-300" label="En attente" />
+      </div>
+    </div>
+  );
 }
 
-function formatAmount(amount: number | null, currency: string | null) {
-  if (typeof amount !== 'number') {
-    return 'Montant indisponible';
+function ColumnChart({ months }: { months: MonthStat[] }) {
+  const maxTotal = Math.max(1, ...months.map((month) => month.total));
+
+  return (
+    <div className="flex h-full min-h-64 items-end gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 pb-4 pt-6">
+      {months.map((month) => {
+        const totalHeight = Math.max(8, (month.total / maxTotal) * 180);
+        const acceptedHeight = month.total > 0 ? Math.max(0, (month.accepted / month.total) * totalHeight) : 0;
+
+        return (
+          <div key={month.key} className="flex min-w-0 flex-1 flex-col items-center gap-2">
+            <div className="flex h-48 w-full max-w-14 items-end rounded-full bg-white px-1.5 py-1.5 shadow-inner">
+              <div className="relative w-full overflow-hidden rounded-full bg-brand-200" style={{ height: `${totalHeight}px` }}>
+                <div className="absolute bottom-0 left-0 right-0 rounded-full bg-brand-600" style={{ height: `${acceptedHeight}px` }} />
+              </div>
+            </div>
+            <span className="truncate text-xs font-black uppercase text-slate-500">{month.label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ClientPortfolioChart({ clients, totalValue }: { clients: ClientPortfolioRow[]; totalValue: number }) {
+  if (clients.length === 0) {
+    return <div className="grid h-full place-items-center rounded-2xl bg-slate-50 p-6 text-sm text-slate-500">Aucun client renseigné pour le moment.</div>;
   }
 
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: (currency ?? 'eur').toUpperCase(),
-  }).format(amount / 100);
+  return (
+    <div className="space-y-4">
+      {clients.map((client) => {
+        const width = totalValue > 0 ? Math.max(7, (client.total / totalValue) * 100) : 0;
+
+        return (
+          <div key={client.name}>
+            <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+              <span className="truncate font-black text-slate-950">{client.name}</span>
+              <span className="shrink-0 font-bold text-slate-600">{formatCurrency(client.total)}</span>
+            </div>
+            <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-[linear-gradient(90deg,#0878f2,#11cfc2)]" style={{ width: `${width}%` }} />
+            </div>
+            <p className="mt-1 text-xs text-slate-500">
+              {client.count} dossier{client.count > 1 ? 's' : ''} · {client.accepted} accepté{client.accepted > 1 ? 's' : ''}
+            </p>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
-function formatDate(value: string | null) {
-  if (!value) {
-    return 'Date indisponible';
-  }
-
-  return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(new Date(value));
+function Legend({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className={`h-2.5 w-2.5 rounded-full ${color}`} />
+      {label}
+    </span>
+  );
 }
-

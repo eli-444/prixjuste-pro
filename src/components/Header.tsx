@@ -20,7 +20,7 @@ export async function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-brand-100/80 bg-white/90 shadow-sm backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-2">
+      <div className="flex w-full items-center justify-between px-3 py-2">
         <Link href="/" className="flex items-center gap-3 font-semibold tracking-tight text-slate-950">
           <Image src="/logo-nav.png" alt="Tarifly" width={1814} height={902} className="h-11 w-auto object-contain md:h-12" priority />
         </Link>
