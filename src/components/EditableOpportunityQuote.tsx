@@ -3,6 +3,8 @@
 import { useMemo, useState } from 'react';
 import { OpportunityPrintActions } from '@/components/OpportunityPrintActions';
 import type { PricingInput } from '@/lib/pricing';
+import { createBrowserSupabaseClient } from '@/lib/supabase/browser';
+import { showToast } from '@/lib/toast';
 import { formatCurrency } from '@/lib/utils';
 
 type EditableOpportunityQuoteProps = {
@@ -37,9 +39,89 @@ export function EditableOpportunityQuote({ initialOpen, quote }: EditableOpportu
   const [notes, setNotes] = useState(
     "Les prix sont etablis sur les informations communiquees a la date du devis.\nToute demande supplementaire pourra faire l'objet d'un devis complementaire.",
   );
+  const [clientLink, setClientLink] = useState('');
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const serviceLine = useMemo(() => buildServiceLine(quote.title, quote.input, quote.finalPrice), [quote]);
   const issuerName = quote.issuerLines[0] || 'Tarifly';
   const issuerDetails = quote.issuerLines.slice(1);
+
+  async function generateClientLink() {
+    setIsGeneratingLink(true);
+
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error('Vous devez être connecté pour générer un lien client.');
+      }
+
+      const validityDays = Math.max(1, getDaysBetween(quoteDate, validUntil));
+      const { data, error } = await supabase
+        .from('quotes')
+        .upsert(
+          {
+            user_id: user.id,
+            calculation_id: quote.id,
+            quote_number: quoteNumber,
+            status: 'generated',
+            company_snapshot: {
+              account_type: quote.accountType,
+              name: issuerName,
+              lines: issuerDetails,
+              share_capital: shareCapital,
+            },
+            client_snapshot: {
+              name: quote.clientName,
+            },
+            items: [
+              {
+                description: serviceLine.title,
+                quantity: serviceLine.quantity,
+                unit: serviceLine.unitLabel,
+                unitPriceExcludingTax: serviceLine.unitPriceExcludingTax,
+                totalExcludingTax: quote.subtotalExcludingTax,
+              },
+            ],
+            subtotal_excluding_tax: quote.subtotalExcludingTax,
+            tax_percent: quote.taxRate,
+            tax_amount: quote.taxAmount,
+            total_including_tax: quote.finalPrice,
+            validity_days: validityDays,
+          },
+          { onConflict: 'user_id,quote_number' },
+        )
+        .select('public_token')
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      const url = `${window.location.origin}/devis/${data.public_token}`;
+      setClientLink(url);
+      showToast('Lien client généré.', 'success');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Impossible de générer le lien client.', 'error');
+    } finally {
+      setIsGeneratingLink(false);
+    }
+  }
+
+  async function copyClientLink() {
+    if (!clientLink) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(clientLink);
+      showToast('Lien client copié.', 'success');
+    } catch {
+      showToast('Impossible de copier le lien automatiquement.', 'error');
+    }
+  }
 
   return (
     <div className="h-full overflow-auto bg-slate-200 p-4 md:p-6 print:block print:h-auto print:overflow-visible print:bg-white print:p-0">
@@ -64,9 +146,32 @@ export function EditableOpportunityQuote({ initialOpen, quote }: EditableOpportu
             >
               Modifier le devis
             </button>
+            <button
+              type="button"
+              onClick={generateClientLink}
+              disabled={isGeneratingLink}
+              className="inline-flex items-center justify-center rounded-xl bg-brand-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isGeneratingLink ? 'Génération...' : 'Générer lien client'}
+            </button>
             <OpportunityPrintActions />
           </div>
         </div>
+
+        {clientLink ? (
+          <div className="mb-4 rounded-2xl border border-brand-100 bg-white p-4 shadow-sm print:hidden">
+            <p className="text-sm font-black text-slate-950">Lien à envoyer au client</p>
+            <p className="mt-1 truncate text-xs text-slate-500">{clientLink}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <a href={clientLink} target="_blank" rel="noreferrer" className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
+                Ouvrir
+              </a>
+              <button type="button" onClick={copyClientLink} className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-brand-700">
+                Copier
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         <article className="quote-sheet min-h-[1123px] bg-white p-10 text-[13px] text-slate-950 shadow-xl">
           <header className="grid grid-cols-[1fr_260px] gap-8">
@@ -378,6 +483,18 @@ function addDays(value: string, days: number) {
   const date = new Date(value);
   date.setDate(date.getDate() + days);
   return date.toISOString();
+}
+
+function getDaysBetween(startValue: string, endValue: string) {
+  const start = new Date(startValue);
+  const end = new Date(endValue);
+  const diff = end.getTime() - start.getTime();
+
+  if (!Number.isFinite(diff)) {
+    return 30;
+  }
+
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
 function formatDateInput(value: string) {

@@ -92,13 +92,12 @@ export default async function DashboardPage() {
       <header className="mb-3 flex items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-black tracking-tight text-slate-950">Tableau de bord</h1>
-          <p className="mt-1 text-sm text-slate-500">Vue commerciale de vos devis et opportunités.</p>
         </div>
         <SignOutButton className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" />
       </header>
 
-      <div className="grid h-[calc(100%_-_64px)] min-h-[760px] gap-3 xl:min-h-0 xl:grid-cols-[1.05fr_0.95fr]">
-        <section className="grid min-h-0 gap-3 xl:grid-rows-[1fr_0.82fr]">
+      <div className="grid h-[calc(100%_-_52px)] min-h-[860px] gap-5 xl:min-h-0 xl:grid-cols-[1.05fr_0.95fr]">
+        <section className="grid min-h-0 gap-5 xl:grid-rows-[1fr_0.82fr]">
           <StatPanel title="Performance de réussite" icon={<TrendingUp size={18} />}>
             <div className="grid h-full gap-4 md:grid-cols-[220px_1fr] md:items-center">
               <DonutChart
@@ -106,7 +105,7 @@ export default async function DashboardPage() {
                 refused={successStats.refused}
                 pending={successStats.pending}
               />
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-5 sm:grid-cols-3">
                 <KpiCard icon={<Send size={17} />} label="Devis envoyés" value={`${successStats.sent}`} tone="blue" />
                 <KpiCard icon={<CheckCircle2 size={17} />} label="Acceptés" value={`${successStats.accepted}`} tone="green" detail={`${successStats.successRate}% réussite`} />
                 <KpiCard icon={<XCircle size={17} />} label="Refusés" value={`${successStats.refused}`} tone="red" />
@@ -117,7 +116,7 @@ export default async function DashboardPage() {
           <StatPanel title="Performance mois / année" icon={<BarChart3 size={18} />}>
             <div className="grid h-full gap-4 lg:grid-cols-[1fr_240px]">
               <ColumnChart months={monthStats} />
-              <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+              <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
                 <MiniMetric label="Année en cours" value={`${yearStats.total}`} detail="opportunités" />
                 <MiniMetric label="Signées" value={`${yearStats.accepted}`} detail={`${yearStats.acceptanceRate}% de réussite`} />
                 <MiniMetric label="Potentiel annuel" value={formatCurrency(yearStats.value)} detail="prix proposés" />
@@ -126,8 +125,8 @@ export default async function DashboardPage() {
           </StatPanel>
         </section>
 
-        <section className="grid min-h-0 gap-3 xl:grid-rows-[0.62fr_1fr]">
-          <div className="grid gap-3 sm:grid-cols-3">
+        <section className="grid min-h-0 gap-5 xl:grid-rows-[0.62fr_1fr]">
+          <div className="grid gap-5 sm:grid-cols-3">
             <KpiCard icon={<Users size={17} />} label="Clients" value={`${clientStats.uniqueClients}`} tone="aqua" detail={`${clientStats.activeClients} actifs`} />
             <KpiCard icon={<CheckCircle2 size={17} />} label="Clients gagnés" value={`${clientStats.acceptedClients}`} tone="green" />
             <KpiCard icon={<TrendingUp size={17} />} label="Portefeuille" value={formatCurrency(clientStats.totalValue)} tone="blue" />

@@ -1,76 +1,143 @@
 import { redirect } from 'next/navigation';
-import { CompanyAccountForm } from '@/components/CompanyAccountForm';
-import { SignOutButton } from '@/components/SignOutButton';
+import { EditableOpportunityQuote } from '@/components/EditableOpportunityQuote';
+import { statusLabels, type OpportunityStatus } from '@/lib/opportunities';
+import type { PricingInput } from '@/lib/pricing';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
-export default async function DashboardAccountPage() {
+type CalculationRow = {
+  id: string;
+  title: string | null;
+  client_name: string | null;
+  opportunity_status: OpportunityStatus | null;
+  input: PricingInput | null;
+  result: {
+    priceIncludingTax?: number;
+    priceExcludingTax?: number;
+    taxAmount?: number;
+    baseCost?: number;
+    netProfit?: number;
+  } | null;
+  recommended_price: number | null;
+  created_at: string;
+};
+
+type ProfileRow = {
+  account_type: 'personal' | 'business' | null;
+  first_name: string | null;
+  last_name: string | null;
+  full_name: string | null;
+  company_name: string | null;
+  siret: string | null;
+  company_address: string | null;
+  company_email: string | null;
+  company_phone: string | null;
+};
+
+export default async function DashboardOpportunityQuotePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ setup?: string }>;
+}) {
+  const { id } = await params;
+  const { setup } = await searchParams;
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
   } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
 
   if (!user || !supabase) {
-    redirect('/connexion?redirect=/dashboard/mon-compte');
+    redirect(`/connexion?redirect=/dashboard/opportunites/${id}/devis`);
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('account_type, first_name, last_name, full_name, company_name, siret, company_address, company_email, default_tax_percent, default_hourly_rate')
-    .eq('id', user.id)
-    .maybeSingle();
-  const accountType = profile?.account_type === 'business' ? 'business' : 'personal';
-  const nameParts = (profile?.full_name ?? '').split(' ').filter(Boolean);
-  const firstName = profile?.first_name ?? nameParts[0] ?? '';
-  const lastName = profile?.last_name ?? nameParts.slice(1).join(' ') ?? '';
+  const [{ data: calculation }, { data: profile }] = await Promise.all([
+    supabase
+      .from('pricing_calculations')
+      .select('id, title, client_name, opportunity_status, input, result, recommended_price, created_at')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('profiles')
+      .select('account_type, first_name, last_name, full_name, company_name, siret, company_address, company_email, company_phone')
+      .eq('id', user.id)
+      .maybeSingle(),
+  ]);
+
+  if (!calculation) {
+    redirect('/dashboard/opportunites');
+  }
+
+  const row = calculation as CalculationRow;
+  const profileRow = (profile ?? {}) as ProfileRow;
+  const input = row.input ?? buildFallbackInput();
+  const finalPrice = Number(row.recommended_price ?? row.result?.priceIncludingTax ?? 0);
+  const taxRate = Number(input.taxPercent ?? 0);
+  const subtotalExcludingTax = Number(row.result?.priceExcludingTax ?? computePriceExcludingTax(finalPrice, taxRate));
+  const taxAmount = Number(row.result?.taxAmount ?? Math.max(0, finalPrice - subtotalExcludingTax));
+  const holderName = getHolderName(profileRow, user.email ?? '');
+  const accountType = profileRow.account_type === 'business' ? 'business' : 'personal';
 
   return (
-    <div className="h-full overflow-auto p-3 md:p-4">
-      <header className="mb-3">
-        <h1 className="text-2xl font-bold tracking-tight">Mon compte</h1>
-      </header>
-      <div className="grid max-w-5xl gap-3 lg:grid-cols-[minmax(0,500px)_300px]">
-        <CompanyAccountForm
-          userId={user.id}
-          accountType={accountType}
-          initialValues={{
-            firstName,
-            lastName,
-            companyName: profile?.company_name ?? '',
-            siret: profile?.siret ?? '',
-            companyAddress: profile?.company_address ?? '',
-          }}
-        />
-
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <InfoRow label="Type de compte" value={accountType === 'business' ? 'Entreprise' : 'Personnel'} />
-          <InfoRow label="Titulaire" value={`${firstName} ${lastName}`.trim() || user.email || 'Non renseigné'} />
-          {accountType === 'business' ? (
-            <>
-              <InfoRow label="Entreprise" value={profile?.company_name || 'Non renseigné'} />
-              <InfoRow label="SIRET" value={profile?.siret || 'Non renseigné'} />
-            </>
-          ) : null}
-          <InfoRow label="Email" value={profile?.company_email || user.email || 'Non renseigné'} />
-          <InfoRow label="TVA par defaut" value={`${profile?.default_tax_percent ?? 20} %`} />
-          <InfoRow label="Taux horaire" value={formatEuro(Number(profile?.default_hourly_rate ?? 0))} />
-          <div className="mt-4">
-            <SignOutButton />
-          </div>
-        </section>
-      </div>
-    </div>
+    <EditableOpportunityQuote
+      initialOpen={setup === '1'}
+      quote={{
+        id: row.id,
+        title: row.title || 'Calcul sans titre',
+        clientName: row.client_name || 'Client non renseigné',
+        statusLabel: statusLabels[row.opportunity_status ?? 'to_price'],
+        input,
+        finalPrice,
+        subtotalExcludingTax,
+        taxAmount,
+        taxRate,
+        baseCost: Number(row.result?.baseCost ?? 0),
+        netProfit: Number(row.result?.netProfit ?? 0),
+        issuerLines: buildIssuerLines(profileRow, holderName, accountType),
+        holderName,
+        accountType,
+        createdAt: row.created_at,
+      }}
+    />
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-4 border-b border-slate-100 py-2.5 first:pt-0 last:border-b-0">
-      <span className="text-sm text-slate-500">{label}</span>
-      <span className="text-right text-sm font-bold text-slate-950">{value}</span>
-    </div>
-  );
+function buildIssuerLines(profile: ProfileRow, holderName: string, accountType: 'personal' | 'business') {
+  if (accountType === 'business') {
+    return [
+      profile.company_name || holderName || 'Entreprise',
+      profile.company_address || '',
+      profile.company_phone || '',
+      profile.company_email || '',
+      profile.siret ? `SIRET : ${profile.siret}` : '',
+    ].filter(Boolean);
+  }
+
+  return [holderName || 'Émetteur', profile.company_email || ''].filter(Boolean);
 }
 
-function formatEuro(amount: number) {
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
+function getHolderName(profile: ProfileRow, fallback: string) {
+  const nameParts = (profile.full_name ?? '').split(' ').filter(Boolean);
+  return `${profile.first_name ?? nameParts[0] ?? ''} ${profile.last_name ?? nameParts.slice(1).join(' ') ?? ''}`.trim() || profile.company_name || fallback;
+}
+
+function computePriceExcludingTax(finalPrice: number, taxPercent: number) {
+  const rate = Math.max(0, taxPercent) / 100;
+  return rate >= 1 ? finalPrice : finalPrice / (1 + rate);
+}
+
+function buildFallbackInput(): PricingInput {
+  return {
+    activityType: 'service',
+    billingMode: 'fixed',
+    productCost: 0,
+    workHours: 1,
+    hourlyRate: 0,
+    fixedFees: 0,
+    transactionFeesPercent: 0,
+    desiredMarginPercent: 0,
+    taxPercent: 20,
+    proposedPrice: 0,
+  };
 }

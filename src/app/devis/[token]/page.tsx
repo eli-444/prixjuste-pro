@@ -14,6 +14,7 @@ type Snapshot = {
   email?: string;
   phone?: string;
   siret?: string;
+  lines?: string[];
 };
 
 type QuoteItem = {
@@ -192,6 +193,7 @@ function AddressBlock({ title, data }: { title: string; data: Snapshot }) {
       <div className="mt-3 space-y-1 text-sm leading-6 text-slate-700">
         <p className="font-black text-slate-950">{data.name || 'Non renseigné'}</p>
         {data.address ? <p className="whitespace-pre-line">{data.address}</p> : null}
+        {Array.isArray(data.lines) ? data.lines.map((line) => (line ? <p key={line}>{line}</p> : null)) : null}
         {data.siret ? <p>SIRET {data.siret}</p> : null}
         {data.email ? <p>{data.email}</p> : null}
         {data.phone ? <p>{data.phone}</p> : null}

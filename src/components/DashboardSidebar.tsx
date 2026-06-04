@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BarChart3, ClipboardList, CreditCard, LayoutDashboard, Settings, UserCircle } from 'lucide-react';
+import { BarChart3, ClipboardList, CreditCard, FileText, LayoutDashboard, Settings, UserCircle } from 'lucide-react';
 
 const items = [
   { href: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
   { href: '/dashboard/opportunites', label: 'Opportunités', icon: BarChart3 },
+  { href: '/dashboard/devis', label: 'Devis', icon: FileText },
   { href: '/dashboard/suivi-demarches', label: 'Suivi démarches', icon: ClipboardList },
   { href: '/dashboard/facturation', label: 'Facturation', icon: CreditCard },
   { href: '/dashboard/mon-compte', label: 'Mon compte', icon: UserCircle },
