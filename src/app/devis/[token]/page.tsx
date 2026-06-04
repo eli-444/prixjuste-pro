@@ -1,301 +1,232 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
-import { Calculator, FileText, ShieldCheck, Sparkles } from 'lucide-react';
-import { SignOutButton } from '@/components/SignOutButton';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { getSupabaseConfig } from '@/lib/supabase/env';
+import { notFound } from 'next/navigation';
+import { Header } from '@/components/Header';
+import { PublicQuoteActions } from '@/components/PublicQuoteActions';
+import { createSupabaseAdminClient } from '@/lib/supabase/admin';
+import { getQuoteExpirationDate, isFinalQuoteStatus, isQuoteExpired } from '@/lib/quotes';
+import { formatCurrency } from '@/lib/utils';
 
-export default async function DashboardPage() {
-  const { isConfigured } = getSupabaseConfig();
-  const supabase = await createServerSupabaseClient();
+type QuoteStatus = 'draft' | 'generated' | 'sent' | 'accepted' | 'refused' | 'expired';
 
-  if (!isConfigured || !supabase) {
-    return (
-      <div className="grid h-full place-items-center p-5">
-        <section className="max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h1 className="text-2xl font-bold">Tableau de bord indisponible</h1>
-          <p className="mt-2 text-sm leading-6 text-slate-600">Merci de reessayer plus tard.</p>
-        </section>
-      </div>
-    );
+type Snapshot = {
+  name?: string;
+  address?: string;
+  email?: string;
+  phone?: string;
+  siret?: string;
+};
+
+type QuoteItem = {
+  description?: string;
+  quantity?: number;
+  unit?: string;
+  unitPriceExcludingTax?: number;
+  totalExcludingTax?: number;
+};
+
+type PublicQuote = {
+  public_token: string;
+  quote_number: string;
+  status: QuoteStatus | null;
+  company_snapshot: Snapshot | null;
+  client_snapshot: Snapshot | null;
+  items: QuoteItem[] | null;
+  subtotal_excluding_tax: number | null;
+  tax_percent: number | null;
+  tax_amount: number | null;
+  total_including_tax: number | null;
+  validity_days: number | null;
+  deposit_status: string | null;
+  generated_at: string | null;
+  created_at: string;
+};
+
+export default async function PublicQuotePage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
+  const supabase = createSupabaseAdminClient();
+
+  if (!supabase) {
+    notFound();
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data } = await supabase
+    .from('quotes')
+    .select('public_token, quote_number, status, company_snapshot, client_snapshot, items, subtotal_excluding_tax, tax_percent, tax_amount, total_including_tax, validity_days, deposit_status, generated_at, created_at')
+    .eq('public_token', token)
+    .maybeSingle();
 
-  if (!user) {
-    redirect('/connexion?redirect=/dashboard');
+  if (!data) {
+    notFound();
   }
 
-  const [
-    { data: profile },
-    { data: entitlement },
-    { count: calculationCount },
-    { data: purchases },
-    { count: quoteCount },
-    { data: recentQuotes },
-    { data: recentCalculations },
-  ] = await Promise.all([
-    supabase
-      .from('profiles')
-      .select('account_type, first_name, last_name, full_name, company_name, siret, company_address')
-      .eq('id', user.id)
-      .maybeSingle(),
-    supabase
-      .from('premium_entitlements')
-      .select('status, source, valid_until, updated_at')
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .maybeSingle(),
-    supabase.from('pricing_calculations').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-    supabase
-      .from('purchases')
-      .select('id, amount_total, currency, status, created_at, stripe_session_id')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(3),
-    supabase.from('quotes').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-    supabase
-      .from('quotes')
-      .select('id, public_token, quote_number, status, total_including_tax, created_at')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(4),
-    supabase
-      .from('pricing_calculations')
-      .select('id, title, client_name, opportunity_status, recommended_price, created_at')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(4),
-  ]);
-
-  const accountType = profile?.account_type === 'business' ? 'business' : 'personal';
-  const nameParts = (profile?.full_name ?? '').split(' ').filter(Boolean);
-  const holderName =
-    `${profile?.first_name ?? nameParts[0] ?? ''} ${profile?.last_name ?? nameParts.slice(1).join(' ') ?? ''}`.trim() ||
-    user.user_metadata?.full_name ||
-    user.email;
-  const displayName = accountType === 'business' ? profile?.company_name || holderName : holderName;
-  const isPremium = Boolean(entitlement);
-  const totalQuoteValue = (recentQuotes ?? []).reduce((total, quote) => total + Number(quote.total_including_tax ?? 0), 0);
+  const quote = data as PublicQuote;
+  const company = (quote.company_snapshot ?? {}) as Snapshot;
+  const client = (quote.client_snapshot ?? {}) as Snapshot;
+  const items = Array.isArray(quote.items) ? quote.items : [];
+  const status = quote.status ?? 'generated';
+  const expiresAt = getQuoteExpirationDate(quote.generated_at ?? quote.created_at, quote.validity_days);
+  const expired = !isFinalQuoteStatus(status) && isQuoteExpired(quote.generated_at ?? quote.created_at, quote.validity_days);
 
   return (
-    <div className="grid h-full gap-4 overflow-hidden p-4 xl:grid-cols-[1fr_300px]">
-      <div className="grid min-h-0 gap-4 grid-rows-[auto_auto_1fr]">
-        <header className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="truncate text-2xl font-bold tracking-tight">Tableau de bord</h1>
-            <p className="mt-1 truncate text-sm text-slate-500">{displayName}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <SignOutButton className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" />
-          </div>
-        </header>
-
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <MetricCard icon={<FileText />} label="Devis" value={`${quoteCount ?? 0}`} detail={`${formatEuro(totalQuoteValue)} recents`} tone="blue" />
-          <MetricCard icon={<Calculator />} label="Calculs" value={`${calculationCount ?? 0}`} detail="Sauvegardes" tone="aqua" />
-          <MetricCard icon={<ShieldCheck />} label="Abonnement" value={isPremium ? 'Actif' : 'Gratuit'} detail="9,90 EUR / mois" tone="green" />
-          <MetricCard icon={<Sparkles />} label="Acces" value={isPremium ? 'Illimite' : 'Essai'} detail={isPremium ? 'Premium' : '1 calcul complet'} tone="orange" />
-        </div>
-
-        <div className="grid min-h-0 gap-4 xl:grid-cols-[1fr_0.92fr]">
-          <Panel title="Derniers calculs" actionHref="/dashboard/opportunites" actionLabel="Voir tout">
-            {recentCalculations && recentCalculations.length > 0 ? (
-              <div className="divide-y divide-slate-200">
-                {recentCalculations.map((calculation) => (
-                  <Link key={calculation.id} href={`/opportunites/${calculation.id}`} className="grid grid-cols-[1fr_auto] gap-3 px-4 py-3 text-sm transition hover:bg-slate-50">
-                    <div className="min-w-0">
-                      <p className="truncate font-bold text-slate-950">{calculation.title || 'Calcul sans titre'}</p>
-                      <p className="mt-1 truncate text-xs text-slate-500">{calculation.client_name || 'Client non renseigne'}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-slate-950">{formatEuro(Number(calculation.recommended_price ?? 0))}</p>
-                      <p className="mt-1 text-xs text-slate-500">{calculation.opportunity_status ?? 'to_price'}</p>
-                    </div>
-                  </Link>
-                ))}
+    <>
+      <Header />
+      <main className="min-h-[calc(100vh-73px)] bg-[#f4f8fb] text-slate-950">
+        <section className="mx-auto grid max-w-6xl gap-6 px-4 py-8 lg:grid-cols-[1fr_380px]">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+            <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-brand-600">Devis client</p>
+                <h1 className="mt-3 text-3xl font-black tracking-tight md:text-4xl">Devis {quote.quote_number}</h1>
+                <p className="mt-3 text-sm leading-6 text-slate-600">
+                  Proposition envoyée par {company.name || 'l’entreprise émettrice'} à {client.name || 'son client'}.
+                </p>
               </div>
-            ) : (
-              <EmptyState text="Aucun calcul sauvegarde." />
-            )}
-          </Panel>
+              <StatusBadge status={expired ? 'expired' : status} />
+            </div>
 
-          <Panel title="Derniers devis" actionHref="/dashboard/devis" actionLabel="Voir tout">
-            {recentQuotes && recentQuotes.length > 0 ? (
-              <div className="divide-y divide-slate-200">
-                {recentQuotes.map((quote) => (
-                  <div key={quote.id} className="grid grid-cols-[1fr_auto] gap-3 px-4 py-3 text-sm">
-                    <div className="min-w-0">
-                      <p className="truncate font-bold text-slate-950">Devis {quote.quote_number}</p>
-                      <p className="mt-1 text-xs text-slate-500">{formatDate(quote.created_at)}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-slate-950">{formatEuro(Number(quote.total_including_tax ?? 0))}</p>
-                      <Link href={`/devis/${quote.public_token}`} target="_blank" className="mt-1 inline-flex text-xs font-bold text-brand-600">
-                        Ouvrir
-                      </Link>
-                    </div>
-                  </div>
-                ))}
+            <div className="mt-6 grid gap-4 md:grid-cols-3">
+              <InfoCard label="Émetteur" value={company.name || 'Non renseigné'} detail={company.email || company.phone || ''} />
+              <InfoCard label="Client" value={client.name || 'Non renseigné'} detail={client.email || ''} />
+              <InfoCard label="Validité" value={formatDate(expiresAt)} detail={`${quote.validity_days ?? 30} jours`} />
+            </div>
+          </div>
+
+          <aside className="space-y-4">
+            <PublicQuoteActions token={token} status={expired ? 'expired' : status} isExpired={expired} />
+            <Link
+              href="/"
+              className="inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-5 py-4 text-sm font-black text-white transition hover:bg-brand-700"
+            >
+              Découvrir Tarifly
+            </Link>
+          </aside>
+        </section>
+
+        <section id="devis" className="mx-auto max-w-6xl px-4 pb-10">
+          <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <header className="grid gap-6 border-b border-slate-200 p-6 md:grid-cols-2 md:p-8">
+              <AddressBlock title="Émetteur" data={company} />
+              <AddressBlock title="Client" data={client} />
+            </header>
+
+            <div className="overflow-x-auto p-4 md:p-8">
+              <table className="w-full min-w-[720px] border-collapse text-sm">
+                <thead>
+                  <tr className="bg-brand-600 text-white">
+                    <Th>Désignation</Th>
+                    <Th align="right">Prix unitaire HT</Th>
+                    <Th align="center">Unité</Th>
+                    <Th align="center">Quantité</Th>
+                    <Th align="right">Montant HT</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.length > 0 ? (
+                    items.map((item, index) => (
+                      <tr key={`${item.description}-${index}`} className="border-b border-slate-200">
+                        <Td>{item.description || 'Prestation'}</Td>
+                        <Td align="right">{formatCurrency(Number(item.unitPriceExcludingTax ?? 0))}</Td>
+                        <Td align="center">{item.unit || 'forfait'}</Td>
+                        <Td align="center">{formatNumber(Number(item.quantity ?? 1))}</Td>
+                        <Td align="right">{formatCurrency(Number(item.totalExcludingTax ?? 0))}</Td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <Td>Aucune ligne renseignée</Td>
+                      <Td align="right">{formatCurrency(0)}</Td>
+                      <Td align="center">-</Td>
+                      <Td align="center">-</Td>
+                      <Td align="right">{formatCurrency(0)}</Td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+
+              <div className="mt-6 ml-auto w-full max-w-sm overflow-hidden rounded-2xl border border-slate-200 text-sm">
+                <TotalRow label="Total HT" value={formatCurrency(Number(quote.subtotal_excluding_tax ?? 0))} />
+                <TotalRow label={`TVA ${formatNumber(Number(quote.tax_percent ?? 0))}%`} value={formatCurrency(Number(quote.tax_amount ?? 0))} />
+                <TotalRow label="Total TTC" value={formatCurrency(Number(quote.total_including_tax ?? 0))} strong />
               </div>
-            ) : (
-              <EmptyState text="Aucun devis généré." />
-            )}
-          </Panel>
-        </div>
-      </div>
-
-      <aside className="min-h-0 space-y-4">
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="font-bold">Compte</h2>
-          <div className="mt-3 divide-y divide-slate-100">
-            <InfoRow label="Type" value={accountType === 'business' ? 'Entreprise' : 'Personnel'} />
-            {accountType === 'business' ? (
-              <>
-                <InfoRow label="Entreprise" value={profile?.company_name || 'Non renseigné'} />
-                <InfoRow label="SIRET" value={profile?.siret || 'Non renseigné'} />
-              </>
-            ) : (
-              <InfoRow label="Titulaire" value={holderName || 'Non renseigné'} />
-            )}
-          </div>
-          <Link href="/dashboard/mon-compte" className="mt-4 inline-flex w-full justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
-            Modifier le compte
-          </Link>
+            </div>
+          </article>
         </section>
-
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="font-bold">Facturation</h2>
-          <div className="mt-3 divide-y divide-slate-100">
-            <InfoRow label="Abonnement" value={isPremium ? 'Actif' : 'Inactif'} />
-            <InfoRow label="Dernier paiement" value={purchases?.[0] ? formatAmount(purchases[0].amount_total, purchases[0].currency) : 'Aucun'} />
-            <InfoRow label="Statut" value={purchases?.[0]?.status ?? 'Aucun'} />
-          </div>
-          <Link href="/dashboard/facturation" className="mt-4 inline-flex w-full justify-center rounded-xl bg-brand-900 px-4 py-3 text-sm font-bold text-white">
-            Voir la facturation
-          </Link>
-        </section>
-
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="font-bold">Paiements recents</h2>
-          <div className="mt-3 space-y-2">
-            {purchases && purchases.length > 0 ? (
-              purchases.map((purchase) => (
-                <div key={purchase.id} className="rounded-xl border border-slate-200 p-3 text-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="font-semibold text-slate-950">{formatAmount(purchase.amount_total, purchase.currency)}</span>
-                    <PaymentStatus status={purchase.status} />
-                  </div>
-                  <p className="mt-1 text-xs text-slate-500">{formatDate(purchase.created_at)}</p>
-                </div>
-              ))
-            ) : (
-              <EmptyState text="Aucun paiement rattache." compact />
-            )}
-          </div>
-        </section>
-      </aside>
-    </div>
+      </main>
+    </>
   );
 }
 
-function MetricCard({
-  icon,
-  label,
-  value,
-  detail,
-  tone,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  detail: string;
-  tone: 'blue' | 'aqua' | 'green' | 'orange';
-}) {
-  const tones = {
-    blue: 'bg-brand-50 text-brand-600',
-    aqua: 'bg-aqua-50 text-aqua-600',
-    green: 'bg-emerald-50 text-emerald-600',
-    orange: 'bg-orange-50 text-orange-500',
+function StatusBadge({ status }: { status: QuoteStatus }) {
+  const labels: Record<QuoteStatus, string> = {
+    draft: 'Brouillon',
+    generated: 'En attente',
+    sent: 'Envoyé',
+    accepted: 'Accepté',
+    refused: 'Refusé',
+    expired: 'Expiré',
   };
+  const tone =
+    status === 'accepted'
+      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+      : status === 'refused' || status === 'expired'
+        ? 'border-red-200 bg-red-50 text-red-700'
+        : 'border-amber-200 bg-amber-50 text-amber-700';
 
+  return <span className={`inline-flex rounded-full border px-4 py-2 text-sm font-black ${tone}`}>{labels[status]}</span>;
+}
+
+function InfoCard({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <span className={`grid h-10 w-10 place-items-center rounded-xl ${tones[tone]}`}>{icon}</span>
-        <span className="text-xs font-bold uppercase tracking-[0.14em] text-slate-950">{label}</span>
-      </div>
-      <p className="mt-3 text-2xl font-bold tracking-tight text-slate-950">{value}</p>
-      <p className="mt-1 text-xs text-slate-500">{detail}</p>
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">{label}</p>
+      <p className="mt-2 font-black text-slate-950">{value}</p>
+      {detail ? <p className="mt-1 truncate text-sm text-slate-500">{detail}</p> : null}
     </div>
   );
 }
 
-function Panel({ title, actionHref, actionLabel, children }: { title: string; actionHref: string; actionLabel: string; children: React.ReactNode }) {
+function AddressBlock({ title, data }: { title: string; data: Snapshot }) {
   return (
-    <section className="min-h-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-        <h2 className="font-bold">{title}</h2>
-        <Link href={actionHref} className="text-sm font-bold text-brand-600 hover:text-aqua-600">
-          {actionLabel}
-        </Link>
+    <section className="rounded-2xl bg-slate-50 p-5">
+      <h2 className="text-sm font-black uppercase tracking-[0.14em] text-brand-600">{title}</h2>
+      <div className="mt-3 space-y-1 text-sm leading-6 text-slate-700">
+        <p className="font-black text-slate-950">{data.name || 'Non renseigné'}</p>
+        {data.address ? <p className="whitespace-pre-line">{data.address}</p> : null}
+        {data.siret ? <p>SIRET {data.siret}</p> : null}
+        {data.email ? <p>{data.email}</p> : null}
+        {data.phone ? <p>{data.phone}</p> : null}
       </div>
-      {children}
     </section>
   );
 }
 
-function EmptyState({ text, compact }: { text: string; compact?: boolean }) {
-  return <div className={`${compact ? 'py-2' : 'p-4'} text-sm leading-6 text-slate-500`}>{text}</div>;
+function Th({ children, align = 'left' }: { children: React.ReactNode; align?: 'left' | 'center' | 'right' }) {
+  return <th className={`px-4 py-3 text-xs font-black uppercase tracking-[0.12em] ${alignClasses[align]}`}>{children}</th>;
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+function Td({ children, align = 'left' }: { children: React.ReactNode; align?: 'left' | 'center' | 'right' }) {
+  return <td className={`px-4 py-4 text-slate-700 ${alignClasses[align]}`}>{children}</td>;
+}
+
+const alignClasses = {
+  left: 'text-left',
+  center: 'text-center',
+  right: 'text-right',
+};
+
+function TotalRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-3">
-      <span className="text-sm text-slate-500">{label}</span>
-      <span className="text-right text-sm font-bold text-slate-950">{value}</span>
+    <div className={`flex items-center justify-between gap-4 px-4 py-3 ${strong ? 'bg-brand-600 text-white' : 'border-b border-slate-200 bg-white text-slate-700'}`}>
+      <span className="font-bold">{label}</span>
+      <span className="font-black">{value}</span>
     </div>
   );
 }
 
-function PaymentStatus({ status }: { status: string }) {
-  const isPaid = status === 'paid' || status === 'accepted';
-
-  return (
-    <span
-      className={`inline-flex justify-center rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-[0.12em] ${
-        isPaid ? 'bg-aqua-50 text-aqua-600' : 'bg-slate-100 text-slate-600'
-      }`}
-    >
-      {status}
-    </span>
-  );
+function formatDate(value: Date) {
+  return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(value);
 }
 
-function formatEuro(amount: number) {
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(amount);
-}
-
-function formatAmount(amount: number | null, currency: string | null) {
-  if (typeof amount !== 'number') {
-    return 'Montant indisponible';
-  }
-
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: (currency ?? 'eur').toUpperCase(),
-  }).format(amount / 100);
-}
-
-function formatDate(value: string | null) {
-  if (!value) {
-    return 'Date indisponible';
-  }
-
-  return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(new Date(value));
+function formatNumber(value: number) {
+  return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(value);
 }

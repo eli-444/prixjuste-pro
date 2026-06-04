@@ -11,14 +11,7 @@ export async function POST(
     name?: string;
     email?: string;
     message?: string;
-    signature?: string;
   };
-  const signature = payload.signature?.trim();
-
-  if (!signature) {
-    return NextResponse.json({ error: 'Signature électronique obligatoire.' }, { status: 400 });
-  }
-
   const supabase = createSupabaseAdminClient();
 
   if (!supabase) {
@@ -40,11 +33,11 @@ export async function POST(
   }
 
   if (quote.status === 'accepted') {
-    return NextResponse.json({ accepted: true });
+    return NextResponse.json({ error: 'Ce devis a déjà été accepté.' }, { status: 409 });
   }
 
   if (quote.status === 'refused') {
-    return NextResponse.json({ error: 'Ce devis a déjà été refusé.' }, { status: 409 });
+    return NextResponse.json({ refused: true });
   }
 
   if (quote.status === 'expired' || isQuoteExpired(quote.generated_at ?? quote.created_at, quote.validity_days)) {
@@ -55,18 +48,16 @@ export async function POST(
     return NextResponse.json({ error: 'Ce devis a expiré.' }, { status: 410 });
   }
 
-  const acceptedAt = new Date().toISOString();
+  const refusedAt = new Date().toISOString();
   const { error } = await supabase
     .from('quotes')
     .update({
-      status: 'accepted',
-      accepted_at: acceptedAt,
+      status: 'refused',
       client_acceptance: {
         name: payload.name ?? '',
         email: payload.email ?? '',
-        signature,
         message: payload.message ?? '',
-        accepted_at: acceptedAt,
+        refused_at: refusedAt,
         user_agent: request.headers.get('user-agent') ?? '',
       },
     })
@@ -80,9 +71,9 @@ export async function POST(
     await supabase
       .from('pricing_calculations')
       .update({
-        opportunity_status: 'won',
-        quote_validated: true,
-        quote_validated_at: acceptedAt,
+        opportunity_status: 'lost',
+        quote_validated: false,
+        quote_validated_at: null,
       })
       .eq('id', quote.calculation_id)
       .eq('user_id', quote.user_id);
@@ -92,10 +83,10 @@ export async function POST(
     user_id: quote.user_id,
     quote_id: quote.id,
     calculation_id: quote.calculation_id,
-    type: 'quote_accepted',
-    title: 'Devis accepté',
-    message: `Le devis ${quote.quote_number} a été signé et accepté par le client.`,
+    type: 'quote_refused',
+    title: 'Devis refusé',
+    message: `Le devis ${quote.quote_number} a été refusé par le client.`,
   });
 
-  return NextResponse.json({ accepted: true });
+  return NextResponse.json({ refused: true });
 }

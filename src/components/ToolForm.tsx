@@ -902,6 +902,19 @@ export function ToolForm({
     setQuoteModalOpen(false);
   }
 
+  async function copyQuoteShareUrl() {
+    if (!quoteShareUrl) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(quoteShareUrl);
+      showToast('Lien client copié.', 'success');
+    } catch {
+      showToast('Impossible de copier le lien automatiquement.', 'error');
+    }
+  }
+
   return (
     <>
     <section className="mx-auto max-w-4xl">
@@ -1172,6 +1185,29 @@ export function ToolForm({
         onClose={() => setQuoteModalOpen(false)}
         onGenerate={generateQuotePdf}
       />
+    ) : null}
+    {quoteShareUrl ? (
+      <div className="fixed bottom-4 right-4 z-[70] w-[min(420px,calc(100vw-32px))] rounded-2xl border border-brand-100 bg-white p-4 shadow-2xl">
+        <p className="text-sm font-black text-slate-950">Lien client généré</p>
+        <p className="mt-1 truncate text-xs text-slate-500">{quoteShareUrl}</p>
+        <div className="mt-3 flex gap-2">
+          <a
+            href={quoteShareUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex flex-1 justify-center rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+          >
+            Ouvrir
+          </a>
+          <button
+            type="button"
+            onClick={copyQuoteShareUrl}
+            className="inline-flex flex-1 justify-center rounded-xl bg-brand-600 px-3 py-2 text-sm font-bold text-white transition hover:bg-brand-700"
+          >
+            Copier
+          </button>
+        </div>
+      </div>
     ) : null}
     </>
   );
