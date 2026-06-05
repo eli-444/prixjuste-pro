@@ -29,6 +29,18 @@ add column if not exists company_address text,
 add column if not exists company_email text,
 add column if not exists company_phone text;
 
+create table if not exists public.clients (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text not null,
+  address text,
+  email text,
+  phone text,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.professions (
   slug text primary key,
   label text not null,
@@ -273,6 +285,11 @@ create trigger set_professions_updated_at
 before update on public.professions
 for each row execute function public.set_updated_at();
 
+drop trigger if exists set_clients_updated_at on public.clients;
+create trigger set_clients_updated_at
+before update on public.clients
+for each row execute function public.set_updated_at();
+
 drop trigger if exists set_market_rates_updated_at on public.market_rates;
 create trigger set_market_rates_updated_at
 before update on public.market_rates
@@ -336,6 +353,7 @@ after insert on auth.users
 for each row execute function public.handle_new_user();
 
 alter table public.profiles enable row level security;
+alter table public.clients enable row level security;
 alter table public.professions enable row level security;
 alter table public.market_rates enable row level security;
 alter table public.market_observations enable row level security;
@@ -358,6 +376,27 @@ create policy "profiles_update_own"
 on public.profiles for update
 using (auth.uid() = id)
 with check (auth.uid() = id);
+
+drop policy if exists "clients_select_own" on public.clients;
+create policy "clients_select_own"
+on public.clients for select
+using (auth.uid() = user_id);
+
+drop policy if exists "clients_insert_own" on public.clients;
+create policy "clients_insert_own"
+on public.clients for insert
+with check (auth.uid() = user_id);
+
+drop policy if exists "clients_update_own" on public.clients;
+create policy "clients_update_own"
+on public.clients for update
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+drop policy if exists "clients_delete_own" on public.clients;
+create policy "clients_delete_own"
+on public.clients for delete
+using (auth.uid() = user_id);
 
 drop policy if exists "professions_select_public" on public.professions;
 create policy "professions_select_public"
@@ -461,6 +500,9 @@ on public.pricing_calculations (user_id, created_at desc);
 
 create index if not exists pricing_calculations_user_status_idx
 on public.pricing_calculations (user_id, opportunity_status, created_at desc);
+
+create index if not exists clients_user_created_idx
+on public.clients (user_id, created_at desc);
 
 create index if not exists service_templates_user_created_idx
 on public.service_templates (user_id, created_at desc);

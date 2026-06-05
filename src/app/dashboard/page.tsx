@@ -1,4 +1,6 @@
 import { BarChart3, CheckCircle2, Send, TrendingUp, Users, XCircle } from 'lucide-react';
+import { revalidatePath } from 'next/cache';
+import { ClientPortfolioPanel, type ClientFormState, type ClientPortfolioItem } from '@/components/ClientPortfolioPanel';
 import { SignOutButton } from '@/components/SignOutButton';
 import { getSupabaseConfig } from '@/lib/supabase/env';
 import { formatCurrency } from '@/lib/utils';
@@ -23,7 +25,16 @@ type CalculationRow = {
   created_at: string;
 };
 
-type ClientPortfolioRow = {
+type ClientRow = {
+  id: string;
+  name: string;
+  address: string | null;
+  email: string | null;
+  phone: string | null;
+  created_at: string;
+};
+
+type ClientPortfolioRow = ClientPortfolioItem & {
   name: string;
   total: number;
   count: number;
@@ -55,7 +66,7 @@ export default async function DashboardPage() {
     );
   }
 
-  const [{ data: quotesData }, { data: calculationsData }] = await Promise.all([
+  const [{ data: quotesData }, { data: calculationsData }, { data: clientsData }] = await Promise.all([
     supabase
       .from('quotes')
       .select('id, calculation_id, status, total_including_tax, created_at')
@@ -68,13 +79,20 @@ export default async function DashboardPage() {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(500),
+    supabase
+      .from('clients')
+      .select('id, name, address, email, phone, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(500),
   ]);
 
   const quotes = (quotesData ?? []) as QuoteRow[];
   const calculations = (calculationsData ?? []) as CalculationRow[];
+  const clients = (clientsData ?? []) as ClientRow[];
 
   const successStats = buildSuccessStats(quotes, calculations);
-  const clientStats = buildClientStats(calculations);
+  const clientStats = buildClientStats(calculations, clients);
   const monthStats = buildMonthStats(calculations);
   const yearStats = buildYearStats(calculations);
 
@@ -124,12 +142,43 @@ export default async function DashboardPage() {
           </div>
 
           <StatPanel title="Portefeuille client" icon={<Users size={18} />}>
-            <ClientPortfolioChart clients={clientStats.topClients} totalValue={clientStats.totalValue} />
+            <ClientPortfolioPanel clients={clientStats.topClients} totalValue={clientStats.totalValue} action={createClientAction} />
           </StatPanel>
         </section>
       </div>
     </div>
   );
+}
+
+async function createClientAction(_state: ClientFormState, formData: FormData): Promise<ClientFormState> {
+  'use server';
+
+  const { supabase, user } = await requireActivePremium({ loginRedirect: '/dashboard' });
+  const name = String(formData.get('name') ?? '').trim();
+  const address = String(formData.get('address') ?? '').trim();
+  const email = String(formData.get('email') ?? '').trim();
+  const phone = String(formData.get('phone') ?? '').trim();
+  const notes = String(formData.get('notes') ?? '').trim();
+
+  if (!name) {
+    return { status: 'error', message: 'Renseignez au moins le nom du client.' };
+  }
+
+  const { error } = await supabase.from('clients').insert({
+    user_id: user.id,
+    name,
+    address: address || null,
+    email: email || null,
+    phone: phone || null,
+    notes: notes || null,
+  });
+
+  if (error) {
+    return { status: 'error', message: "Impossible d'enregistrer ce client pour le moment." };
+  }
+
+  revalidatePath('/dashboard');
+  return { status: 'success', message: 'Client enregistré.' };
 }
 
 function buildSuccessStats(quotes: QuoteRow[], calculations: CalculationRow[]) {
@@ -145,8 +194,27 @@ function buildSuccessStats(quotes: QuoteRow[], calculations: CalculationRow[]) {
   return { sent, accepted, refused, pending, successRate };
 }
 
-function buildClientStats(calculations: CalculationRow[]) {
+function buildClientStats(calculations: CalculationRow[], savedClients: ClientRow[]) {
   const portfolio = new Map<string, ClientPortfolioRow>();
+
+  for (const client of savedClients) {
+    const name = client.name.trim();
+
+    if (!name) {
+      continue;
+    }
+
+    portfolio.set(name, {
+      id: client.id,
+      name,
+      address: client.address,
+      email: client.email,
+      phone: client.phone,
+      total: 0,
+      count: 0,
+      accepted: 0,
+    });
+  }
 
   for (const calculation of calculations) {
     const clientName = (calculation.client_name ?? '').trim();
@@ -162,7 +230,17 @@ function buildClientStats(calculations: CalculationRow[]) {
     portfolio.set(clientName, current);
   }
 
-  const clients = [...portfolio.values()].sort((a, b) => b.total - a.total);
+  const clients = [...portfolio.values()].sort((a, b) => {
+    if (a.id && !b.id) {
+      return -1;
+    }
+
+    if (!a.id && b.id) {
+      return 1;
+    }
+
+    return b.total - a.total;
+  });
   const activeClients = new Set(calculations.filter((calculation) => calculation.client_name && !['won', 'lost'].includes(calculation.opportunity_status ?? '')).map((calculation) => calculation.client_name)).size;
   const acceptedClients = new Set(calculations.filter((calculation) => calculation.client_name && calculation.opportunity_status === 'won').map((calculation) => calculation.client_name)).size;
   const totalValue = clients.reduce((total, client) => total + client.total, 0);
@@ -172,7 +250,7 @@ function buildClientStats(calculations: CalculationRow[]) {
     activeClients,
     acceptedClients,
     totalValue,
-    topClients: clients.slice(0, 5),
+    topClients: clients.slice(0, 8),
   };
 }
 

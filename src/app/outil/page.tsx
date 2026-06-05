@@ -9,13 +9,21 @@ import { requireActivePremium } from '@/lib/premium/server';
 export default async function ToolPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ calculation?: string }>;
+  searchParams?: Promise<{ calculation?: string; client?: string }>;
 }) {
   const params = await searchParams;
   const calculationId = params?.calculation;
+  const clientId = params?.client;
   let initialInput: PricingInput | undefined;
   let initialMeta: OpportunityMeta | undefined;
   let initialMarket: MarketBenchmarkInput | undefined;
+  let initialClient:
+    | {
+        name: string;
+        address: string;
+        email: string;
+      }
+    | undefined;
   let professions: Profession[] = [];
   const { supabase, user } = await requireActivePremium({ loginRedirect: '/outil' });
 
@@ -51,6 +59,27 @@ export default async function ToolPage({
         professionSlug: profile.profession_slug ?? '',
         region: profile.region ?? '',
         city: profile.city ?? '',
+      };
+    }
+  }
+
+  if (clientId && !calculationId && supabase && user) {
+    const { data: client } = await supabase
+      .from('clients')
+      .select('name, address, email')
+      .eq('id', clientId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (client) {
+      initialClient = {
+        name: client.name ?? '',
+        address: client.address ?? '',
+        email: client.email ?? '',
+      };
+      initialMeta = {
+        ...defaultOpportunityMeta,
+        clientName: client.name ?? '',
       };
     }
   }
@@ -100,6 +129,7 @@ export default async function ToolPage({
             initialInput={initialInput}
             initialMeta={initialMeta}
             initialMarket={initialMarket}
+            initialClient={initialClient}
             professions={professions}
           />
         </div>

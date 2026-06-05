@@ -57,6 +57,12 @@ type QuoteItemForm = {
   taxPercent: string;
 };
 
+type InitialClient = {
+  name: string;
+  address: string;
+  email: string;
+};
+
 type ServiceTemplate = {
   id: string;
   name: string;
@@ -113,6 +119,7 @@ export function ToolForm({
   initialInput = defaultInput,
   initialMeta = defaultOpportunityMeta,
   initialMarket = defaultMarketBenchmark,
+  initialClient,
   professions = [],
   marketRates = [],
   marketRateStats = [],
@@ -121,6 +128,7 @@ export function ToolForm({
   initialInput?: PricingInput;
   initialMeta?: OpportunityMeta;
   initialMarket?: MarketBenchmarkInput;
+  initialClient?: InitialClient;
   professions?: Profession[];
   marketRates?: MarketRate[];
   marketRateStats?: MarketRateStat[];
@@ -161,9 +169,9 @@ export function ToolForm({
     companyEmail: '',
     companyPhone: '',
     quoteNumber: getDefaultQuoteNumber(),
-    clientName: normalizedInitialInput ? initialMeta.clientName : '',
-    clientAddress: '',
-    clientEmail: '',
+    clientName: initialClient?.name || initialMeta.clientName || '',
+    clientAddress: initialClient?.address || '',
+    clientEmail: initialClient?.email || '',
     description: initialMeta.title || 'Prestation',
     validityDays: '30',
   }));
@@ -753,6 +761,8 @@ export function ToolForm({
     setQuoteForm((current) => ({
       ...current,
       clientName: current.clientName || meta.clientName,
+      clientAddress: current.clientAddress || initialClient?.address || '',
+      clientEmail: current.clientEmail || initialClient?.email || '',
       description: current.description || meta.title || 'Prestation',
     }));
     setQuoteItems((current) =>
