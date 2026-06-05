@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { CookiePreferencesButton } from '@/components/CookiePreferencesButton';
 import { Footer } from '@/components/Footer';
 import { Header } from '@/components/Header';
 
@@ -14,7 +15,8 @@ type PolicyContent =
   | { type: 'paragraph'; text: string }
   | { type: 'list'; items: string[] }
   | { type: 'subtitle'; text: string }
-  | { type: 'email'; email: string };
+  | { type: 'email'; label: string; email: string }
+  | { type: 'cookieButton' };
 
 type PolicySection = {
   title: string;
@@ -27,11 +29,15 @@ const sections: PolicySection[] = [
     content: [
       {
         type: 'paragraph',
-        text: 'La présente politique de confidentialité a pour objet d’informer les utilisateurs de Tarifly sur la manière dont leurs données personnelles sont collectées, utilisées, conservées et protégées dans le cadre de l’utilisation du service.',
+        text: 'Cette politique explique comment Tarifly collecte, utilise, conserve et protège les données personnelles de ses utilisateurs.',
       },
       {
         type: 'paragraph',
-        text: 'Tarifly est une application SaaS éditée par Aurora Web & Security, destinée aux indépendants, freelances, artisans, prestataires de services et petites entreprises.',
+        text: 'Elle explique aussi l’utilisation des cookies et technologies similaires dans l’application.',
+      },
+      {
+        type: 'paragraph',
+        text: 'Tarifly est une application SaaS destinée aux indépendants, freelances, artisans, prestataires de services et petites entreprises.',
       },
     ],
   },
@@ -39,15 +45,17 @@ const sections: PolicySection[] = [
     title: '2. Responsable du traitement',
     content: [
       { type: 'paragraph', text: 'Le responsable du traitement des données personnelles est :' },
+      { type: 'paragraph', text: 'Aurora Web & Security, exerçant également sous le nom commercial Aurora Web & Sec.' },
+      { type: 'paragraph', text: 'Forme juridique : entrepreneur individuel / micro-entrepreneur.' },
+      { type: 'paragraph', text: 'Siège social : 82 rue Anatole France, 69100 Villeurbanne, France.' },
+      { type: 'paragraph', text: 'SIREN : 991 249 228.' },
+      { type: 'paragraph', text: 'SIRET : 991 249 228 00016.' },
+      { type: 'email', label: 'Contact', email: 'aurorawebsec@gmail.com' },
       {
         type: 'paragraph',
-        text: 'Aurora Web & Security, exerçant également sous le nom commercial Aurora Web & Sec',
+        text: 'Aucun délégué à la protection des données n’a été désigné. Pour toute demande liée au RGPD ou aux données personnelles, vous pouvez utiliser le contact ci-dessous.',
       },
-      { type: 'paragraph', text: 'Forme juridique : entrepreneur individuel / micro-entrepreneur' },
-      { type: 'paragraph', text: 'Siège social : [adresse complète à renseigner], 69100 Villeurbanne, France' },
-      { type: 'paragraph', text: 'SIREN : 991 249 228' },
-      { type: 'paragraph', text: 'SIRET : 991 249 228 00016' },
-      { type: 'email', email: 'aurorawebsec@gmail.com' },
+      { type: 'email', label: 'Contact RGPD', email: 'aurorawebsec@gmail.com' },
     ],
   },
   {
@@ -55,74 +63,71 @@ const sections: PolicySection[] = [
     content: [
       {
         type: 'paragraph',
-        text: 'Dans le cadre de l’utilisation de Tarifly, l’éditeur peut collecter et traiter les catégories de données suivantes :',
+        text: 'Tarifly collecte uniquement les données nécessaires à son fonctionnement, à la sécurité du service, à la facturation et à l’amélioration de l’expérience utilisateur.',
       },
       { type: 'subtitle', text: 'Données de compte' },
       {
         type: 'list',
         items: [
           'adresse e-mail ;',
-          'identifiants de connexion ;',
           'données nécessaires à l’authentification ;',
           'date de création du compte ;',
           'informations de connexion et de sécurité.',
         ],
       },
-      { type: 'subtitle', text: 'Données de profil utilisateur' },
+      { type: 'subtitle', text: 'Données de profil et d’entreprise' },
       {
         type: 'list',
         items: [
-          'nom ou raison sociale ;',
-          'informations d’entreprise ;',
-          'adresse professionnelle ;',
+          'nom, prénom ou raison sociale ;',
+          'type de compte ;',
+          'nom d’entreprise ;',
           'SIRET ;',
-          'coordonnées ;',
-          'logo éventuellement ajouté par l’utilisateur ;',
-          'préférences liées à l’utilisation du service.',
+          'adresse professionnelle ;',
+          'adresse e-mail et téléphone professionnels ;',
+          'préférences utilisateur ;',
+          'logo éventuellement ajouté pour les devis.',
         ],
       },
-      { type: 'subtitle', text: 'Données commerciales renseignées par l’utilisateur' },
+      { type: 'subtitle', text: 'Données clients, prospects et devis' },
       {
         type: 'list',
         items: [
+          'clients enregistrés dans le portefeuille ;',
+          'nom, adresse, e-mail et téléphone du client renseigné ;',
           'opportunités commerciales ;',
-          'informations client renseignées dans les opportunités ou devis ;',
-          'statut, budget, échéance et notes ;',
-          'lignes de prestation ;',
-          'conditions de paiement ;',
-          'dates, dates limites et numéros de devis.',
+          'statuts des démarches et devis ;',
+          'numéros de devis, dates, dates limites, conditions et notes ;',
+          'lignes de prestations, prix, quantités, taxes et conditions de paiement ;',
+          'signature et réponse du client lorsque le lien public de devis est utilisé.',
         ],
       },
-      { type: 'subtitle', text: 'Données de calcul' },
+      { type: 'subtitle', text: 'Données de calcul et de marché' },
       {
         type: 'list',
         items: [
-          'achats et matières ;',
+          'coûts d’achat ou de matière ;',
           'temps prévu ;',
-          'tarif horaire ;',
-          'frais fixes ;',
-          'frais de paiement ;',
+          'tarif horaire, journalier ou forfaitaire ;',
+          'frais fixes et frais de paiement ;',
           'TVA ;',
-          'prix de vente calculé ;',
-          'marge ;',
-          'niveau de rentabilité ;',
-          'paramètres de comparaison de marché, notamment métier, région, ville et unité de facturation.',
+          'prix calculé, marge et niveau de rentabilité ;',
+          'métier, région, ville et unité de facturation utilisés pour la comparaison marché.',
         ],
       },
-      { type: 'subtitle', text: 'Données d’abonnement et de facturation' },
+      { type: 'subtitle', text: 'Données d’abonnement et de paiement' },
       {
         type: 'list',
         items: [
           'statut de l’abonnement ;',
-          'historique ou informations liées aux paiements ;',
+          'historique de paiement ou de facturation disponible ;',
           'identifiants de transaction ;',
-          'informations nécessaires à la facturation ;',
-          'données traitées via Stripe.',
+          'données nécessaires au lien avec Stripe.',
         ],
       },
       {
         type: 'paragraph',
-        text: 'L’éditeur ne stocke pas directement les données complètes de carte bancaire. Ces données sont traitées par Stripe.',
+        text: 'Tarifly ne stocke pas les données complètes de carte bancaire. Ces données sont traitées par Stripe.',
       },
       { type: 'subtitle', text: 'Données techniques' },
       {
@@ -132,45 +137,44 @@ const sections: PolicySection[] = [
           'type de navigateur ;',
           'appareil utilisé ;',
           'logs techniques ;',
-          'données nécessaires à la sécurité, au diagnostic, à la prévention des abus et au bon fonctionnement de l’application.',
+          'données utiles à la sécurité, au diagnostic, à la prévention des abus et au bon fonctionnement de l’application.',
         ],
       },
     ],
   },
   {
-    title: '4. Finalités des traitements',
+    title: '4. Pourquoi ces données sont utilisées',
     content: [
-      { type: 'paragraph', text: 'Les données personnelles sont traitées pour les finalités suivantes :' },
+      { type: 'paragraph', text: 'Les données sont utilisées pour :' },
       {
         type: 'list',
         items: [
-          'création et gestion du compte utilisateur ;',
-          'authentification et sécurisation de l’accès ;',
-          'fourniture des fonctionnalités de Tarifly ;',
-          'sauvegarde des opportunités, calculs et devis ;',
-          'génération de PDF et exports CSV ;',
-          'gestion de l’abonnement Premium ;',
-          'traitement des paiements via Stripe ;',
-          'gestion de la facturation ;',
-          'support utilisateur ;',
-          'amélioration, maintenance et sécurisation du service ;',
-          'prévention des fraudes, abus et incidents de sécurité ;',
-          'respect des obligations légales, fiscales et comptables.',
+          'créer et gérer le compte utilisateur ;',
+          'authentifier l’utilisateur et sécuriser l’accès ;',
+          'fournir les fonctionnalités de Tarifly ;',
+          'sauvegarder les clients, opportunités, calculs et devis ;',
+          'générer des PDF, exports CSV et liens de devis ;',
+          'gérer les signatures et réponses des clients aux devis ;',
+          'gérer l’abonnement Premium ;',
+          'traiter les paiements via Stripe ;',
+          'assurer le support utilisateur ;',
+          'maintenir, améliorer et sécuriser le service ;',
+          'respecter les obligations légales, fiscales et comptables.',
         ],
       },
     ],
   },
   {
-    title: '5. Bases légales des traitements',
+    title: '5. Bases légales',
     content: [
-      { type: 'paragraph', text: 'Selon les cas, les traitements reposent sur les bases légales suivantes :' },
+      { type: 'paragraph', text: 'Selon les cas, les traitements reposent sur :' },
       {
         type: 'list',
         items: [
-          'exécution du contrat : pour fournir le service, gérer le compte, permettre l’accès aux fonctionnalités et gérer l’abonnement ;',
-          'obligation légale : pour respecter les obligations comptables, fiscales ou administratives ;',
-          'intérêt légitime : pour sécuriser le service, prévenir les abus, améliorer l’application et assurer le support ;',
-          'consentement : pour les cookies ou traceurs non strictement nécessaires, ainsi que pour certaines communications facultatives si elles sont mises en place.',
+          'l’exécution du contrat, pour fournir le service et gérer l’abonnement ;',
+          'l’obligation légale, pour les obligations fiscales, comptables ou administratives ;',
+          'l’intérêt légitime, pour sécuriser le service, prévenir les abus, maintenir l’application et assurer le support ;',
+          'le consentement, pour les cookies ou traceurs non strictement nécessaires.',
         ],
       },
     ],
@@ -180,17 +184,16 @@ const sections: PolicySection[] = [
     content: [
       {
         type: 'paragraph',
-        text: 'Les données peuvent être accessibles, dans la limite de leurs missions respectives, aux destinataires suivants :',
+        text: 'Les données peuvent être accessibles uniquement aux personnes et prestataires qui en ont besoin pour faire fonctionner Tarifly.',
       },
       {
         type: 'list',
         items: [
           'l’éditeur du service ;',
-          'les prestataires techniques nécessaires au fonctionnement de Tarifly ;',
           'Supabase, pour l’authentification, les profils utilisateurs et la base de données ;',
-          'Vercel, pour l’hébergement et le déploiement de l’application ;',
+          'Vercel, pour l’hébergement, le déploiement et le nom de domaine ;',
           'Stripe, pour les paiements, abonnements et facturation ;',
-          'les éventuels prestataires de support, maintenance, sécurité ou analyse technique ;',
+          'les prestataires de support, maintenance, sécurité ou analyse technique si nécessaire ;',
           'les autorités administratives ou judiciaires lorsque la loi l’exige.',
         ],
       },
@@ -202,11 +205,11 @@ const sections: PolicySection[] = [
     content: [
       {
         type: 'paragraph',
-        text: 'Certains prestataires techniques utilisés par Tarifly, notamment Supabase, Vercel ou Stripe, peuvent être situés hors de l’Union européenne ou impliquer des transferts de données hors Union européenne.',
+        text: 'Certains prestataires utilisés par Tarifly, notamment Supabase, Vercel ou Stripe, peuvent être situés hors de l’Union européenne ou impliquer des transferts de données hors Union européenne.',
       },
       {
         type: 'paragraph',
-        text: 'Lorsque de tels transferts ont lieu, l’éditeur s’efforce de s’assurer qu’ils sont encadrés par des garanties appropriées, telles que des clauses contractuelles types, des mécanismes reconnus par la réglementation applicable ou les engagements contractuels des prestataires concernés.',
+        text: 'Lorsque ces transferts ont lieu, l’éditeur s’efforce de s’appuyer sur les garanties prévues par la réglementation applicable, notamment les engagements contractuels des prestataires et les clauses contractuelles types lorsque cela est nécessaire.',
       },
     ],
   },
@@ -215,20 +218,22 @@ const sections: PolicySection[] = [
     content: [
       {
         type: 'paragraph',
-        text: 'Les données sont conservées pendant la durée nécessaire aux finalités pour lesquelles elles sont traitées.',
+        text: 'Les données sont conservées pendant la durée nécessaire à leur finalité.',
       },
-      { type: 'paragraph', text: 'À titre indicatif :' },
       {
         type: 'list',
         items: [
-          'les données de compte sont conservées tant que le compte est actif ;',
-          'les données d’opportunités, calculs et devis sont conservées tant que le compte est actif ou jusqu’à suppression par l’utilisateur lorsque la fonctionnalité est disponible ;',
-          'les données liées à l’abonnement et à la facturation sont conservées pendant la durée nécessaire au respect des obligations comptables, fiscales et légales ;',
+          'les données de compte sont conservées tant que le compte existe ;',
+          'les clients, opportunités, calculs et devis sont conservés tant que le compte est actif ou jusqu’à suppression lorsque la fonctionnalité le permet ;',
+          'les données liées aux paiements et factures sont conservées pendant la durée nécessaire aux obligations comptables, fiscales et légales ;',
           'les logs techniques et données de sécurité sont conservés pendant une durée limitée nécessaire à la sécurité et au diagnostic ;',
-          'les données liées aux cookies non essentiels sont conservées selon les durées indiquées dans l’outil de gestion du consentement, lorsque de tels cookies sont utilisés.',
+          'les préférences cookies sont conservées localement afin de mémoriser les choix de l’utilisateur.',
         ],
       },
-      { type: 'paragraph', text: 'Certaines données peuvent être conservées plus longtemps si la loi l’exige ou en cas de litige.' },
+      {
+        type: 'paragraph',
+        text: 'Certaines données peuvent être conservées plus longtemps si la loi l’exige ou en cas de litige.',
+      },
     ],
   },
   {
@@ -236,7 +241,7 @@ const sections: PolicySection[] = [
     content: [
       {
         type: 'paragraph',
-        text: 'Conformément à la réglementation applicable en matière de protection des données personnelles, l’utilisateur peut exercer les droits suivants :',
+        text: 'Conformément au RGPD et à la loi Informatique et Libertés, l’utilisateur peut exercer les droits suivants :',
       },
       {
         type: 'list',
@@ -251,11 +256,14 @@ const sections: PolicySection[] = [
           'droit d’introduire une réclamation auprès de la CNIL.',
         ],
       },
-      { type: 'paragraph', text: 'Pour exercer ses droits, l’utilisateur peut contacter l’éditeur à l’adresse suivante :' },
-      { type: 'email', email: 'aurorawebsec@gmail.com' },
       {
         type: 'paragraph',
-        text: 'L’éditeur pourra demander une preuve d’identité lorsque cela est nécessaire afin de vérifier l’identité du demandeur.',
+        text: 'Pour exercer ces droits, l’utilisateur peut contacter l’éditeur.',
+      },
+      { type: 'email', label: 'Contact RGPD', email: 'aurorawebsec@gmail.com' },
+      {
+        type: 'paragraph',
+        text: 'Une preuve d’identité peut être demandée lorsque cela est nécessaire pour vérifier l’identité du demandeur.',
       },
     ],
   },
@@ -264,9 +272,8 @@ const sections: PolicySection[] = [
     content: [
       {
         type: 'paragraph',
-        text: 'L’éditeur met en œuvre des mesures techniques et organisationnelles raisonnables afin de protéger les données personnelles contre l’accès non autorisé, la perte, l’altération, la divulgation ou la destruction.',
+        text: 'L’éditeur met en œuvre des mesures techniques et organisationnelles raisonnables pour protéger les données personnelles.',
       },
-      { type: 'paragraph', text: 'Ces mesures peuvent notamment inclure :' },
       {
         type: 'list',
         items: [
@@ -275,71 +282,82 @@ const sections: PolicySection[] = [
           'stockage auprès de prestataires reconnus ;',
           'restrictions d’accès aux données ;',
           'surveillance des incidents techniques ;',
-          'sauvegardes ou mécanismes de résilience selon les services utilisés.',
+          'mécanismes de sauvegarde ou de résilience selon les services utilisés.',
         ],
       },
-      { type: 'paragraph', text: 'Toutefois, aucun système informatique ne peut garantir une sécurité absolue.' },
-    ],
-  },
-  {
-    title: '11. Responsabilité de l’utilisateur sur les données saisies',
-    content: [
       {
         type: 'paragraph',
-        text: 'L’utilisateur est responsable des données qu’il renseigne dans Tarifly, notamment les informations relatives à ses clients, prospects, devis, opportunités et prestations.',
-      },
-      {
-        type: 'paragraph',
-        text: 'L’utilisateur s’engage à ne renseigner que les données nécessaires à son usage professionnel et à respecter ses propres obligations en matière de protection des données personnelles lorsqu’il traite les données de ses clients ou prospects.',
+        text: 'Aucun système informatique ne peut toutefois garantir une sécurité absolue.',
       },
     ],
   },
   {
-    title: '12. Cookies et traceurs',
+    title: '11. Responsabilité de l’utilisateur',
     content: [
-      { type: 'paragraph', text: 'Tarifly peut utiliser des cookies ou technologies similaires.' },
-      { type: 'subtitle', text: 'Cookies strictement nécessaires' },
       {
         type: 'paragraph',
-        text: 'Ces cookies sont nécessaires au fonctionnement du service, notamment pour :',
+        text: 'L’utilisateur est responsable des données qu’il renseigne dans Tarifly, notamment les données relatives à ses clients, prospects, devis, opportunités et prestations.',
+      },
+      {
+        type: 'paragraph',
+        text: 'Il doit s’assurer qu’il dispose des droits ou bases légales nécessaires pour saisir ces informations dans l’application.',
+      },
+      {
+        type: 'paragraph',
+        text: 'Il s’engage à ne renseigner que les données utiles à son usage du service et à respecter ses propres obligations lorsqu’il traite les données de ses clients ou prospects.',
+      },
+    ],
+  },
+  {
+    title: '12. Cookies et technologies similaires',
+    content: [
+      {
+        type: 'paragraph',
+        text: 'Tarifly utilise des cookies, du stockage local ou des technologies similaires.',
+      },
+      { type: 'subtitle', text: 'Cookies et stockage nécessaires' },
+      {
+        type: 'paragraph',
+        text: 'Ces éléments sont nécessaires au fonctionnement du service. Ils permettent notamment :',
       },
       {
         type: 'list',
         items: [
-          'permettre la connexion au compte ;',
-          'maintenir la session utilisateur ;',
-          'sécuriser l’accès ;',
-          'mémoriser certains choix nécessaires au fonctionnement de l’application ;',
-          'gérer l’abonnement ou l’accès aux fonctionnalités.',
+          'la connexion au compte ;',
+          'le maintien de la session utilisateur ;',
+          'la sécurité du service ;',
+          'la mémorisation des préférences indispensables ;',
+          'la gestion de l’accès Premium ;',
+          'la mémorisation des choix de consentement cookies.',
         ],
       },
       {
         type: 'paragraph',
-        text: 'Ces cookies ne nécessitent pas nécessairement le consentement de l’utilisateur lorsqu’ils sont strictement indispensables au service demandé.',
+        text: 'Ces cookies ou éléments de stockage ne nécessitent pas toujours le consentement lorsqu’ils sont strictement nécessaires au service demandé.',
       },
       { type: 'subtitle', text: 'Cookies non essentiels' },
       {
         type: 'paragraph',
-        text: 'Tarifly peut utiliser, le cas échéant, des cookies ou traceurs non essentiels, notamment pour :',
+        text: 'Tarifly peut utiliser des cookies non essentiels uniquement si l’utilisateur les accepte.',
       },
       {
         type: 'list',
         items: [
-          'mesurer l’audience ;',
-          'comprendre l’utilisation de l’application ;',
-          'améliorer l’expérience utilisateur ;',
-          'réaliser des statistiques ;',
-          'effectuer du suivi marketing.',
+          'mesure d’audience ;',
+          'statistiques d’usage ;',
+          'amélioration de l’expérience utilisateur ;',
+          'suivi marketing facultatif si un outil de ce type est activé.',
         ],
       },
       {
         type: 'paragraph',
-        text: 'Lorsque ces cookies ne sont pas strictement nécessaires, ils sont déposés uniquement après consentement de l’utilisateur.',
+        text: 'L’utilisateur peut accepter, refuser ou personnaliser ses choix depuis le bandeau cookies.',
       },
       {
         type: 'paragraph',
-        text: 'L’utilisateur peut accepter, refuser ou modifier ses préférences à tout moment depuis le bandeau ou l’outil de gestion des cookies mis à disposition dans l’application.',
+        text: 'Il peut aussi rouvrir les préférences cookies à tout moment.',
       },
+      { type: 'cookieButton' },
     ],
   },
   {
@@ -347,22 +365,33 @@ const sections: PolicySection[] = [
     content: [
       {
         type: 'paragraph',
-        text: 'Tarifly s’appuie sur des services tiers nécessaires à son fonctionnement, notamment Supabase, Vercel et Stripe.',
+        text: 'Tarifly s’appuie sur des services tiers nécessaires à son fonctionnement.',
+      },
+      {
+        type: 'list',
+        items: [
+          'Supabase, pour l’authentification et la base de données ;',
+          'Vercel, pour l’hébergement, le déploiement et le nom de domaine ;',
+          'Stripe, pour les paiements, abonnements et facturation.',
+        ],
       },
       {
         type: 'paragraph',
-        text: 'Ces prestataires peuvent collecter ou traiter certaines données conformément à leurs propres politiques de confidentialité. L’utilisateur est invité à consulter les politiques de confidentialité de ces prestataires pour plus d’informations.',
+        text: 'Ces prestataires peuvent traiter certaines données selon leurs propres politiques de confidentialité.',
       },
     ],
   },
   {
-    title: '14. Modification de la politique de confidentialité',
+    title: '14. Modification de la politique',
     content: [
       {
         type: 'paragraph',
-        text: 'L’éditeur peut modifier la présente politique de confidentialité afin de tenir compte de l’évolution du service, de la réglementation ou des prestataires utilisés.',
+        text: 'L’éditeur peut modifier cette politique pour tenir compte de l’évolution du service, de la réglementation ou des prestataires utilisés.',
       },
-      { type: 'paragraph', text: 'En cas de modification importante, l’utilisateur pourra être informé par tout moyen approprié.' },
+      {
+        type: 'paragraph',
+        text: 'En cas de modification importante, l’utilisateur pourra être informé par tout moyen approprié.',
+      },
     ],
   },
   {
@@ -370,9 +399,9 @@ const sections: PolicySection[] = [
     content: [
       {
         type: 'paragraph',
-        text: 'Pour toute question relative à la présente politique de confidentialité ou au traitement des données personnelles, l’utilisateur peut contacter l’éditeur à l’adresse suivante :',
+        text: 'Pour toute question relative à cette politique ou au traitement des données personnelles, l’utilisateur peut contacter l’éditeur.',
       },
-      { type: 'email', email: 'aurorawebsec@gmail.com' },
+      { type: 'email', label: 'Contact', email: 'aurorawebsec@gmail.com' },
     ],
   },
 ];
@@ -395,11 +424,19 @@ function PolicyBlock({ item }: { item: PolicyContent }) {
   if (item.type === 'email') {
     return (
       <p>
-        Contact :{' '}
+        {item.label} :{' '}
         <a className="font-semibold text-brand-700 underline-offset-4 hover:underline" href={`mailto:${item.email}`}>
           {item.email}
         </a>
       </p>
+    );
+  }
+
+  if (item.type === 'cookieButton') {
+    return (
+      <div className="pt-1">
+        <CookiePreferencesButton />
+      </div>
     );
   }
 
@@ -416,7 +453,7 @@ export default function PrivacyPage() {
           <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-950">
             Politique de confidentialité et cookies
           </h1>
-          <p className="mt-4 leading-7 text-slate-600">Dernière mise à jour : 03/06/2026</p>
+          <p className="mt-4 leading-7 text-slate-600">Dernière mise à jour : 05/06/2026</p>
 
           <div className="mt-8 divide-y divide-slate-200">
             {sections.map((section) => (
@@ -436,4 +473,3 @@ export default function PrivacyPage() {
     </>
   );
 }
-

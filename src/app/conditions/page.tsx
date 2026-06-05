@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { Footer } from '@/components/Footer';
 import { Header } from '@/components/Header';
 
@@ -13,7 +14,8 @@ export const metadata: Metadata = {
 type ConditionContent =
   | { type: 'paragraph'; text: string }
   | { type: 'list'; items: string[] }
-  | { type: 'email'; email: string };
+  | { type: 'email'; label: string; email: string }
+  | { type: 'internalLink'; text: string; href: string; label: string };
 
 type ConditionSection = {
   title: string;
@@ -26,47 +28,44 @@ const sections: ConditionSection[] = [
     content: [
       {
         type: 'paragraph',
-        text: 'Les présentes Conditions Générales d’Utilisation et de Vente, ci-après les « Conditions », ont pour objet de définir les conditions d’accès, d’utilisation, de souscription et de paiement du service Tarifly.',
+        text: 'Les présentes Conditions Générales d’Utilisation et de Vente, appelées ci-après les « Conditions », encadrent l’accès, l’utilisation, la souscription et le paiement du service Tarifly.',
       },
       {
         type: 'paragraph',
-        text: 'Tarifly est une application SaaS éditée par Aurora Web & Security, permettant notamment aux indépendants, freelances, artisans, prestataires de services et petites entreprises de structurer leurs coûts, calculer des prix de vente, comparer des prix à des données indicatives de marché, gérer des opportunités commerciales et générer des devis professionnels.',
+        text: 'Tarifly est une application SaaS qui aide les indépendants, freelances, artisans, prestataires de services et petites entreprises à calculer leurs prix, suivre leurs opportunités commerciales et générer des devis professionnels.',
       },
       {
         type: 'paragraph',
-        text: 'L’utilisation du service implique l’acceptation pleine et entière des présentes Conditions.',
+        text: 'L’utilisation du service implique l’acceptation des présentes Conditions.',
       },
     ],
   },
   {
-    title: '2. Éditeur',
+    title: '2. Éditeur du service',
     content: [
       { type: 'paragraph', text: 'Le service Tarifly est édité par :' },
-      {
-        type: 'paragraph',
-        text: 'Aurora Web & Security, exerçant également sous le nom commercial Aurora Web & Sec',
-      },
-      { type: 'paragraph', text: 'Forme juridique : entrepreneur individuel / micro-entrepreneur' },
-      { type: 'paragraph', text: 'Siège social : [adresse complète à renseigner], 69100 Villeurbanne, France' },
-      { type: 'paragraph', text: 'SIREN : 991 249 228' },
-      { type: 'paragraph', text: 'SIRET : 991 249 228 00016' },
-      { type: 'email', email: 'aurorawebsec@gmail.com' },
+      { type: 'paragraph', text: 'Aurora Web & Security, exerçant également sous le nom commercial Aurora Web & Sec.' },
+      { type: 'paragraph', text: 'Forme juridique : entrepreneur individuel / micro-entrepreneur.' },
+      { type: 'paragraph', text: 'Siège social : 82 rue Anatole France, 69100 Villeurbanne, France.' },
+      { type: 'paragraph', text: 'SIREN : 991 249 228.' },
+      { type: 'paragraph', text: 'SIRET : 991 249 228 00016.' },
+      { type: 'email', label: 'Contact', email: 'aurorawebsec@gmail.com' },
     ],
   },
   {
     title: '3. Définitions',
     content: [
-      { type: 'paragraph', text: 'Dans les présentes Conditions, les termes suivants désignent :' },
+      { type: 'paragraph', text: 'Dans les présentes Conditions :' },
       {
         type: 'list',
         items: [
-          'Service : l’application Tarifly et l’ensemble de ses fonctionnalités.',
-          'Utilisateur : toute personne utilisant Tarifly, avec ou sans compte.',
-          'Client : tout utilisateur ayant souscrit à une offre payante.',
-          'Compte : espace personnel créé par l’utilisateur pour accéder au service.',
-          'Abonnement Premium : formule payante donnant accès à des fonctionnalités avancées ou illimitées.',
-          'Données utilisateur : informations renseignées par l’utilisateur dans Tarifly, notamment données d’entreprise, opportunités commerciales, données de calcul, informations client, devis et notes.',
-          'Données de marché : estimations indicatives affichées dans Tarifly à partir d’une base interne ou de données agrégées.',
+          'Service : l’application Tarifly et ses fonctionnalités.',
+          'Utilisateur : toute personne qui utilise Tarifly.',
+          'Client : tout utilisateur ayant souscrit une offre payante.',
+          'Compte : espace personnel permettant d’accéder au service.',
+          'Abonnement Premium : abonnement mensuel payant donnant accès aux fonctionnalités de Tarifly.',
+          'Données utilisateur : informations renseignées dans Tarifly, notamment les informations d’entreprise, clients, opportunités, calculs, devis et notes.',
+          'Données de marché : estimations indicatives utilisées pour comparer un prix avec une tendance de marché.',
         ],
       },
     ],
@@ -76,204 +75,230 @@ const sections: ConditionSection[] = [
     content: [
       {
         type: 'paragraph',
-        text: 'L’accès à certaines fonctionnalités de Tarifly nécessite la création d’un compte utilisateur.',
+        text: 'L’accès aux fonctionnalités principales de Tarifly nécessite un compte utilisateur et un abonnement Premium actif, sauf accès exceptionnel ou offre promotionnelle indiquée par l’éditeur.',
       },
       {
         type: 'paragraph',
-        text: 'L’utilisateur s’engage à fournir des informations exactes, complètes et à jour lors de la création de son compte et de l’utilisation du service.',
+        text: 'L’utilisateur doit fournir des informations exactes, complètes et à jour lors de la création de son compte et pendant l’utilisation du service.',
       },
       {
         type: 'paragraph',
-        text: 'L’utilisateur est responsable de la confidentialité de ses identifiants de connexion. Toute utilisation de son compte est réputée effectuée par lui, sauf preuve contraire.',
+        text: 'L’utilisateur est responsable de la confidentialité de ses identifiants. Toute utilisation de son compte est réputée effectuée par lui, sauf preuve contraire.',
       },
       {
         type: 'paragraph',
-        text: 'En cas d’utilisation frauduleuse, suspecte ou non autorisée de son compte, l’utilisateur doit contacter l’éditeur dans les meilleurs délais à l’adresse suivante :',
+        text: 'En cas d’accès non autorisé, d’utilisation suspecte ou de perte d’identifiants, l’utilisateur doit contacter l’éditeur dès que possible.',
       },
-      { type: 'email', email: 'aurorawebsec@gmail.com' },
+      { type: 'email', label: 'Contact support', email: 'aurorawebsec@gmail.com' },
     ],
   },
   {
-    title: '5. Fonctionnalités du service',
+    title: '5. Fonctionnalités',
     content: [
-      { type: 'paragraph', text: 'Tarifly permet notamment à l’utilisateur de :' },
+      { type: 'paragraph', text: 'Tarifly permet notamment de :' },
       {
         type: 'list',
         items: [
-          'créer un compte utilisateur ;',
           'renseigner ses informations d’entreprise ;',
-          'créer et gérer des opportunités commerciales ;',
+          'enregistrer des clients et opportunités commerciales ;',
           'saisir les coûts réels d’une mission ;',
-          'calculer automatiquement un prix de vente TTC, une marge et un niveau de rentabilité ;',
-          'comparer le prix calculé à des données indicatives de marché ;',
-          'sauvegarder des opportunités et calculs ;',
+          'calculer un prix de vente, une marge et un niveau de rentabilité ;',
+          'comparer un prix à des données indicatives de marché ;',
           'générer un résumé PDF interne ;',
           'générer un devis PDF destiné au client ;',
+          'envoyer un lien public de consultation, signature, acceptation ou refus du devis ;',
           'exporter certaines données en CSV ;',
-          'accéder à un dashboard ;',
-          'gérer son compte et son abonnement premium.',
+          'suivre ses devis, clients, démarches commerciales et performances depuis un dashboard ;',
+          'gérer son abonnement et sa facturation.',
         ],
       },
       {
         type: 'paragraph',
-        text: 'L’accès au SaaS Tarifly et à ses fonctionnalités principales est réservé à l’offre Premium, sauf accès exceptionnel ou période promotionnelle expressément indiquée par l’éditeur.',
+        text: 'Les fonctionnalités peuvent évoluer. L’éditeur peut ajouter, modifier ou supprimer certaines fonctionnalités pour améliorer le service, corriger un problème ou respecter une obligation légale.',
       },
     ],
   },
   {
-    title: '6. Nature indicative des calculs',
+    title: '6. Abonnement Premium',
     content: [
       {
         type: 'paragraph',
-        text: 'Les calculs, marges, prix recommandés, comparaisons de marché, indicateurs de rentabilité et autres résultats fournis par Tarifly sont donnés à titre strictement indicatif.',
+        text: 'Tarifly est proposé sous forme d’abonnement mensuel Premium.',
       },
       {
         type: 'paragraph',
-        text: 'Tarifly n’est pas un cabinet comptable, un expert-comptable, un conseiller juridique, un conseiller fiscal, un conseiller financier ou un conseiller commercial personnalisé.',
-      },
-      { type: 'paragraph', text: 'L’utilisateur reste seul responsable :' },
-      {
-        type: 'list',
-        items: [
-          'du choix de ses prix ;',
-          'de la vérification des calculs ;',
-          'de la rentabilité réelle de ses prestations ;',
-          'de la conformité de ses devis ;',
-          'de ses obligations fiscales, comptables, sociales, légales et commerciales ;',
-          'de toute décision prise à partir des informations fournies par Tarifly.',
-        ],
+        text: 'Le prix de l’abonnement Tarifly Premium est de 9,90 EUR TTC par mois.',
       },
       {
         type: 'paragraph',
-        text: 'L’éditeur ne garantit pas que les prix suggérés ou calculés permettront à l’utilisateur d’obtenir une rentabilité, un chiffre d’affaires, une marge ou un résultat commercial déterminé.',
+        text: 'Le prix est affiché avant la souscription. L’abonnement est renouvelé automatiquement chaque mois jusqu’à sa résiliation.',
+      },
+      {
+        type: 'paragraph',
+        text: 'L’éditeur peut modifier le prix de l’abonnement pour les nouvelles souscriptions. Si une modification concerne un abonnement existant, l’utilisateur en est informé avant son application.',
       },
     ],
   },
   {
-    title: '7. Données de marché',
+    title: '7. Paiement et facturation',
     content: [
       {
         type: 'paragraph',
-        text: 'Les données de marché affichées dans Tarifly sont des estimations issues d’une base de données interne, de données agrégées ou de données indicatives.',
+        text: 'Les paiements sont traités par Stripe, prestataire de paiement tiers.',
       },
       {
         type: 'paragraph',
-        text: 'Elles peuvent être incomplètes, imprécises, obsolètes ou variables selon les régions, villes, métiers, périodes, unités de facturation ou méthodes de calcul.',
+        text: 'L’éditeur ne stocke pas les données complètes de carte bancaire. Ces données sont traitées par Stripe selon ses propres conditions et politiques.',
       },
       {
         type: 'paragraph',
-        text: 'Ces données ne constituent pas une étude de marché officielle, exhaustive ou opposable. Elles ne garantissent pas le prix réel du marché.',
+        text: 'En souscrivant à l’abonnement Premium, l’utilisateur autorise le prélèvement mensuel du montant indiqué lors de la souscription.',
       },
       {
         type: 'paragraph',
-        text: 'L’utilisateur reconnaît que les données de marché servent uniquement d’aide à la réflexion et qu’il doit effectuer ses propres vérifications avant toute décision commerciale.',
+        text: 'En cas d’échec de paiement, de moyen de paiement expiré ou d’incident de facturation, l’accès Premium peut être suspendu ou limité jusqu’à régularisation.',
+      },
+      {
+        type: 'paragraph',
+        text: 'Les factures et informations de paiement disponibles sont accessibles depuis l’espace Facturation ou le portail Stripe lorsque celui-ci est proposé.',
       },
     ],
   },
   {
-    title: '8. Devis générés',
+    title: '8. Résiliation',
+    content: [
+      {
+        type: 'paragraph',
+        text: 'L’utilisateur peut résilier son abonnement Premium depuis son compte ou depuis le portail de facturation mis à disposition dans l’application.',
+      },
+      {
+        type: 'paragraph',
+        text: 'La résiliation prend effet à la fin de la période d’abonnement en cours, sauf obligation légale contraire.',
+      },
+      {
+        type: 'paragraph',
+        text: 'La période déjà payée reste accessible jusqu’à son échéance. Elle n’est pas remboursée au prorata, sauf obligation légale contraire ou décision commerciale exceptionnelle de l’éditeur.',
+      },
+      {
+        type: 'paragraph',
+        text: 'L’éditeur peut suspendre ou fermer l’accès au service en cas d’impayé, fraude, usage abusif, atteinte à la sécurité du service ou violation des présentes Conditions.',
+      },
+    ],
+  },
+  {
+    title: '9. Droit de rétractation',
+    content: [
+      {
+        type: 'paragraph',
+        text: 'Lorsque l’utilisateur agit en qualité de consommateur et que le droit de rétractation est applicable, il dispose en principe d’un délai de 14 jours pour se rétracter après la souscription à distance.',
+      },
+      {
+        type: 'paragraph',
+        text: 'Si l’utilisateur demande l’accès immédiat au service numérique avant la fin du délai de rétractation, il peut lui être demandé de reconnaître que l’exécution du service commence immédiatement et que son droit de rétractation peut être limité ou écarté dans les conditions prévues par la loi.',
+      },
+      {
+        type: 'paragraph',
+        text: 'Lorsque l’utilisateur agit exclusivement dans le cadre de son activité professionnelle, les règles propres au droit de rétractation des consommateurs ne s’appliquent pas, sauf disposition légale contraire.',
+      },
+      {
+        type: 'paragraph',
+        text: 'Toute demande liée au droit de rétractation peut être adressée à l’éditeur par e-mail.',
+      },
+      { type: 'email', label: 'Contact rétractation', email: 'aurorawebsec@gmail.com' },
+    ],
+  },
+  {
+    title: '10. Nature indicative des résultats',
+    content: [
+      {
+        type: 'paragraph',
+        text: 'Les calculs, marges, prix recommandés, comparaisons de marché, indicateurs de rentabilité et analyses affichés par Tarifly sont fournis à titre indicatif.',
+      },
+      {
+        type: 'paragraph',
+        text: 'Tarifly n’est pas un cabinet comptable, un expert-comptable, un avocat, un conseiller fiscal, un conseiller financier ou un conseiller commercial personnalisé.',
+      },
+      {
+        type: 'paragraph',
+        text: 'L’utilisateur reste seul responsable de ses prix, devis, décisions commerciales, obligations fiscales, obligations comptables et obligations légales.',
+      },
+      {
+        type: 'paragraph',
+        text: 'L’éditeur ne garantit pas que les résultats affichés permettront d’obtenir une marge, un chiffre d’affaires, une rentabilité ou une réussite commerciale déterminée.',
+      },
+    ],
+  },
+  {
+    title: '11. Données de marché',
+    content: [
+      {
+        type: 'paragraph',
+        text: 'Les données de marché affichées dans Tarifly sont des estimations. Elles peuvent provenir d’une base interne, de données agrégées ou de données indicatives.',
+      },
+      {
+        type: 'paragraph',
+        text: 'Elles peuvent être incomplètes, imprécises, obsolètes ou variables selon le métier, la ville, la région, l’unité de facturation, la période ou le nombre de données disponibles.',
+      },
+      {
+        type: 'paragraph',
+        text: 'Ces données ne constituent pas une étude de marché officielle. Elles ne garantissent pas le prix réel du marché.',
+      },
+      {
+        type: 'paragraph',
+        text: 'L’utilisateur doit effectuer ses propres vérifications avant toute décision commerciale.',
+      },
+    ],
+  },
+  {
+    title: '12. Devis générés',
     content: [
       {
         type: 'paragraph',
         text: 'Tarifly permet de générer des devis PDF à partir des informations renseignées par l’utilisateur.',
       },
-      { type: 'paragraph', text: 'L’utilisateur est seul responsable :' },
       {
-        type: 'list',
-        items: [
-          'des informations d’entreprise renseignées ;',
-          'des informations client renseignées ;',
-          'des prestations décrites ;',
-          'des prix, taxes, remises, conditions de paiement et délais affichés ;',
-          'du numéro de devis ;',
-          'de la conformité du devis à sa situation légale, fiscale et commerciale ;',
-          'de la vérification du devis avant tout envoi au client.',
-        ],
+        type: 'paragraph',
+        text: 'L’utilisateur est responsable des informations présentes sur ses devis : identité de l’entreprise, client, prestations, prix, taxes, conditions de paiement, délais, numéro de devis et mentions utiles.',
       },
       {
         type: 'paragraph',
-        text: 'Tarifly ne garantit pas que les devis générés respectent toutes les obligations spécifiques applicables à chaque métier, secteur, statut juridique ou situation fiscale.',
+        text: 'L’utilisateur doit vérifier chaque devis avant de l’envoyer à son client.',
+      },
+      {
+        type: 'paragraph',
+        text: 'Tarifly ne garantit pas que les devis générés respectent toutes les obligations propres à chaque métier, secteur d’activité, statut juridique ou régime fiscal.',
       },
     ],
   },
   {
-    title: '9. Abonnement Premium',
+    title: '13. Signature et acceptation du devis par le client final',
     content: [
-      { type: 'paragraph', text: 'Tarifly est proposé sous forme d’abonnement mensuel Premium.' },
       {
         type: 'paragraph',
-        text: 'L’abonnement permet d’accéder à certaines fonctionnalités avancées, notamment selon l’offre disponible au moment de la souscription.',
+        text: 'Tarifly peut permettre à l’utilisateur d’envoyer un lien public à son client final afin que celui-ci consulte, télécharge, signe, accepte ou refuse un devis.',
       },
       {
         type: 'paragraph',
-        text: 'Le prix de l’abonnement Tarifly Premium est fixé à 9,90 EUR TTC par mois. Ce prix est indiqué sur l’application avant toute souscription. Le prix peut être modifié à tout moment pour les nouvelles souscriptions. En cas de modification applicable à un abonnement existant, l’utilisateur en sera informé dans un délai raisonnable avant son entrée en vigueur.',
+        text: 'Le client final n’a pas besoin de créer un compte Tarifly pour utiliser ce lien.',
       },
       {
         type: 'paragraph',
-        text: 'Sauf mention contraire, l’abonnement est renouvelé automatiquement chaque mois jusqu’à sa résiliation par l’utilisateur.',
+        text: 'L’utilisateur reste responsable de la validité commerciale, contractuelle et juridique du devis transmis à son client final.',
+      },
+      {
+        type: 'paragraph',
+        text: 'Tarifly fournit un outil technique de signature et de suivi. Il ne remplace pas un conseil juridique sur la valeur probante ou la conformité du document signé.',
       },
     ],
   },
   {
-    title: '10. Paiement',
-    content: [
-      { type: 'paragraph', text: 'Les paiements sont traités par Stripe, prestataire de paiement tiers.' },
-      {
-        type: 'paragraph',
-        text: 'L’éditeur ne stocke pas directement les données complètes de carte bancaire de l’utilisateur. Les données de paiement sont traitées par Stripe conformément à ses propres conditions et politiques de confidentialité.',
-      },
-      {
-        type: 'paragraph',
-        text: 'En souscrivant à une offre payante, l’utilisateur autorise le prélèvement du montant de l’abonnement selon la périodicité indiquée lors de la souscription.',
-      },
-      {
-        type: 'paragraph',
-        text: 'En cas d’échec de paiement, d’expiration du moyen de paiement ou d’incident de facturation, l’accès aux fonctionnalités Premium pourra être suspendu ou limité jusqu’à régularisation.',
-      },
-    ],
-  },
-  {
-    title: '11. Résiliation',
+    title: '14. Obligations de l’utilisateur',
     content: [
       {
         type: 'paragraph',
-        text: 'L’utilisateur peut résilier son abonnement Premium depuis son espace compte, son portail de facturation ou tout autre moyen mis à disposition dans l’application.',
+        text: 'L’utilisateur s’engage à utiliser Tarifly de manière loyale, conforme à la loi et respectueuse des droits des tiers.',
       },
-      {
-        type: 'paragraph',
-        text: 'Sauf mention contraire ou obligation légale contraire, la résiliation prend effet à la fin de la période d’abonnement en cours. La période déjà payée reste accessible jusqu’à son échéance et n’est pas remboursée au prorata.',
-      },
-      {
-        type: 'paragraph',
-        text: 'L’éditeur peut suspendre ou résilier l’accès au service en cas de violation des présentes Conditions, d’usage frauduleux, de tentative d’atteinte à la sécurité du service, d’impayé ou d’utilisation abusive.',
-      },
-    ],
-  },
-  {
-    title: '12. Droit de rétractation',
-    content: [
-      {
-        type: 'paragraph',
-        text: 'Lorsque l’utilisateur agit en qualité de consommateur et que le droit de rétractation est applicable, il dispose en principe d’un délai de quatorze jours pour exercer ce droit.',
-      },
-      {
-        type: 'paragraph',
-        text: 'Toutefois, lorsque l’utilisateur demande l’accès immédiat au service numérique avant la fin du délai de rétractation, il peut lui être demandé de reconnaître qu’il renonce à son droit de rétractation pour la période ou le service déjà exécuté, lorsque la loi le permet.',
-      },
-      {
-        type: 'paragraph',
-        text: 'Lorsque l’utilisateur agit exclusivement dans le cadre de son activité professionnelle, les règles relatives au droit de rétractation des consommateurs ne s’appliquent pas, sauf disposition légale contraire.',
-      },
-    ],
-  },
-  {
-    title: '13. Obligations de l’utilisateur',
-    content: [
-      {
-        type: 'paragraph',
-        text: 'L’utilisateur s’engage à utiliser Tarifly conformément aux présentes Conditions, à la loi applicable et aux droits des tiers.',
-      },
-      { type: 'paragraph', text: 'Il s’interdit notamment de :' },
+      { type: 'paragraph', text: 'Il est notamment interdit de :' },
       {
         type: 'list',
         items: [
@@ -281,39 +306,49 @@ const sections: ConditionSection[] = [
           'porter atteinte à la sécurité, à l’intégrité ou au fonctionnement du service ;',
           'tenter d’accéder aux comptes, données ou systèmes d’autres utilisateurs ;',
           'copier, extraire ou réutiliser massivement les données de marché ou la base interne de Tarifly ;',
-          'détourner le service de sa finalité ;',
-          'transmettre des contenus illicites, trompeurs, diffamatoires ou portant atteinte aux droits de tiers.',
+          'transmettre des contenus illicites, trompeurs, diffamatoires ou portant atteinte aux droits de tiers ;',
+          'détourner le service de son usage normal.',
         ],
       },
     ],
   },
   {
-    title: '14. Contenus et données renseignés par l’utilisateur',
+    title: '15. Données renseignées par l’utilisateur',
     content: [
       {
         type: 'paragraph',
-        text: 'L’utilisateur conserve la responsabilité des contenus qu’il renseigne dans Tarifly, notamment ses informations d’entreprise, informations client, notes, opportunités commerciales, lignes de devis et données de calcul.',
+        text: 'L’utilisateur reste responsable des informations qu’il renseigne dans Tarifly, notamment ses informations d’entreprise, informations client, opportunités, notes, calculs et devis.',
       },
       {
         type: 'paragraph',
-        text: 'L’utilisateur garantit qu’il dispose des droits, autorisations ou bases légales nécessaires pour renseigner ces informations dans l’application.',
+        text: 'Il garantit disposer des droits, autorisations ou bases légales nécessaires pour renseigner ces informations dans l’application.',
       },
       {
         type: 'paragraph',
-        text: 'L’utilisateur s’engage à ne pas renseigner de données sensibles ou inutiles au fonctionnement du service, notamment des données relatives à la santé, aux opinions politiques, aux convictions religieuses, à l’origine ethnique, à la vie sexuelle ou à des infractions, sauf nécessité légale et sous sa seule responsabilité.',
+        text: 'L’utilisateur s’engage à ne renseigner que les données nécessaires à son usage du service.',
+      },
+      {
+        type: 'internalLink',
+        text: 'Les règles relatives aux données personnelles et aux cookies sont détaillées dans la',
+        href: '/confidentialite',
+        label: 'Politique de confidentialité et cookies',
       },
     ],
   },
   {
-    title: '15. Propriété intellectuelle',
+    title: '16. Propriété intellectuelle',
     content: [
       {
         type: 'paragraph',
-        text: 'Le service Tarifly, son interface, ses fonctionnalités, sa structure, son code, ses textes, ses éléments graphiques, son logo, sa base interne et ses contenus sont protégés par le droit de la propriété intellectuelle.',
+        text: 'Tarifly, son interface, ses fonctionnalités, ses textes, ses éléments graphiques, son logo, son code, sa structure et sa base interne sont protégés par le droit de la propriété intellectuelle.',
       },
       {
         type: 'paragraph',
-        text: 'Les présentes Conditions n’accordent à l’utilisateur aucun droit de propriété sur Tarifly. L’utilisateur bénéficie uniquement d’un droit d’accès personnel, non exclusif, non cessible et limité au service, pendant la durée de son utilisation ou de son abonnement.',
+        text: 'Les présentes Conditions n’accordent à l’utilisateur aucun droit de propriété sur Tarifly.',
+      },
+      {
+        type: 'paragraph',
+        text: 'L’utilisateur bénéficie uniquement d’un droit d’accès personnel, non exclusif, non cessible et limité au service pendant la durée de son abonnement ou de son utilisation autorisée.',
       },
       {
         type: 'paragraph',
@@ -322,61 +357,56 @@ const sections: ConditionSection[] = [
     ],
   },
   {
-    title: '16. Disponibilité du service',
+    title: '17. Disponibilité du service',
     content: [
-      { type: 'paragraph', text: 'L’éditeur met en œuvre des efforts raisonnables pour assurer l’accès au service.' },
       {
         type: 'paragraph',
-        text: 'Toutefois, Tarifly peut être temporairement indisponible en raison d’opérations de maintenance, mises à jour, incidents techniques, pannes, interruptions de services tiers, problèmes d’hébergement, force majeure ou événements indépendants de la volonté de l’éditeur.',
+        text: 'L’éditeur met en œuvre des moyens raisonnables pour assurer l’accès et le bon fonctionnement de Tarifly.',
       },
-      { type: 'paragraph', text: 'L’éditeur ne garantit pas une disponibilité permanente, continue ou sans erreur du service.' },
+      {
+        type: 'paragraph',
+        text: 'Le service peut toutefois être interrompu, ralenti ou indisponible en cas de maintenance, mise à jour, incident technique, panne, force majeure ou problème lié à un prestataire externe.',
+      },
+      {
+        type: 'paragraph',
+        text: 'L’éditeur ne garantit pas une disponibilité permanente, continue ou sans erreur du service.',
+      },
     ],
   },
   {
-    title: '17. Responsabilité',
+    title: '18. Responsabilité',
     content: [
-      { type: 'paragraph', text: 'L’éditeur ne saurait être tenu responsable :' },
+      { type: 'paragraph', text: 'L’éditeur ne peut pas être tenu responsable :' },
       {
         type: 'list',
         items: [
           'des décisions commerciales prises par l’utilisateur ;',
           'd’une mauvaise estimation de prix, marge ou rentabilité ;',
-          'd’une erreur dans un devis généré ;',
+          'd’une erreur présente dans un devis généré ;',
           'd’un manquement fiscal, comptable, légal ou commercial de l’utilisateur ;',
           'd’une perte de chiffre d’affaires, perte de clientèle, perte de données, perte d’opportunité ou préjudice indirect ;',
           'd’une utilisation non conforme du service ;',
           'd’une indisponibilité temporaire du service ;',
-          'd’un problème causé par un prestataire tiers, notamment Supabase, Vercel ou Stripe.',
+          'd’un problème causé par un prestataire tiers, notamment Supabase, Vercel, Stripe ou tout autre service nécessaire au fonctionnement de Tarifly.',
         ],
       },
       {
         type: 'paragraph',
-        text: 'Dans tous les cas, lorsque la responsabilité de l’éditeur peut légalement être engagée, elle est limitée au montant payé par l’utilisateur au titre de l’abonnement Tarifly au cours des trois derniers mois précédant le fait générateur du dommage, sauf disposition légale contraire.',
+        text: 'Lorsque la responsabilité de l’éditeur peut légalement être engagée, elle est limitée au montant payé par l’utilisateur au titre de l’abonnement Tarifly au cours des trois derniers mois précédant le fait générateur du dommage, sauf disposition légale contraire.',
       },
     ],
   },
   {
-    title: '18. Support',
-    content: [
-      { type: 'paragraph', text: 'Pour toute demande relative au service, l’utilisateur peut contacter l’éditeur à l’adresse suivante :' },
-      { type: 'email', email: 'aurorawebsec@gmail.com' },
-      {
-        type: 'paragraph',
-        text: 'L’éditeur s’efforce de répondre dans un délai raisonnable, sans garantie de délai de réponse spécifique sauf engagement contraire.',
-      },
-    ],
-  },
-  {
-    title: '19. Modification des Conditions',
+    title: '19. Support',
     content: [
       {
         type: 'paragraph',
-        text: 'L’éditeur se réserve le droit de modifier les présentes Conditions à tout moment, notamment pour tenir compte de l’évolution du service, de la loi, des fonctionnalités ou du modèle économique.',
+        text: 'Pour toute question liée au service, l’utilisateur peut contacter l’éditeur par e-mail.',
       },
-      { type: 'paragraph', text: 'Les utilisateurs seront informés des modifications importantes par tout moyen approprié.' },
+      { type: 'email', label: 'Contact support', email: 'aurorawebsec@gmail.com' },
       {
         type: 'paragraph',
-        text: 'La poursuite de l’utilisation du service après l’entrée en vigueur des nouvelles Conditions vaut acceptation de celles-ci.',
+        text: 'L’éditeur s’efforce de répondre dans un délai raisonnable, sans garantir de délai de réponse spécifique sauf engagement contraire.',
       },
     ],
   },
@@ -385,36 +415,50 @@ const sections: ConditionSection[] = [
     content: [
       {
         type: 'paragraph',
-        text: 'Lorsque l’utilisateur agit en qualité de consommateur, il peut, après avoir tenté de résoudre préalablement le litige directement auprès de l’éditeur, recourir gratuitement à un médiateur de la consommation.',
+        text: 'Lorsque l’utilisateur agit en qualité de consommateur, il peut recourir gratuitement à un médiateur de la consommation après avoir tenté de résoudre le litige directement auprès de l’éditeur.',
       },
       {
         type: 'paragraph',
-        text: 'Médiateur compétent : CM2C - Centre de la Médiation de la Consommation de Conciliateurs de Justice',
+        text: 'L’éditeur doit communiquer les coordonnées du médiateur de la consommation dont il relève dès lors qu’il vend le service à des consommateurs.',
       },
-      { type: 'paragraph', text: 'Adresse : 49 rue de Ponthieu, 75008 Paris, France' },
-      { type: 'paragraph', text: 'Site internet : https://www.cm2c.net' },
-      { type: 'paragraph', text: 'Saisine en ligne : https://www.cm2c.net/declarer-un-litige.php' },
       {
         type: 'paragraph',
-        text: 'Cette mention doit être maintenue uniquement si l’éditeur dispose effectivement d’une convention ou adhésion active auprès du médiateur indiqué.',
+        text: 'Cette information doit être complétée avec le médiateur effectivement désigné par l’éditeur avant toute commercialisation à des consommateurs.',
       },
     ],
   },
   {
-    title: '21. Droit applicable',
+    title: '21. Modification des Conditions',
+    content: [
+      {
+        type: 'paragraph',
+        text: 'L’éditeur peut modifier les présentes Conditions pour tenir compte de l’évolution du service, de la loi, des fonctionnalités ou du modèle économique.',
+      },
+      {
+        type: 'paragraph',
+        text: 'Les utilisateurs sont informés des modifications importantes par tout moyen approprié.',
+      },
+      {
+        type: 'paragraph',
+        text: 'La poursuite de l’utilisation du service après l’entrée en vigueur des nouvelles Conditions vaut acceptation de celles-ci.',
+      },
+    ],
+  },
+  {
+    title: '22. Droit applicable',
     content: [
       { type: 'paragraph', text: 'Les présentes Conditions sont soumises au droit français.' },
       {
         type: 'paragraph',
-        text: 'En cas de litige, l’utilisateur est invité à contacter préalablement l’éditeur afin de rechercher une solution amiable.',
+        text: 'En cas de litige, l’utilisateur est invité à contacter l’éditeur afin de rechercher une solution amiable.',
       },
       {
         type: 'paragraph',
-        text: 'Lorsque l’utilisateur agit en qualité de professionnel, tout litige relatif à la formation, l’interprétation, l’exécution ou la cessation des présentes Conditions relève, sauf disposition légale contraire, de la compétence des tribunaux compétents du ressort du siège de l’éditeur.',
+        text: 'Lorsque l’utilisateur agit en qualité de professionnel, tout litige relatif aux présentes Conditions relève, sauf disposition légale contraire, des tribunaux compétents du ressort du siège de l’éditeur.',
       },
       {
         type: 'paragraph',
-        text: 'Lorsque l’utilisateur agit en qualité de consommateur, les règles légales de compétence juridictionnelle applicables aux consommateurs demeurent applicables.',
+        text: 'Lorsque l’utilisateur agit en qualité de consommateur, les règles légales de compétence applicables aux consommateurs restent applicables.',
       },
     ],
   },
@@ -434,10 +478,22 @@ function ContentBlock({ item }: { item: ConditionContent }) {
   if (item.type === 'email') {
     return (
       <p>
-        Contact :{' '}
+        {item.label} :{' '}
         <a className="font-semibold text-brand-700 underline-offset-4 hover:underline" href={`mailto:${item.email}`}>
           {item.email}
         </a>
+      </p>
+    );
+  }
+
+  if (item.type === 'internalLink') {
+    return (
+      <p>
+        {item.text}{' '}
+        <Link className="font-semibold text-brand-700 underline-offset-4 hover:underline" href={item.href}>
+          {item.label}
+        </Link>
+        .
       </p>
     );
   }
@@ -455,7 +511,7 @@ export default function ConditionsPage() {
           <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-950">
             Conditions Générales d’Utilisation et de Vente
           </h1>
-          <p className="mt-4 leading-7 text-slate-600">Dernière mise à jour : 03/06/2026</p>
+          <p className="mt-4 leading-7 text-slate-600">Dernière mise à jour : 05/06/2026</p>
 
           <div className="mt-8 divide-y divide-slate-200">
             {sections.map((section) => (
@@ -475,4 +531,3 @@ export default function ConditionsPage() {
     </>
   );
 }
-
