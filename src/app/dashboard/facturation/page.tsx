@@ -50,7 +50,6 @@ export default async function DashboardBillingPage({
           <InfoRow label="Abonnement" value={entitlement ? 'Actif' : 'Inactif'} />
           <InfoRow label="Dernier paiement" value={latestPayment ? formatAmount(latestPayment.amount_total, latestPayment.currency) : 'Aucun'} />
           <InfoRow label="Date" value={latestPayment ? formatDate(latestPayment.created_at) : 'Aucune'} />
-          <InfoRow label="Statut" value={latestPayment?.status ?? 'Aucun'} />
         </section>
 
         {!entitlement ? (
@@ -60,13 +59,12 @@ export default async function DashboardBillingPage({
             {purchases && purchases.length > 0 ? (
               <div className="divide-y divide-slate-200">
                 {purchases.map((purchase) => (
-                  <div key={purchase.id} className="grid gap-3 p-4 text-sm md:grid-cols-[1fr_140px_120px_160px] md:items-center">
+                  <div key={purchase.id} className="grid gap-3 p-4 text-sm md:grid-cols-[1fr_140px_160px] md:items-center">
                     <div>
                       <p className="font-semibold text-slate-950">{formatDate(purchase.created_at)}</p>
                       <p className="mt-1 text-xs text-slate-500">Référence {purchase.stripe_session_id?.slice(-10) ?? purchase.id.slice(0, 8)}</p>
                     </div>
                     <p className="font-bold">{formatAmount(purchase.amount_total, purchase.currency)}</p>
-                    <p className="font-semibold text-slate-600">{purchase.status}</p>
                     <p className="text-slate-500">Stripe</p>
                   </div>
                 ))}

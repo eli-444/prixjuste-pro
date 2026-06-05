@@ -51,7 +51,7 @@ export default async function DashboardAccountPage() {
         />
 
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <InfoRow label="Type de compte" value={accountType === 'business' ? 'Entreprise' : 'Personnel'} />
+          <InfoRow label="Type de compte" value={accountType === 'business' ? 'Entreprise' : 'Particulier'} />
           <InfoRow label="Titulaire" value={`${firstName} ${lastName}`.trim() || user.email || 'Non renseigné'} />
           {accountType === 'business' ? (
             <>

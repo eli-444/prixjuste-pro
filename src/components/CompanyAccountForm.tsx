@@ -95,10 +95,6 @@ export function CompanyAccountForm({
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-3 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-600">
-        {isBusiness ? 'Compte entreprise' : 'Compte personnel'}
-      </div>
-
       <div className="grid gap-3">
         <div className="grid gap-3 sm:grid-cols-2">
           <TextField label="Prénom" value={values.firstName} onChange={(value) => updateField('firstName', value)} />
