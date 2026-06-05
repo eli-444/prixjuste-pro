@@ -10,7 +10,7 @@ import { PricingCard } from '@/components/PricingCard';
 import { AuthCodeRedirect } from '@/components/AuthCodeRedirect';
 
 export const metadata: Metadata = {
-  title: 'Logiciel de calcul de prix, comparaison marché et devis pour indépendants',
+  title: 'Tarifly - Logiciel de calcul de prix, comparaison marché et devis pour indépendants',
   description:
     'Tarifly aide les indépendants, artisans, freelances et TPE à calculer un prix rentable, comparer leur tarif au marché, générer des devis professionnels et suivre les réponses clients.',
   alternates: {
