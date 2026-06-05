@@ -99,7 +99,7 @@ const sections: LegalSection[] = [
         type: 'paragraph',
         text: 'Aucun délégué à la protection des données n’a été désigné. Pour toute question relative aux données personnelles ou à l’exercice de vos droits RGPD, vous pouvez contacter l’éditeur.',
       },
-      { type: 'email', label: 'Contact RGPD', email: 'aurorawebsec@gmail.com' },
+      { type: 'email', label: 'Contact RGPD', email: '01 53 73 22 22' },
     ],
   },
   {

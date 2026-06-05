@@ -55,7 +55,7 @@ const sections: PolicySection[] = [
         type: 'paragraph',
         text: 'Aucun délégué à la protection des données n’a été désigné. Pour toute demande liée au RGPD ou aux données personnelles, vous pouvez utiliser le contact ci-dessous.',
       },
-      { type: 'email', label: 'Contact RGPD', email: 'aurorawebsec@gmail.com' },
+      { type: 'email', label: 'Contact RGPD', email: '01 53 73 22 22' },
     ],
   },
   {
@@ -260,7 +260,7 @@ const sections: PolicySection[] = [
         type: 'paragraph',
         text: 'Pour exercer ces droits, l’utilisateur peut contacter l’éditeur.',
       },
-      { type: 'email', label: 'Contact RGPD', email: 'aurorawebsec@gmail.com' },
+      { type: 'email', label: 'Contact RGPD', email: '01 53 73 22 22' },
       {
         type: 'paragraph',
         text: 'Une preuve d’identité peut être demandée lorsque cela est nécessaire pour vérifier l’identité du demandeur.',
