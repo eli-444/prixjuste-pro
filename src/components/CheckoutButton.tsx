@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { trackProductEvent } from '@/lib/product-analytics';
 import { showToast } from '@/lib/toast';
 
 type CheckoutButtonProps = {
@@ -20,6 +21,7 @@ export function CheckoutButton({ className, children }: CheckoutButtonProps) {
     }
 
     setLoading(true);
+    trackProductEvent('checkout_started', { source: 'pricing_card' });
 
     try {
       const response = await fetch('/api/checkout', {
@@ -45,6 +47,7 @@ export function CheckoutButton({ className, children }: CheckoutButtonProps) {
         throw new Error("Impossible d'ouvrir la page de paiement.");
       }
 
+      trackProductEvent('checkout_redirected', { source: 'pricing_card' });
       window.location.href = data.url;
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'Une erreur est survenue.', 'error');

@@ -5,8 +5,6 @@ import { Save } from 'lucide-react';
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser';
 import { showToast } from '@/lib/toast';
 
-type AccountType = 'personal' | 'business';
-
 type AccountValues = {
   firstName: string;
   lastName: string;
@@ -17,36 +15,31 @@ type AccountValues = {
 
 export function CompanyAccountForm({
   userId,
-  accountType,
   initialValues,
 }: {
   userId: string;
-  accountType: AccountType;
   initialValues: AccountValues;
 }) {
   const [values, setValues] = useState(initialValues);
   const [isSaving, setIsSaving] = useState(false);
-  const isBusiness = accountType === 'business';
 
   function updateField(name: keyof AccountValues, value: string) {
     setValues((current) => ({ ...current, [name]: value }));
   }
 
   function validate() {
+    const normalizedSiret = values.siret.replace(/\D/g, '');
+
     if (!values.firstName.trim() || !values.lastName.trim()) {
       return 'Renseignez votre prénom et votre nom.';
     }
 
-    if (isBusiness) {
-      const normalizedSiret = values.siret.replace(/\D/g, '');
+    if (!values.companyName.trim() || !values.companyAddress.trim()) {
+      return "Renseignez le nom et l'adresse de l'entreprise.";
+    }
 
-      if (!values.companyName.trim() || !values.companyAddress.trim()) {
-        return "Renseignez le nom et l'adresse de l'entreprise.";
-      }
-
-      if (normalizedSiret.length !== 14) {
-        return 'Le SIRET doit contenir 14 chiffres.';
-      }
+    if (normalizedSiret.length !== 14) {
+      return 'Le SIRET doit contenir 14 chiffres.';
     }
 
     return '';
@@ -70,12 +63,13 @@ export function CompanyAccountForm({
       const { error } = await supabase
         .from('profiles')
         .update({
+          account_type: 'business',
           first_name: firstName,
           last_name: lastName,
           full_name: `${firstName} ${lastName}`.trim(),
-          company_name: isBusiness ? values.companyName.trim() : null,
-          siret: isBusiness ? normalizedSiret : null,
-          company_address: isBusiness ? values.companyAddress.trim() : null,
+          company_name: values.companyName.trim(),
+          siret: normalizedSiret,
+          company_address: values.companyAddress.trim(),
           onboarding_completed: true,
         })
         .eq('id', userId);
@@ -84,7 +78,7 @@ export function CompanyAccountForm({
         throw error;
       }
 
-      setValues((current) => ({ ...current, siret: isBusiness ? normalizedSiret : '' }));
+      setValues((current) => ({ ...current, siret: normalizedSiret }));
       showToast('Informations enregistrées.', 'success');
     } catch (saveError) {
       showToast(saveError instanceof Error ? saveError.message : 'Enregistrement impossible.', 'error');
@@ -97,25 +91,28 @@ export function CompanyAccountForm({
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="grid gap-3">
         <div className="grid gap-3 sm:grid-cols-2">
-          <TextField label="Prénom" value={values.firstName} onChange={(value) => updateField('firstName', value)} />
-          <TextField label="Nom" value={values.lastName} onChange={(value) => updateField('lastName', value)} />
+          <TextField label="Prénom" value={values.firstName} onChange={(value) => updateField('firstName', value)} required />
+          <TextField label="Nom" value={values.lastName} onChange={(value) => updateField('lastName', value)} required />
         </div>
 
-        {isBusiness ? (
-          <>
-            <TextField label="Nom de l'entreprise" value={values.companyName} onChange={(value) => updateField('companyName', value)} />
-            <TextField label="Numéro de SIRET" value={values.siret} onChange={(value) => updateField('siret', value)} inputMode="numeric" />
-            <label className="space-y-1.5">
-              <span className="text-sm font-bold text-slate-950">Adresse de l'entreprise</span>
-              <textarea
-                value={values.companyAddress}
-                onChange={(event) => updateField('companyAddress', event.target.value)}
-                rows={2}
-                className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
-              />
-            </label>
-          </>
-        ) : null}
+        <TextField label="Nom de l'entreprise" value={values.companyName} onChange={(value) => updateField('companyName', value)} required />
+        <TextField
+          label="Numéro de SIRET"
+          value={values.siret}
+          onChange={(value) => updateField('siret', value)}
+          inputMode="numeric"
+          required
+        />
+        <label className="space-y-1.5">
+          <span className="text-sm font-bold text-slate-950">Adresse de l'entreprise</span>
+          <textarea
+            value={values.companyAddress}
+            onChange={(event) => updateField('companyAddress', event.target.value)}
+            rows={2}
+            required
+            className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+          />
+        </label>
       </div>
 
       <button
@@ -136,11 +133,13 @@ function TextField({
   value,
   onChange,
   inputMode,
+  required = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
+  required?: boolean;
 }) {
   return (
     <label className="space-y-1.5">
@@ -148,10 +147,10 @@ function TextField({
       <input
         value={value}
         inputMode={inputMode}
+        required={required}
         onChange={(event) => onChange(event.target.value)}
         className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
       />
     </label>
   );
 }
-

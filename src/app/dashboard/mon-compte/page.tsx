@@ -17,7 +17,7 @@ export default async function DashboardAccountPage() {
   const [{ data: profile }, { data: entitlement }] = await Promise.all([
     supabase
       .from('profiles')
-      .select('account_type, first_name, last_name, full_name, company_name, siret, company_address, company_email, default_tax_percent, default_hourly_rate')
+      .select('first_name, last_name, full_name, company_name, siret, company_address, company_email, default_tax_percent, default_hourly_rate')
       .eq('id', user.id)
       .maybeSingle(),
     supabase
@@ -27,7 +27,6 @@ export default async function DashboardAccountPage() {
       .eq('status', 'active')
       .maybeSingle(),
   ]);
-  const accountType = profile?.account_type === 'business' ? 'business' : 'personal';
   const nameParts = (profile?.full_name ?? '').split(' ').filter(Boolean);
   const firstName = profile?.first_name ?? nameParts[0] ?? '';
   const lastName = profile?.last_name ?? nameParts.slice(1).join(' ') ?? '';
@@ -40,7 +39,6 @@ export default async function DashboardAccountPage() {
       <div className="grid max-w-5xl gap-3 lg:grid-cols-[minmax(0,500px)_300px]">
         <CompanyAccountForm
           userId={user.id}
-          accountType={accountType}
           initialValues={{
             firstName,
             lastName,
@@ -51,16 +49,11 @@ export default async function DashboardAccountPage() {
         />
 
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <InfoRow label="Type de compte" value={accountType === 'business' ? 'Entreprise' : 'Particulier'} />
           <InfoRow label="Titulaire" value={`${firstName} ${lastName}`.trim() || user.email || 'Non renseigné'} />
-          {accountType === 'business' ? (
-            <>
-              <InfoRow label="Entreprise" value={profile?.company_name || 'Non renseigné'} />
-              <InfoRow label="SIRET" value={profile?.siret || 'Non renseigné'} />
-            </>
-          ) : null}
+          <InfoRow label="Entreprise" value={profile?.company_name || 'Non renseigné'} />
+          <InfoRow label="SIRET" value={profile?.siret || 'Non renseigné'} />
           <InfoRow label="Email" value={profile?.company_email || user.email || 'Non renseigné'} />
-          <InfoRow label="TVA par defaut" value={`${profile?.default_tax_percent ?? 20} %`} />
+          <InfoRow label="TVA par défaut" value={`${profile?.default_tax_percent ?? 20} %`} />
           <InfoRow label="Taux horaire" value={formatEuro(Number(profile?.default_hourly_rate ?? 0))} />
           {entitlement ? (
             <div className="mt-4 border-t border-slate-100 pt-4">
@@ -89,4 +82,3 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 function formatEuro(amount: number) {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
 }
-

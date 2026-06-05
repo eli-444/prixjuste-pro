@@ -2,21 +2,17 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Building2, LogIn, User, UserPlus } from 'lucide-react';
+import { LogIn, UserPlus } from 'lucide-react';
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser';
 import { getSupabaseConfig } from '@/lib/supabase/env';
 import { showToast } from '@/lib/toast';
 
 type AuthMode = 'login' | 'signup';
-type AccountType = 'personal' | 'business';
-type SignupStep = 'type' | 'details';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function AuthForm({ redirectTo = '/dashboard' }: { redirectTo?: string }) {
   const [mode, setMode] = useState<AuthMode>('login');
-  const [signupStep, setSignupStep] = useState<SignupStep>('type');
-  const [accountType, setAccountType] = useState<AccountType>('personal');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [companyName, setCompanyName] = useState('');
@@ -40,9 +36,6 @@ export function AuthForm({ redirectTo = '/dashboard' }: { redirectTo?: string })
 
   function switchMode(nextMode: AuthMode) {
     setMode(nextMode);
-    if (nextMode === 'signup') {
-      setSignupStep('type');
-    }
   }
 
   function validateSignup() {
@@ -50,6 +43,14 @@ export function AuthForm({ redirectTo = '/dashboard' }: { redirectTo?: string })
 
     if (!firstName.trim() || !lastName.trim()) {
       return 'Renseignez votre prénom et votre nom.';
+    }
+
+    if (!companyName.trim() || !companyAddress.trim()) {
+      return "Renseignez le nom et l'adresse de l'entreprise.";
+    }
+
+    if (normalizedSiret.length !== 14) {
+      return 'Le SIRET doit contenir 14 chiffres.';
     }
 
     if (!emailPattern.test(email.trim())) {
@@ -64,16 +65,6 @@ export function AuthForm({ redirectTo = '/dashboard' }: { redirectTo?: string })
       return 'Les deux mots de passe ne correspondent pas.';
     }
 
-    if (accountType === 'business') {
-      if (!companyName.trim() || !companyAddress.trim()) {
-        return "Renseignez le nom et l'adresse de l'entreprise.";
-      }
-
-      if (normalizedSiret.length !== 14) {
-        return 'Le SIRET doit contenir 14 chiffres.';
-      }
-    }
-
     return '';
   }
 
@@ -81,11 +72,6 @@ export function AuthForm({ redirectTo = '/dashboard' }: { redirectTo?: string })
     event.preventDefault();
     if (!isConfigured) {
       showToast("L'espace compte est momentanément indisponible. Merci de réessayer plus tard.", 'error');
-      return;
-    }
-
-    if (mode === 'signup' && signupStep === 'type') {
-      setSignupStep('details');
       return;
     }
 
@@ -111,13 +97,13 @@ export function AuthForm({ redirectTo = '/dashboard' }: { redirectTo?: string })
           options: {
             emailRedirectTo: callbackUrl,
             data: {
-              account_type: accountType,
+              account_type: 'business',
               first_name: firstName.trim(),
               last_name: lastName.trim(),
               full_name: fullName,
-              company_name: accountType === 'business' ? companyName.trim() : null,
-              siret: accountType === 'business' ? normalizedSiret : null,
-              company_address: accountType === 'business' ? companyAddress.trim() : null,
+              company_name: companyName.trim(),
+              siret: normalizedSiret,
+              company_address: companyAddress.trim(),
             },
           },
         });
@@ -169,60 +155,44 @@ export function AuthForm({ redirectTo = '/dashboard' }: { redirectTo?: string })
         </button>
       </div>
 
-      {mode === 'signup' ? (
-        <div className="mt-6 grid grid-cols-2 gap-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-          <span className={signupStep === 'type' ? 'text-brand-600' : 'text-slate-950'}>1. Type</span>
-          <span className={signupStep === 'details' ? 'text-brand-600' : 'text-slate-400'}>2. Informations</span>
-        </div>
-      ) : null}
-
-      {mode === 'signup' && signupStep === 'type' ? (
-        <div className="mt-6 grid gap-3">
-          <AccountTypeButton
-            active={accountType === 'personal'}
-            icon={<User size={18} />}
-            title="Compte à usage personnel"
-            onClick={() => setAccountType('personal')}
-          />
-          <AccountTypeButton
-            active={accountType === 'business'}
-            icon={<Building2 size={18} />}
-            title="Compte entreprise"
-            onClick={() => setAccountType('business')}
-          />
-        </div>
-      ) : (
-        <div className="mt-6 space-y-4">
-          {mode === 'signup' && accountType === 'business' ? (
+      <div className="mt-6 space-y-4">
+        {mode === 'signup' ? (
+          <>
             <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <TextField label="Nom de l'entreprise" value={companyName} onChange={setCompanyName} />
-              <TextField label="Numéro de SIRET" value={siret} onChange={setSiret} inputMode="numeric" />
+              <TextField label="Nom de l'entreprise" value={companyName} onChange={setCompanyName} required />
+              <TextField label="Numéro de SIRET" value={siret} onChange={setSiret} inputMode="numeric" required />
               <label className="block space-y-2">
                 <span className="text-sm font-semibold text-slate-700">Adresse de l'entreprise</span>
                 <textarea
                   value={companyAddress}
                   onChange={(event) => setCompanyAddress(event.target.value)}
                   rows={3}
+                  required
                   className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-slate-400"
                 />
               </label>
             </div>
-          ) : null}
 
-          {mode === 'signup' ? (
             <div className="grid gap-4 sm:grid-cols-2">
-              <TextField label="Prénom" value={firstName} onChange={setFirstName} />
-              <TextField label="Nom" value={lastName} onChange={setLastName} />
+              <TextField label="Prénom" value={firstName} onChange={setFirstName} required />
+              <TextField label="Nom" value={lastName} onChange={setLastName} required />
             </div>
-          ) : null}
+          </>
+        ) : null}
 
-          <TextField label="Email" type="email" value={email} onChange={setEmail} />
-          <TextField label="Mot de passe" type="password" value={password} onChange={setPassword} minLength={6} />
-          {mode === 'signup' ? (
-            <TextField label="Confirmation du mot de passe" type="password" value={passwordConfirm} onChange={setPasswordConfirm} minLength={6} />
-          ) : null}
-        </div>
-      )}
+        <TextField label="Email" type="email" value={email} onChange={setEmail} required />
+        <TextField label="Mot de passe" type="password" value={password} onChange={setPassword} minLength={6} required />
+        {mode === 'signup' ? (
+          <TextField
+            label="Confirmation du mot de passe"
+            type="password"
+            value={passwordConfirm}
+            onChange={setPasswordConfirm}
+            minLength={6}
+            required
+          />
+        ) : null}
+      </div>
 
       {mode === 'login' ? (
         <div className="mt-4 text-right">
@@ -232,55 +202,14 @@ export function AuthForm({ redirectTo = '/dashboard' }: { redirectTo?: string })
         </div>
       ) : null}
 
-      <div className="mt-6 flex gap-3">
-        {mode === 'signup' && signupStep === 'details' ? (
-          <button
-            type="button"
-            onClick={() => {
-              setSignupStep('type');
-            }}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-5 py-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            <ArrowLeft size={16} />
-            Retour
-          </button>
-        ) : null}
-        <button
-          type="submit"
-          disabled={loading}
-          className="flex-1 rounded-2xl bg-slate-950 px-5 py-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {loading ? 'Veuillez patienter...' : getSubmitLabel(mode, signupStep)}
-        </button>
-      </div>
+      <button
+        type="submit"
+        disabled={loading}
+        className="mt-6 w-full rounded-2xl bg-slate-950 px-5 py-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {loading ? 'Veuillez patienter...' : mode === 'login' ? 'Se connecter' : 'Créer mon compte'}
+      </button>
     </form>
-  );
-}
-
-function AccountTypeButton({
-  active,
-  icon,
-  title,
-  onClick,
-}: {
-  active: boolean;
-  icon: React.ReactNode;
-  title: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex items-center gap-3 rounded-2xl border px-4 py-4 text-left transition ${
-        active ? 'border-brand-500 bg-brand-50 text-slate-950' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-      }`}
-    >
-      <span className={`grid h-10 w-10 place-items-center rounded-xl ${active ? 'bg-white text-brand-600' : 'bg-slate-100 text-slate-500'}`}>
-        {icon}
-      </span>
-      <span className="font-bold">{title}</span>
-    </button>
   );
 }
 
@@ -291,6 +220,7 @@ function TextField({
   onChange,
   minLength,
   inputMode,
+  required = false,
 }: {
   label: string;
   type?: string;
@@ -298,6 +228,7 @@ function TextField({
   onChange: (value: string) => void;
   minLength?: number;
   inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
+  required?: boolean;
 }) {
   return (
     <label className="block space-y-2">
@@ -307,18 +238,10 @@ function TextField({
         value={value}
         minLength={minLength}
         inputMode={inputMode}
+        required={required}
         onChange={(event) => onChange(event.target.value)}
         className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-slate-400"
       />
     </label>
   );
 }
-
-function getSubmitLabel(mode: AuthMode, signupStep: SignupStep) {
-  if (mode === 'login') {
-    return 'Se connecter';
-  }
-
-  return signupStep === 'type' ? 'Continuer' : 'Créer mon compte';
-}
-

@@ -6,6 +6,9 @@ create extension if not exists pgcrypto;
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text,
+  account_type text not null default 'business' check (account_type in ('business')),
+  first_name text,
+  last_name text,
   full_name text,
   activity_type text check (activity_type in ('service', 'product', 'mixed')),
   profession_slug text,
@@ -14,20 +17,38 @@ create table if not exists public.profiles (
   default_tax_percent numeric(5, 2) not null default 20,
   default_hourly_rate numeric(12, 2) not null default 0,
   company_name text,
+  siret text,
   company_address text,
   company_email text,
   company_phone text,
+  onboarding_completed boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 alter table public.profiles
+add column if not exists account_type text not null default 'business',
+add column if not exists first_name text,
+add column if not exists last_name text,
 add column if not exists default_tax_percent numeric(5, 2) not null default 20,
 add column if not exists default_hourly_rate numeric(12, 2) not null default 0,
 add column if not exists company_name text,
+add column if not exists siret text,
 add column if not exists company_address text,
 add column if not exists company_email text,
-add column if not exists company_phone text;
+add column if not exists company_phone text,
+add column if not exists onboarding_completed boolean not null default false;
+
+alter table public.profiles
+drop constraint if exists profiles_account_type_check;
+
+update public.profiles
+set account_type = 'business'
+where account_type is null or account_type <> 'business';
+
+alter table public.profiles
+add constraint profiles_account_type_check
+check (account_type in ('business'));
 
 create table if not exists public.clients (
   id uuid primary key default gen_random_uuid(),
@@ -39,6 +60,14 @@ create table if not exists public.clients (
   notes text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
+);
+
+create table if not exists public.product_events (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  event_name text not null,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
 );
 
 create table if not exists public.professions (
@@ -337,11 +366,40 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, email, full_name)
-  values (new.id, new.email, new.raw_user_meta_data->>'full_name')
+  insert into public.profiles (
+    id,
+    email,
+    account_type,
+    first_name,
+    last_name,
+    full_name,
+    company_name,
+    siret,
+    company_address,
+    onboarding_completed
+  )
+  values (
+    new.id,
+    new.email,
+    'business',
+    new.raw_user_meta_data->>'first_name',
+    new.raw_user_meta_data->>'last_name',
+    new.raw_user_meta_data->>'full_name',
+    new.raw_user_meta_data->>'company_name',
+    new.raw_user_meta_data->>'siret',
+    new.raw_user_meta_data->>'company_address',
+    true
+  )
   on conflict (id) do update set
     email = excluded.email,
-    full_name = coalesce(excluded.full_name, public.profiles.full_name);
+    account_type = 'business',
+    first_name = coalesce(excluded.first_name, public.profiles.first_name),
+    last_name = coalesce(excluded.last_name, public.profiles.last_name),
+    full_name = coalesce(excluded.full_name, public.profiles.full_name),
+    company_name = coalesce(excluded.company_name, public.profiles.company_name),
+    siret = coalesce(excluded.siret, public.profiles.siret),
+    company_address = coalesce(excluded.company_address, public.profiles.company_address),
+    onboarding_completed = true;
 
   return new;
 end;
@@ -354,6 +412,7 @@ for each row execute function public.handle_new_user();
 
 alter table public.profiles enable row level security;
 alter table public.clients enable row level security;
+alter table public.product_events enable row level security;
 alter table public.professions enable row level security;
 alter table public.market_rates enable row level security;
 alter table public.market_observations enable row level security;
@@ -397,6 +456,16 @@ drop policy if exists "clients_delete_own" on public.clients;
 create policy "clients_delete_own"
 on public.clients for delete
 using (auth.uid() = user_id);
+
+drop policy if exists "product_events_select_own" on public.product_events;
+create policy "product_events_select_own"
+on public.product_events for select
+using (auth.uid() = user_id);
+
+drop policy if exists "product_events_insert_own" on public.product_events;
+create policy "product_events_insert_own"
+on public.product_events for insert
+with check (auth.uid() = user_id);
 
 drop policy if exists "professions_select_public" on public.professions;
 create policy "professions_select_public"
@@ -503,6 +572,12 @@ on public.pricing_calculations (user_id, opportunity_status, created_at desc);
 
 create index if not exists clients_user_created_idx
 on public.clients (user_id, created_at desc);
+
+create index if not exists product_events_user_created_idx
+on public.product_events (user_id, created_at desc);
+
+create index if not exists product_events_name_created_idx
+on public.product_events (event_name, created_at desc);
 
 create index if not exists service_templates_user_created_idx
 on public.service_templates (user_id, created_at desc);

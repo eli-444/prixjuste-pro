@@ -22,7 +22,6 @@ type CalculationRow = {
 };
 
 type ProfileRow = {
-  account_type: 'personal' | 'business' | null;
   first_name: string | null;
   last_name: string | null;
   full_name: string | null;
@@ -53,7 +52,7 @@ export default async function DashboardOpportunityQuotePage({
       .maybeSingle(),
     supabase
       .from('profiles')
-      .select('account_type, first_name, last_name, full_name, company_name, siret, company_address, company_email, company_phone')
+      .select('first_name, last_name, full_name, company_name, siret, company_address, company_email, company_phone')
       .eq('id', user.id)
       .maybeSingle(),
   ]);
@@ -70,7 +69,7 @@ export default async function DashboardOpportunityQuotePage({
   const subtotalExcludingTax = Number(row.result?.priceExcludingTax ?? computePriceExcludingTax(finalPrice, taxRate));
   const taxAmount = Number(row.result?.taxAmount ?? Math.max(0, finalPrice - subtotalExcludingTax));
   const holderName = getHolderName(profileRow, user.email ?? '');
-  const accountType = profileRow.account_type === 'business' ? 'business' : 'personal';
+  const accountType = 'business';
 
   return (
     <EditableOpportunityQuote
@@ -87,7 +86,7 @@ export default async function DashboardOpportunityQuotePage({
         taxRate,
         baseCost: Number(row.result?.baseCost ?? 0),
         netProfit: Number(row.result?.netProfit ?? 0),
-        issuerLines: buildIssuerLines(profileRow, holderName, accountType),
+        issuerLines: buildIssuerLines(profileRow, holderName),
         holderName,
         accountType,
         createdAt: row.created_at,
@@ -96,18 +95,14 @@ export default async function DashboardOpportunityQuotePage({
   );
 }
 
-function buildIssuerLines(profile: ProfileRow, holderName: string, accountType: 'personal' | 'business') {
-  if (accountType === 'business') {
-    return [
-      profile.company_name || holderName || 'Entreprise',
-      profile.company_address || '',
-      profile.company_phone || '',
-      profile.company_email || '',
-      profile.siret ? `SIRET : ${profile.siret}` : '',
-    ].filter(Boolean);
-  }
-
-  return [holderName || 'Émetteur', profile.company_email || ''].filter(Boolean);
+function buildIssuerLines(profile: ProfileRow, holderName: string) {
+  return [
+    profile.company_name || holderName || 'Entreprise',
+    profile.company_address || '',
+    profile.company_phone || '',
+    profile.company_email || '',
+    profile.siret ? `SIRET : ${profile.siret}` : '',
+  ].filter(Boolean);
 }
 
 function getHolderName(profile: ProfileRow, fallback: string) {

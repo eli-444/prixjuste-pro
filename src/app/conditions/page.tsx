@@ -262,6 +262,10 @@ const sections: ConditionSection[] = [
       },
       {
         type: 'paragraph',
+        text: 'L’utilisateur est également responsable de l’exactitude de ses informations d’identification professionnelle, notamment son numéro de SIRET. L’éditeur ne peut pas être tenu responsable des conséquences liées à une information fausse, incomplète, usurpée ou renseignée de manière frauduleuse par l’utilisateur.',
+      },
+      {
+        type: 'paragraph',
         text: 'L’utilisateur doit vérifier chaque devis avant de l’envoyer à son client.',
       },
       {
@@ -318,6 +322,10 @@ const sections: ConditionSection[] = [
       {
         type: 'paragraph',
         text: 'L’utilisateur reste responsable des informations qu’il renseigne dans Tarifly, notamment ses informations d’entreprise, informations client, opportunités, notes, calculs et devis.',
+      },
+      {
+        type: 'paragraph',
+        text: 'L’utilisateur garantit que le numéro de SIRET renseigné lui appartient ou qu’il est autorisé à l’utiliser dans le cadre de son activité. Toute fausse déclaration ou usurpation engage sa seule responsabilité.',
       },
       {
         type: 'paragraph',
@@ -415,15 +423,15 @@ const sections: ConditionSection[] = [
     content: [
       {
         type: 'paragraph',
-        text: 'Lorsque l’utilisateur agit en qualité de consommateur, il peut recourir gratuitement à un médiateur de la consommation après avoir tenté de résoudre le litige directement auprès de l’éditeur.',
+        text: 'Tarifly est destiné en priorité aux professionnels, indépendants, freelances, artisans, prestataires de services et petites entreprises.',
       },
       {
         type: 'paragraph',
-        text: 'L’éditeur doit communiquer les coordonnées du médiateur de la consommation dont il relève dès lors qu’il vend le service à des consommateurs.',
+        text: 'Si le service est utilisé par un consommateur au sens du droit applicable, celui-ci est invité à contacter d’abord l’éditeur afin de rechercher une solution amiable.',
       },
       {
         type: 'paragraph',
-        text: 'Cette information doit être complétée avec le médiateur effectivement désigné par l’éditeur avant toute commercialisation à des consommateurs.',
+        text: 'Lorsque la désignation d’un médiateur de la consommation est légalement requise, ses coordonnées seront communiquées à l’utilisateur concerné conformément aux règles applicables.',
       },
     ],
   },

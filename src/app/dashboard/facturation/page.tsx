@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { PricingCard } from '@/components/PricingCard';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
@@ -50,6 +51,12 @@ export default async function DashboardBillingPage({
           <InfoRow label="Abonnement" value={entitlement ? 'Actif' : 'Inactif'} />
           <InfoRow label="Dernier paiement" value={latestPayment ? formatAmount(latestPayment.amount_total, latestPayment.currency) : 'Aucun'} />
           <InfoRow label="Date" value={latestPayment ? formatDate(latestPayment.created_at) : 'Aucune'} />
+          <Link
+            href="/aide"
+            className="mt-4 inline-flex w-full justify-center rounded-xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-50"
+          >
+            Aide facturation
+          </Link>
         </section>
 
         {!entitlement ? (

@@ -7,6 +7,7 @@ import { formatCurrency, formatPercent } from '@/lib/utils';
 import { createQuotePdf, createTariflyPdf } from '@/lib/pdf';
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser';
 import { getSupabaseConfig } from '@/lib/supabase/env';
+import { trackProductEvent } from '@/lib/product-analytics';
 import { showToast } from '@/lib/toast';
 import {
   defaultOpportunityMeta,
@@ -162,7 +163,7 @@ export function ToolForm({
     createDefaultQuoteItem(normalizedInitialInput, initialMeta.title || 'Prestation'),
   ]);
   const [quoteForm, setQuoteForm] = useState<QuoteForm>(() => ({
-    accountType: 'personal',
+    accountType: 'business',
     companyName: '',
     companySiret: '',
     companyAddress: '',
@@ -264,31 +265,6 @@ export function ToolForm({
           statQuery,
         ]);
 
-        if (process.env.NODE_ENV === 'development') {
-          console.info('[Tarifly market_rates]', {
-            selectedProfessionSlug: market.professionSlug,
-            selectedRegion: market.region,
-            selectedCity: market.city || 'Moyenne régionale',
-            query: {
-              table: 'market_rates',
-              filters: {
-                profession_slug: market.professionSlug,
-                region: market.region,
-              },
-              order: 'city',
-            },
-            data: rateData,
-            error: rateError,
-          });
-          console.info('[Tarifly market_rate_stats]', {
-            selectedProfessionSlug: market.professionSlug,
-            selectedRegion: market.region,
-            selectedCity: market.city || 'Moyenne régionale',
-            data: statData,
-            error: statError,
-          });
-        }
-
         if (!isMounted) {
           return;
         }
@@ -303,16 +279,7 @@ export function ToolForm({
         setMarketRateRows((rateData ?? []) as MarketRate[]);
         setMarketRateStatRows(statError ? [] : ((statData ?? []) as MarketRateStat[]));
         setMarketDataStatus('ready');
-      } catch (error) {
-        if (process.env.NODE_ENV === 'development') {
-          console.info('[Tarifly market_rates]', {
-            selectedProfessionSlug: market.professionSlug,
-            selectedRegion: market.region,
-            selectedCity: market.city || 'Moyenne régionale',
-            error,
-          });
-        }
-
+      } catch {
         if (isMounted) {
           setMarketRateRows([]);
           setMarketRateStatRows([]);
@@ -360,7 +327,7 @@ export function ToolForm({
           .maybeSingle();
 
         if (profile) {
-          const accountType = profile.account_type === 'business' ? 'business' : 'personal';
+          const accountType = 'business';
           const nameParts = (profile.full_name ?? '').split(' ').filter(Boolean);
           const personalName =
             `${profile.first_name ?? nameParts[0] ?? ''} ${profile.last_name ?? nameParts.slice(1).join(' ') ?? ''}`.trim() ||
@@ -369,11 +336,11 @@ export function ToolForm({
           setQuoteForm((current) => ({
             ...current,
             accountType,
-            companyName: accountType === 'business' ? profile.company_name || '' : personalName,
-            companySiret: accountType === 'business' ? profile.siret || '' : '',
-            companyAddress: accountType === 'business' ? profile.company_address || '' : '',
+            companyName: profile.company_name || personalName,
+            companySiret: profile.siret || '',
+            companyAddress: profile.company_address || '',
             companyEmail: profile.company_email || profile.email || user.email || '',
-            companyPhone: accountType === 'business' ? profile.company_phone || '' : '',
+            companyPhone: profile.company_phone || '',
           }));
         }
 
@@ -651,6 +618,12 @@ export function ToolForm({
 
       showToast('Opportunité enregistrée.', 'success');
       if (data?.id) {
+        trackProductEvent('calculation_saved', {
+          calculationId: data.id,
+          billingMode: input.billingMode,
+          activityType: input.activityType,
+          hasClient: Boolean(meta.clientName),
+        });
         window.location.href = `/dashboard/opportunites/${data.id}/devis?setup=1`;
       }
     } catch (error) {
@@ -791,10 +764,14 @@ export function ToolForm({
   }
 
   async function generateQuotePdf() {
-    const requiredFields: Array<keyof QuoteForm> =
-      quoteForm.accountType === 'business'
-        ? ['companyName', 'companyAddress', 'quoteNumber', 'clientName', 'clientAddress']
-        : ['companyName', 'quoteNumber', 'clientName', 'clientAddress'];
+    const requiredFields: Array<keyof QuoteForm> = [
+      'companyName',
+      'companySiret',
+      'companyAddress',
+      'quoteNumber',
+      'clientName',
+      'clientAddress',
+    ];
     const missingField = requiredFields.find((field) => !quoteForm[field].trim());
 
     if (missingField) {
@@ -824,7 +801,7 @@ export function ToolForm({
       quoteDate: new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' }).format(new Date()),
       company: {
         name: quoteForm.companyName,
-        siret: quoteForm.accountType === 'business' ? quoteForm.companySiret : '',
+        siret: quoteForm.companySiret,
         address: quoteForm.companyAddress,
         email: quoteForm.companyEmail,
         phone: quoteForm.companyPhone,
@@ -864,7 +841,7 @@ export function ToolForm({
           company_snapshot: {
             account_type: quoteForm.accountType,
             name: quoteForm.companyName,
-            siret: quoteForm.accountType === 'business' ? quoteForm.companySiret : '',
+            siret: quoteForm.companySiret,
             address: quoteForm.companyAddress,
             email: quoteForm.companyEmail,
             phone: quoteForm.companyPhone,
@@ -892,8 +869,18 @@ export function ToolForm({
 
         if (savedQuote?.public_token) {
           setQuoteShareUrl(`${window.location.origin}/devis/${savedQuote.public_token}`);
+          trackProductEvent('quote_link_generated', {
+            hasCalculation: Boolean(currentCalculationId),
+            itemCount: computedItems.length,
+            totalIncludingTax,
+          });
         }
 
+        trackProductEvent('quote_generated', {
+          hasCalculation: Boolean(currentCalculationId),
+          itemCount: computedItems.length,
+          totalIncludingTax,
+        });
         showToast('Devis généré et sauvegardé dans votre compte.', 'success');
       } catch {
         showToast('PDF généré, mais sauvegarde du devis impossible pour le moment.', 'error');
@@ -1256,17 +1243,17 @@ function QuoteModal({
         <div className="mt-6 grid gap-6 md:grid-cols-2">
           <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="flex items-start justify-between gap-4">
-              <h3 className="font-bold text-slate-950">{form.accountType === 'business' ? 'Emetteur' : 'Titulaire'}</h3>
+              <h3 className="font-bold text-slate-950">Émetteur</h3>
               <a href="/dashboard/mon-compte" className="text-sm font-bold text-brand-600 hover:text-aqua-600">
                 Modifier
               </a>
             </div>
             <div className="space-y-2 text-sm leading-6 text-slate-700">
               <p className="font-bold text-slate-950">{form.companyName || 'Nom non renseigne'}</p>
-              {form.accountType === 'business' && form.companySiret ? <p>SIRET {form.companySiret}</p> : null}
-              {form.accountType === 'business' ? <p className="whitespace-pre-line">{form.companyAddress || 'Adresse non renseignee'}</p> : null}
+              {form.companySiret ? <p>SIRET {form.companySiret}</p> : null}
+              <p className="whitespace-pre-line">{form.companyAddress || 'Adresse non renseignée'}</p>
               {form.companyEmail ? <p>{form.companyEmail}</p> : null}
-              {form.accountType === 'business' && form.companyPhone ? <p>{form.companyPhone}</p> : null}
+              {form.companyPhone ? <p>{form.companyPhone}</p> : null}
             </div>
           </div>
 

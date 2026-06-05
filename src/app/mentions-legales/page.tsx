@@ -145,9 +145,14 @@ const sections: LegalSection[] = [
           'des prix qu’il applique à ses clients ;',
           'des devis qu’il crée, modifie, envoie ou fait accepter ;',
           'des informations qu’il renseigne dans l’application ;',
+          'de l’exactitude de son numéro de SIRET et de ses informations professionnelles ;',
           'de ses obligations fiscales, comptables, sociales, commerciales et légales ;',
           'de la vérification des documents avant toute transmission à un client.',
         ],
+      },
+      {
+        type: 'paragraph',
+        text: 'L’éditeur ne peut pas être tenu responsable d’une fausse déclaration, d’une erreur ou d’une usurpation liée au numéro de SIRET ou aux informations professionnelles renseignées par l’utilisateur.',
       },
       {
         type: 'paragraph',

@@ -18,6 +18,9 @@ export function Footer() {
           <Link href="/dashboard" className="hover:text-slate-950">
             Dashboard
           </Link>
+          <Link href="/aide" className="hover:text-slate-950">
+            Aide & support
+          </Link>
           <Link href="/mentions-legales" className="hover:text-slate-950">
             Mentions légales
           </Link>
