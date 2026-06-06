@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { isFinalQuoteStatus, isQuoteExpired } from '@/lib/quotes';
+import { notifyQuoteOwnerByEmail } from '@/lib/quote-email-notifications';
 
 export async function POST(
   request: Request,
@@ -27,7 +28,7 @@ export async function POST(
 
   const { data: quote, error: quoteError } = await supabase
     .from('quotes')
-    .select('id, user_id, calculation_id, quote_number, status, validity_days, generated_at, created_at')
+    .select('id, user_id, calculation_id, public_token, quote_number, status, client_snapshot, total_including_tax, validity_days, generated_at, created_at')
     .eq('public_token', token)
     .maybeSingle();
 
@@ -95,6 +96,15 @@ export async function POST(
     type: 'quote_accepted',
     title: 'Devis accepté',
     message: `Le devis ${quote.quote_number} a été signé et accepté par le client.`,
+  });
+
+  await notifyQuoteOwnerByEmail(supabase, {
+    userId: quote.user_id,
+    status: 'accepted',
+    quoteNumber: quote.quote_number,
+    clientSnapshot: quote.client_snapshot,
+    totalIncludingTax: Number(quote.total_including_tax ?? 0),
+    publicToken: quote.public_token,
   });
 
   return NextResponse.json({ accepted: true });
