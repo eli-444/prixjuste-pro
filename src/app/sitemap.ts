@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 
-const baseUrl = 'https://tarifly.vercel.app';
+const baseUrl = 'https://tarifly.app';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const updatedAt = new Date();

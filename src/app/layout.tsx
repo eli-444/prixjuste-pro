@@ -4,7 +4,7 @@ import { ToastProvider } from '@/components/ToastProvider';
 import './globals.css';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://tarifly.vercel.app'),
+  metadataBase: new URL('https://tarifly.app'),
   applicationName: 'Tarifly',
   title: {
     default: 'Tarifly - Logiciel de calcul de prix, marge et devis pour professionnels',

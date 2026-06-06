@@ -56,15 +56,15 @@ const homeJsonLd = [
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: 'Tarifly',
-    url: 'https://tarifly.vercel.app',
-    logo: 'https://tarifly.vercel.app/logo.png',
-    sameAs: ['https://tarifly.vercel.app'],
+    url: 'https://tarifly.app',
+    logo: 'https://tarifly.app/logo.png',
+    sameAs: ['https://tarifly.app'],
   },
   {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: 'Tarifly',
-    url: 'https://tarifly.vercel.app',
+    url: 'https://tarifly.app',
   },
   {
     '@context': 'https://schema.org',
@@ -72,8 +72,8 @@ const homeJsonLd = [
     name: 'Tarifly',
     applicationCategory: 'BusinessApplication',
     operatingSystem: 'Web',
-    url: 'https://tarifly.vercel.app',
-    image: 'https://tarifly.vercel.app/logo.png',
+    url: 'https://tarifly.app',
+    image: 'https://tarifly.app/logo.png',
     description:
       'Logiciel SaaS pour calculer un prix rentable, comparer son tarif au marché, générer des devis professionnels, envoyer un lien client et suivre les acceptations ou refus.',
     offers: {
