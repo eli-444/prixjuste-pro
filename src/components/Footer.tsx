@@ -21,6 +21,12 @@ export function Footer() {
           <Link href="/aide" className="hover:text-slate-950">
             Aide & support
           </Link>
+          <Link href="/ressources" className="hover:text-slate-950">
+            Ressources pricing
+          </Link>
+          <Link href="/metiers" className="hover:text-slate-950">
+            Guides métiers
+          </Link>
           <Link href="/mentions-legales" className="hover:text-slate-950">
             Mentions légales
           </Link>
